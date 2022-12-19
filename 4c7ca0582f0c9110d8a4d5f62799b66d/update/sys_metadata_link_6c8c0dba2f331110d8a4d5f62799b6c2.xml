@@ -1,0 +1,1183 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>47f5a2575f13030056976e303e46660d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PortalBoardGlideServices&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX API for Portal Board &lt;/description&gt;
+        &lt;name&gt;PortalBoardGlideServices&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PortalBoardGlideServices = Class.create();
+PortalBoardGlideServices.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	INVESTMENT_PORTAL_RECENT_BOARDS : "com.snc.investment.portal.recent.boards",
+	INVESTMENT_PORTAL_PIN_BOARDS : "com.snc.investment.portal.pin.boards",
+	json: function() {
+        return new JSON();
+		
+    },
+	getTeamspaceData: function(teamspace) {
+		var ppmConfig = new PPMConfigHelper();
+		var pmProjectTable = ppmConfig.getProjectTables('pm_project').join();
+		var retObj={
+			'project_tables' : pmProjectTable, //To fetch all non teamspace project tables
+			'pm_project' : 'pm_project',
+			'pm_program' : 'pm_program',
+			'pm_portfolio': 'pm_portfolio',
+			'dmn_demand' : 'dmn_demand',
+			'project_user' : 'it_project_user',
+			'pm_project_task' : 'pm_project_task',
+			'teamspace'  : '' 
+		};
+		
+		if(teamspace!='') {
+			var gr=new GlideRecord('pm_app_config');
+			gr.addQuery('prefix',teamspace);
+			gr.query();
+			if(gr.next()){
+				retObj={};
+				retObj['project_tables'] = gr.getValue('pm_project_table') ? gr.getValue('pm_project_table') : 'pm_project';
+				retObj['pm_project'] = gr.getValue('pm_project_table') ? gr.getValue('pm_project_table') : 'pm_project';
+				retObj['pm_program'] = gr.getValue('pm_program_table') ? gr.getValue('pm_program_table') : 'pm_program';
+				retObj['pm_portfolio'] = gr.getValue('pm_portfolio_table') ? gr.getValue('pm_portfolio_table') : 'pm_portfolio';
+				retObj['dmn_demand'] = gr.getValue('dmn_demand_table') ? gr.getValue('dmn_demand_table') : 'dmn_demand'; 
+				retObj['project_user'] = this._isValidUserRole(teamspace+'_project_user') ? teamspace+'_project_user' : 'it_project_user';
+				retObj['pm_project_task'] = gr.getValue('pm_project_task_table') ? gr.getValue('pm_project_task_table') : 'pm_project_task';
+				retObj['teamspace'] = teamspace;
+			}
+		}
+		
+		return JSON.stringify(retObj);
+	},
+	getTeamspaceDataMap: function() {
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var teamspace = config['teamspace'];
+		var retObj = JSON.parse(this.getTeamspaceData(teamspace));
+		result.setAttribute("data",new JSON().encode(retObj));
+	},
+	getTeamspaceProject: function(projectTable){
+		var gr=new GlideRecord('pm_app_config');
+		gr.addQuery('pm_project_table',projectTable);
+		gr.query();
+		if(gr.next())
+			return gr.getValue('prefix');
+		else
+			return '';
+	},
+	getTeamspaceDemand: function(demandTable){
+		var gr=new GlideRecord('pm_app_config');
+		gr.addQuery('dmn_demand_table',demandTable);
+		gr.query();
+		if(gr.next())
+			return gr.getValue('prefix');
+		else
+			return '';
+	},
+	searchBoard: function() {
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var searchText = config['searchText'];
+		var pagetype = config['pagetype'];
+		var teamspace = config['teamspace'];
+		var from = config['from'];
+		var to = config['to'];
+		this.getAllRecords(pagetype,teamspace,from,to,searchText);
+	},
+	flushLRU: function(json) {
+		var cnt=999999999;
+		var prevDateTime = (new GlideDateTime()).toString();
+		var prevJson={count:cnt,last_used:prevDateTime,sys_id:''};
+		var deleteKey='';
+		for (var key in json) {
+			var curJson = json[key];
+			if((new GlideDateTime(prevJson.last_used)).compareTo(new GlideDateTime(curJson.last_used))&lt;0){
+				deleteKey=prevJson.sys_id;
+			}
+			else
+				prevJson=curJson;
+		}
+		if(json.hasOwnProperty(deleteKey))
+			delete json[deleteKey];
+	},
+	deleteExcessBoards: function(boardCountProperty,boardsJson){
+		var count = Object.keys(boardsJson).length;
+		for (var i=0; i&lt;(count-boardCountProperty); i++ ) {
+			this.flushLRU(boardsJson);
+		}
+	},
+	addBoardRecentCount: function(sysId,teamspace){
+		var boardCountProperty = gs.getProperty('investment_portal_no_of_recent_cards') ? gs.getProperty('investment_portal_no_of_recent_cards') : 5;
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() ){
+			var recentBoards = gs.getUser().getPreference(this.INVESTMENT_PORTAL_RECENT_BOARDS+teamspace);
+			var boardsJson = {};
+			if(JSUtil.notNil(recentBoards)) {
+				boardsJson = this.json().decode(recentBoards);
+				var count = Object.keys(boardsJson).length;
+				if(count&gt;boardCountProperty){
+					this.deleteExcessBoards(boardCountProperty,boardsJson);
+					count = Object.keys(boardsJson).length;
+				}
+				if(boardsJson.hasOwnProperty(sysId)){
+					boardsJson[sysId].count=boardsJson[sysId].count+1;
+				}
+				else {
+					if(count&gt;=boardCountProperty)
+						this.flushLRU(boardsJson);
+					boardsJson[sysId]={};
+					boardsJson[sysId].count=1;
+					boardsJson[sysId].sys_id=sysId;
+				}
+				boardsJson[sysId].last_used=(new GlideDateTime()).toString();
+			}
+			else {
+				boardsJson[sysId]={};
+				boardsJson[sysId].count=1;
+				boardsJson[sysId].last_used=(new GlideDateTime()).toString();
+				boardsJson[sysId].sys_id=sysId;
+			}
+			gs.getUser().setPreference(this.INVESTMENT_PORTAL_RECENT_BOARDS+teamspace,JSON.stringify(boardsJson));
+		}
+	},
+	pinBoard: function(){
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var sysId = config['sysId'];
+		var pagetype = config['pagetype'];
+		if(this._pinBoard(sysId) ){
+			result.setAttribute("data", new JSON().encode( {'status':0}));
+		}
+		else
+			result.setAttribute("data", new JSON().encode( {'status':1}));
+	},
+	_pinBoard: function(sysId){
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() ){
+			var pinList = boardGr.getValue('pinned_by');
+			var array = (pinList &amp;&amp; pinList.split(',')) || [];
+			var i = array.indexOf(gs.getUserID());
+			if (i === -1) {
+				array.push(gs.getUserID());
+				pinList = array.join();
+				boardGr.setValue('pinned_by',pinList);
+				boardGr.update();
+			}
+			return true;
+		}
+		else
+			return false;
+	},
+	unPinBoard: function(){
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var sysId = config['sysId'];
+		var pagetype = config['pagetype'];
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() ){
+			this._unPinBoard(sysId, pagetype, gs.getUserID());
+			result.setAttribute("data", new JSON().encode( {'status':0}));
+		}
+		else
+			result.setAttribute("data", new JSON().encode( {'status':1}));
+	},
+	_unPinBoard: function(sysId, pagetype, userId){
+		if(!pagetype){
+			pagetype = 'investment';
+		}
+		if(!userId){
+			userId = gs.getUserID();
+		}
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() ){
+			var pinList = boardGr.getValue('pinned_by');
+			if(JSUtil.notNil(pinList)){
+				var array = pinList.split(',');
+				var i = array.indexOf(userId);
+				if (i !== -1) {
+					array.splice(i, 1);
+					pinList = array.join();
+					boardGr.setValue('pinned_by',pinList);
+					boardGr.update();
+				}
+			}
+		}
+	},
+	deleteBoard: function(){
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		
+		result.setAttribute("data", new JSON().encode(this._deleteBoard(config)));
+	},
+	_deleteBoard: function(config) {
+		var sysId = config['sysId'];
+		var pagetype = config['pagetype'];
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() &amp;&amp; boardGr.canDelete()){
+			//delete members first
+			var members=new GlideRecord('planned_task_custom_console_member');
+			members.addQuery('console',sysId);
+			members.query();
+			members.deleteMultiple();
+			
+			boardGr.deleteRecord();
+			return {'status':0};
+		}
+		else
+			return {'status':1};
+	},
+	createBoard4mUIAction: function(){
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var boardGr = this.createBoard(config);
+		if(!boardGr)
+			return '';
+		else { 
+			var teamspace = this.getTeamspaceProject(boardGr.getValue('table'));
+			return JSON.stringify({'sysid':boardGr.getUniqueValue(),'teamspace':teamspace}) ;
+		}
+	},
+	isBoardExists: function(name,owner,groupType) {
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.addQuery('name',name);
+		boardGr.addQuery('owner',owner);
+		boardGr.addQuery('group_type',groupType);
+		boardGr.query();
+		if(boardGr.hasNext())
+			return true;
+		//else return false;
+	},
+	saveBoardDetails: function() {
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var status=0;
+		var mode = config['mode'];
+		var name = config['name'];
+		var groupType = config['pagetype'];
+		var owner=gs.getUserID();
+		
+// 		if(!this.isBoardExists(name,owner,groupType)) {
+// 			status=1;
+// 			result.setAttribute("data", new JSON().encode( {'entity':{},'status':status,'message':'Already a board with same name exists for this owner'}));
+// 			return;
+// 		}
+		
+		var boardGr = new GlideRecord('planned_task_custom_console');
+		
+		if(mode=='edit')
+			boardGr = this.updateBoard(config);
+		else
+			boardGr = this.createBoard(config);
+		
+		if(!boardGr) {
+			status=1;
+			result.setAttribute("data", new JSON().encode( {'entity':{},'status':status,'message':'Error'}));
+		}
+		else {
+			var errMsgs = j2js(gs.getErrorMessages());
+			gs.flushMessages();
+			var msgs = '';
+			if(errMsgs) msgs = errMsgs;
+			result.setAttribute("data", new JSON().encode( {'entity':this.entityObject(boardGr),'status':status,'message':msgs.toString()}));
+		}
+	},
+	updateBoard: function(config){
+		var teamspace = config['teamspace'];
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var groupType = config['pagetype'];
+		var type = config['type'];
+		var sysId = config['sysId'];
+		var name = config['name'];
+		var prjFilter = config['prjFilter'];
+		var dmnFilter = config['dmnFilter'];
+		var rpFilter = config['rpFilter'];
+		var entity = config['entity'];
+		var includeActive = config['includeActive']?config['includeActive']:false;
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() &amp;&amp; boardGr.canWrite()){
+			boardGr.name = name;
+			boardGr.type = type;
+			boardGr.include_active = includeActive;
+			
+			if(type=='pm_portfolio') {
+				boardGr.filter='primary_portfolio='+entity;
+				boardGr.filter2='portfolio='+entity+'^projectISEMPTY';
+				if(includeActive){
+					boardGr.filter += '^active='+includeActive;
+					boardGr.filter2 += '^active='+includeActive;
+				}
+				boardGr.entity=entity;
+			}
+			else if(type=='pm_program') {
+				boardGr.filter='primary_program='+entity;
+				boardGr.filter2='primary_program='+entity+'^projectISEMPTY';
+				if(includeActive){
+					boardGr.filter += '^active='+includeActive;
+					boardGr.filter2 += '^active='+includeActive;
+				}
+				boardGr.entity=entity;
+			}
+			else if(type == 'group_manager' || type == 'user_manager' || type == 'group' || type == 'role') {
+				boardGr.filter='sys_idIN'+entity;
+				boardGr.entity=entity;
+				boardGr.filter2 = '';
+				boardGr.table2 = '';
+			} else if(type == 'resource_plan') {
+				boardGr.filter = rpFilter;
+			}
+			else if(type=='custom') {
+				boardGr.filter=prjFilter;
+				boardGr.filter2=dmnFilter;
+			}
+			if (type == 'group_manager' || type == 'user_manager')
+				boardGr.table = 'sys_user';
+			else if (type == 'group')
+				boardGr.table = 'sys_user_group';
+			else if (type == 'role')
+				boardGr.table = 'resource_role';
+			else if (type == 'resource_plan')
+				boardGr.table = 'resource_plan';
+			else {	
+				boardGr.table  = boardGr.filter ? teamspaceDataMap['pm_project'] : '';
+				boardGr.table2 = boardGr.filter2 ? teamspaceDataMap['dmn_demand'] : '';
+			}
+			boardGr.update();
+			return boardGr;
+		}
+		else 
+			return false;
+	},
+	createBoard: function(config){
+		var teamspace = config['teamspace'];
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var groupType = config['pagetype'];
+		var type = config['type'];
+		var name = config['name'];
+		var sysId = config['sysId'];
+		var prjFilter = config['prjFilter'];
+		var dmnFilter = config['dmnFilter'];
+		var rpFilter = config['rpFilter'];
+		var mode = config['mode'];
+		var entity = config['entity'];
+		var table = config['table'];
+		var includeActive = config['includeActive']?config['includeActive']:false;
+		
+		
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.initialize();
+		if(!boardGr.canCreate())
+			return false;
+		if(mode=='copy'){
+			boardGr.get(sysId);
+			boardGr.pinned_by='';
+			boardGr.owner=gs.getUserID();
+			boardGr.table='';
+			boardGr.filter='';
+			boardGr.table2='';
+			boardGr.filter2='';
+		}
+		else
+			boardGr.active=true;
+		boardGr.name = name;
+		boardGr.type=type;
+		boardGr.group_type=groupType;
+		boardGr.include_active=includeActive;
+		if(type=='pm_portfolio') {
+                boardGr.table=teamspaceDataMap['pm_project'];
+				boardGr.filter='primary_portfolio='+entity;
+                boardGr.table2=teamspaceDataMap['dmn_demand'];
+				boardGr.filter2='portfolio='+entity+'^projectISEMPTY';
+				if(includeActive){
+					boardGr.filter += '^active='+includeActive;
+					boardGr.filter2 += '^active='+includeActive;
+				}
+				boardGr.entity=entity;
+			}
+	    else if(type=='pm_program') {
+                boardGr.table=teamspaceDataMap['pm_project'];
+				boardGr.filter='primary_program='+entity;
+                boardGr.table2=teamspaceDataMap['dmn_demand'];
+				boardGr.filter2='primary_program='+entity+'^projectISEMPTY';
+				if(includeActive){
+					boardGr.filter += '^active='+includeActive;
+					boardGr.filter2 += '^active='+includeActive;
+				}
+				boardGr.entity=entity;
+			}
+         else if(type == 'group') {
+			boardGr.table='sys_user_group';
+			boardGr.filter='sys_idIN'+entity;
+			boardGr.entity=entity;
+		 } else if(type == 'role') {
+			 boardGr.table = 'resource_role';
+			 boardGr.filter = 'sys_idIN'+entity;
+			 boardGr.entity = entity;
+		 }
+		 else if(type == 'group_manager' || type == 'user_manager') {
+			boardGr.table='sys_user';
+			boardGr.filter='sys_idIN'+entity;
+            boardGr.entity=entity;
+         } else if(type == 'resource_plan') {
+			boardGr.table = 'resource_plan';
+			boardGr.filter = rpFilter;
+		 } else if(type=='custom') {
+			if(JSUtil.notNil(prjFilter)) {
+				if(JSUtil.notNil(table)){
+					boardGr.table=table;
+				   }
+				else{
+					boardGr.table=teamspaceDataMap['pm_project'];
+				   }
+				boardGr.filter=prjFilter;
+			}
+			if(JSUtil.notNil(dmnFilter)) {
+				boardGr.table2=teamspaceDataMap['dmn_demand'];
+				boardGr.filter2=dmnFilter;
+			}
+		}
+		
+		boardGr.insert();
+		if(groupType == 'resourceplan') {
+			var rmUsageAnalytics = new RMUsageAnalytics();
+			rmUsageAnalytics.logResourceGridAnalytics("allocationBoardCreation","","");
+		}
+		return boardGr;
+	},
+		isAccessible: function(boardId) {
+		var gr = new GlideRecord('planned_task_custom_console');
+		gr.addQuery('owner', gs.getUserID());
+		gr.addQuery('sys_id',boardId);
+		gr.setLimit(1);
+		gr.query();
+		if(gr.hasNext())
+			return true;
+
+		var owner = gs.getUserID();
+
+			var ownerGroupsGr = new GlideRecord('sys_user_grmember');
+		ownerGroupsGr.addQuery('user', owner);
+		ownerGroupsGr.query();
+		var ownerGroups=[];
+		while ( ownerGroupsGr.next() )
+			ownerGroups.push(ownerGroupsGr.getValue('group'));
+
+		var memberConsoles = new GlideRecord('planned_task_custom_console_member');
+		memberConsoles.addEncodedQuery('user='+owner+'^ORuser_groupIN'+ownerGroups);
+		memberConsoles.addQuery('console',boardId);
+		memberConsoles.setLimit(1);
+		memberConsoles.query();
+
+		if(memberConsoles.hasNext())
+			return true;
+		
+		return false;
+		
+	},
+	_populateColors: function() {
+		var that =  this;
+		var api = new EntityColors();
+		var colors = api.entityColors();
+		this.colorMap = {};
+		colors.forEach(function(entity){
+			that.colorMap[entity.id] = entity.color;
+		});
+		this.colorMap['custom'] = '98A0EE';
+	},
+	
+	_getColors: function(type) {
+		if(!this.colorMap.hasOwnProperty(type))
+			this._populateColors();
+		return this.colorMap[type];
+	},
+	
+	getRecords: function() {
+	var config = JSON.parse(this.getParameter('sysparm_config'));
+	var type = config['type'];
+	var from = config['from'];
+	var searchText = config['searchText'];
+	var to = config['to'];
+	var pagetype = config['pagetype'];
+	var teamspace = config['teamspace'];
+	if(type=='pin')
+		this.getPinnedRecords(pagetype,teamspace,from,to, searchText);
+	else if(type=='my')
+		this.getMyRecords(pagetype,teamspace,from,to, searchText);
+	else if(type=='shared')
+		this.getSharedRecords(pagetype,teamspace,from,to, searchText);
+	else if(type=='recent')
+		this.getRecentRecords(pagetype,teamspace,from,to, searchText);
+	else
+		this.getAllRecords(pagetype,teamspace,from,to,'');
+},
+	_addQuery: function(searchText, gr, owner) {
+		if(!gs.nil(searchText)){
+			var condition = gr.addQuery('name','CONTAINS',searchText);
+			condition.addOrCondition('owner.name', 'CONTAINS',searchText);
+		}
+	},
+	getRecentRecords: function(pagetype,teamspace,from,to) {
+		var result = this.newItem("result");
+		var fetchedRecords = this._getRecentRecords(pagetype,teamspace,from,to);
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(fetchedRecords.records), 'count': Object.keys(fetchedRecords.boardsJson).length }));
+		},
+	_getRecentRecords: function(pagetype,teamspace,from,to) {
+		var records = [];
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var recentBoards = gs.getUser().getPreference(this.INVESTMENT_PORTAL_RECENT_BOARDS+teamspace);
+		var boardsJson = {};
+			if(JSUtil.notNil(recentBoards)) {
+				boardsJson = this.json().decode(recentBoards);
+			}
+
+			var ids = [];
+			for (var key in boardsJson) {
+				var ptc= new PortalBoard(key);
+				if(ptc.isValid())
+					ids.push(key);
+				else
+					delete boardsJson[key];
+			}
+			if ( ids.length &gt; 0 ) {
+				var console = new GlideRecord('planned_task_custom_console');
+				console.addQuery('group_type', pagetype);
+				if(pagetype=='investment'){
+					console.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+					console.chooseWindow(from,to);
+				}
+				console.addEncodedQuery('sys_idIN'+ids.join(','));
+				console.orderBy('name');
+				console.query();
+				while ( console.next() ){
+					if(this.isAccessible(console.getUniqueValue())) {
+						var eo = this.entityObject(console);
+						if(Object.keys(eo).length !== 0){
+							eo.updated_on = boardsJson[eo.sys_id].last_used;
+							eo.recent = true;
+							records.push(eo);
+						}
+					}
+					else {
+						if(boardsJson.hasOwnProperty(console.getUniqueValue())) {
+							delete boardsJson[console.getUniqueValue()];
+						}
+					}
+				}
+			}
+			gs.getUser().setPreference(this.INVESTMENT_PORTAL_RECENT_BOARDS+teamspace,JSON.stringify(boardsJson));
+			return {'boardsJson' : boardsJson, 'records' : records};
+	},
+	getSharedRecords: function(pagetype,teamspace,from,to, searchText) {
+		var result = this.newItem("result");
+		
+		var response = this._getSharedRecords(pagetype,teamspace,from,to, searchText);
+		
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(response.records), 'count': response.count }));
+	},
+	_getSharedRecords: function(pagetype,teamspace,from,to, searchText) {
+		var records = [];
+		var owner = gs.getUserID();
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var ownerGroupsGr = new GlideRecord('sys_user_grmember');
+		ownerGroupsGr.addQuery('user', owner);
+		ownerGroupsGr.query();
+		var ownerGroups=[];
+		while ( ownerGroupsGr.next() ){
+				ownerGroups.push(ownerGroupsGr.getValue('group'));
+		}
+		var memberConsoles = new GlideRecord('planned_task_custom_console_member');
+		memberConsoles.addEncodedQuery('user='+owner+'^ORuser_groupIN'+ownerGroups);
+		memberConsoles.query();
+		var ids = [];
+		
+		while ( memberConsoles.next() ){
+			ids.push(memberConsoles.getValue('console'));
+		}
+		var cnt2 = 0;
+		if ( ids.length &gt; 0 ) {
+			var console = new GlideRecord('planned_task_custom_console');
+			console.addQuery('group_type', pagetype);
+			if(pagetype=='investment'){
+				console.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+				console.chooseWindow(from,to);
+			}
+			this._addQuery(searchText, console, owner);
+			console.addEncodedQuery('sys_idIN'+ids.join(','));
+			console.orderBy('name');
+			console.query();
+			cnt2=console.getRowCount();
+			while ( console.next() )
+				if(this.isAccessible(console.getUniqueValue())){
+				var board = this.entityObject(console);
+				if(Object.keys(board).length !== 0){
+					records.push(board);
+				}
+			}
+		}
+		
+		return {'records': records, 'count': (records.length&gt;0 ? cnt2 : 0)};
+	},
+	getPinnedRecords: function(pagetype,teamspace,from,to, searchText) {
+		var result = this.newItem("result");
+		var fetchedRecord = this._getPinnedRecords(pagetype,teamspace,from,to, searchText);
+
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(fetchedRecord.records), 'count': fetchedRecord.count}));
+	},
+	_getPinnedRecords: function(pagetype,teamspace,from,to, searchText) {
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var owner = gs.getUserID();
+		var gr = new GlideRecord('planned_task_custom_console');
+		gr.addQuery('group_type', pagetype);
+		if(pagetype=='investment'){
+			gr.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+		}
+		if(pagetype=='investment')
+			gr.chooseWindow(from,to);
+		gr.addQuery('pinned_by','CONTAINS', owner);
+		this._addQuery(searchText, gr, owner);
+		//gr.addQuery('owner', owner);
+		gr.query();
+		var records = [];
+
+		while ( gr.next() ) {
+			if(this.isAccessible(gr.getUniqueValue())){
+				var board = this.entityObject(gr);
+				if(Object.keys(board).length !== 0){
+					records.push(board);
+				}
+			}
+		}
+		return {'records' : records, 'count': records.length&gt;0 ? gr.getRowCount() : 0};
+	},
+	getMyRecords: function(pagetype,teamspace,from,to, searchText) {
+		var result = this.newItem("result");
+		
+		var response = this._getMyRecords(pagetype,teamspace,from,to, searchText);
+
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(response.records), 'count': response.count}));
+	},
+	_getMyRecords: function(pagetype,teamspace,from,to, searchText) {
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var owner = gs.getUserID();
+		var gr = new GlideRecord('planned_task_custom_console');
+		gr.addQuery('group_type', pagetype);
+		if(pagetype=='investment'){
+			gr.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+			gr.chooseWindow(from,to);
+		}
+		gr.addQuery('owner', owner);
+		this._addQuery(searchText, gr, owner);
+		
+		gr.query();
+		var records = [];
+		while ( gr.next() ){
+			if(this.isAccessible(gr.getUniqueValue())){
+				var board = this.entityObject(gr);
+				if(Object.keys(board).length !== 0){
+					records.push(board);
+				}
+			}
+		}
+
+		return {'records': records, 'count': (records.length&gt;0 ? gr.getRowCount() : 0)};
+	},
+	getTypes: function() {
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var pageType = config['pagetype'];
+		
+		var gr = new GlideRecord('planned_task_custom_console')
+		var validChoices = gr.getElement('type').getChoices(pageType);
+		var results = [];
+		var choicesList = GlideChoiceList.getChoiceList('planned_task_custom_console', 'type');
+		
+		for(var i=0;i&lt;choicesList.size();i++)
+			if(validChoices.indexOf(choicesList.get(i).value) !== -1 )
+				results.push({value :choicesList.get(i).value, name: choicesList.get(i).label});
+		
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(results)}));
+
+	},
+	getAllRecords: function(pagetype,teamspace,from,to,searchText) {
+		var result = this.newItem("result");
+		
+		var response = this._getAllRecords(pagetype,teamspace,from,to,searchText);
+		
+		result.setAttribute("data", new JSON().encode( {'records':JSON.stringify(response.records), 'count': response.totalCount}));
+
+	},
+	_getAllRecords: function(pagetype,teamspace,from,to,searchText) {
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var owner = gs.getUserID();
+		var gr = new GlideRecord('planned_task_custom_console');
+		if(pagetype=='investment'){
+			gr.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+		}
+		gr.addQuery('owner', owner);
+		if(searchText != ''){
+			gr.addQuery('name','CONTAINS',searchText);
+			gr.addOrCondition('owner.name', 'CONTAINS',searchText);
+		}
+		gr.addQuery('group_type', pagetype);
+		if(pagetype=='investment')
+			gr.chooseWindow(from,to);
+		gr.query();
+		var records = [];
+		while ( gr.next() ){
+			if(this.isAccessible(gr.getUniqueValue())){
+				var board = this.entityObject(gr);
+				if(Object.keys(board).length !== 0){
+					records.push(board);
+				}
+			}
+		}
+		
+		var ownerGroupsGr = new GlideRecord('sys_user_grmember');
+		ownerGroupsGr.addQuery('user', owner);
+		ownerGroupsGr.query();
+		var ownerGroups=[];
+		while ( ownerGroupsGr.next() ){
+				ownerGroups.push(ownerGroupsGr.getValue('group'));
+		}
+		var memberConsoles = new GlideRecord('planned_task_custom_console_member');
+		memberConsoles.addEncodedQuery('user='+owner+'^ORuser_groupIN'+ownerGroups);
+		memberConsoles.query();
+		var ids = [];
+		if(to&gt;records.length)
+			while ( memberConsoles.next() )
+				ids.push(memberConsoles.getValue('console'));
+		var cnt2 = 0;
+		if ( ids.length &gt; 0 ) {
+			var console = new GlideRecord('planned_task_custom_console');
+			console.addQuery('group_type', pagetype);
+			if(pagetype=='investment'){
+				console.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+			}
+			console.addEncodedQuery('sys_idIN'+ids.join(','));
+			if(searchText!='') {
+				console.addEncodedQuery('nameLIKE'+searchText+'^ORowner.nameLIKE'+searchText);
+			}
+			console.orderBy('name');
+			console.query();
+			cnt2=console.getRowCount();
+			while ( console.next() &amp;&amp; (to-records.length)&gt;=0){
+				var board = this.entityObject(console);
+				if(Object.keys(board).length !== 0){
+					records.push(board);
+				}
+			}
+		}
+		
+		return {'records': records, 'totalCount': gr.getRowCount() + cnt2};
+
+	},
+	addMember: function(consoleId,userId){
+		var ptc = new PortalBoard(consoleId);
+		if(!ptc.memberExists(userId))
+			ptc.addMember(userId);
+		return this.getMembersInfo([userId]);
+	},
+	removeMember: function(consoleId,userId){
+		var ptc = new PortalBoard(consoleId);
+		if(ptc.memberExists(userId))
+			ptc.removeMember(userId);
+		//if bookmarked, remove it
+		this._unPinBoard(consoleId, 'investment', userId);
+		return [{'id':userId}];
+	},
+	addGroup: function(consoleId,groupId){
+		var ptc = new PortalBoard(consoleId);
+		if(!ptc.groupExists(groupId)){
+			ptc.addGroup(groupId);
+		}
+		return this.getGroupsInfo([groupId]);
+	},
+	removeGroup: function(consoleId,groupId){
+		var ptc = new PortalBoard(consoleId);
+		if(ptc.groupExists(groupId))
+			ptc.removeGroup(groupId);
+		return [{'id':groupId}];
+	},
+	saveShareDetails: function() {
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var sysId = config['sysId'];
+		var entityId = config['entityId'];
+		var type = config['type'];
+		var pagetype = config['pagetype'];
+		var action = config['action'];
+		var entityInfo = {};
+		
+		if(action=='share')
+			if(type=='user')
+				entityInfo = this.addMember(sysId,entityId);
+			else
+				entityInfo = this.addGroup(sysId,entityId);
+		else
+			if(type=='user')
+				entityInfo = this.removeMember(sysId,entityId);
+			else
+				entityInfo = this.removeGroup(sysId,entityId);
+		
+		result.setAttribute("data", new JSON().encode( {'status':0, 'profile':entityInfo[0]}));
+	},
+	
+	getBoardWidgets: function() {
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var sysId = config['sysId'];
+		var ids = config['ids']
+		var widgets = new PortalBoard().getPortalBoardWidgets(sysId, ids);
+		result.setAttribute("data", new JSON().encode({
+			widgets: widgets
+		}));
+	},
+
+	getBoardWidgetDetails: function(consoleId) {
+        var ptc = new PortalBoard(consoleId);
+        var widgets = ptc.getBoardWidgetDetails();
+        return widgets;
+    },
+	getMembersInfo: function(memberIds) {
+        var profiles = new PPMUserProfiles();
+        var mems = profiles.getProfiles(memberIds);
+		for(var i = 0;i&lt;mems.length;i++){
+			if(mems[i].imgUrl) mems[i].imgUrl += '?t=small';
+		}
+        return mems;
+    },
+	getGroupsInfo: function(groupIds) {
+        var profiles = new PPMUserProfiles();
+        var grps = profiles.getGroupProfiles(groupIds);
+		for(var i = 0;i&lt;grps.length;i++){
+			if(grps[i].imgUrl)grps[i].imgUrl += '?t=small';
+		}
+        return grps;
+    },
+	getEntityName: function(type, entityId) {
+		if(JSUtil.has(type) &amp;&amp; (type != 'custom')){
+			var gr;
+			if(type === 'group') {
+				gr = new GlideRecord('sys_user_group');
+			} else if(type === 'role') {
+				gr = new GlideRecord('resource_role');
+			}else if(type === 'group_manager' || type === 'user_manager') {
+				gr = new GlideRecord('sys_user');
+			} else {
+				gr=new GlideRecord(type);
+			}
+			gr.get(entityId);
+			return gr.getDisplayValue();
+		}
+		else 
+			return '';
+	},
+	
+	_isValidUserRole: function(roleName) {
+		var gr = new GlideRecord('sys_user_role');
+		gr.addQuery('name',roleName);
+		gr.query();
+		if(gr.next())
+			return true;
+		return false;	
+	},
+	
+	_isRecent: function (sysId,teamspace){
+		var recentBoards = gs.getUser().getPreference(this.INVESTMENT_PORTAL_RECENT_BOARDS+teamspace);
+		var boardsJson = {};
+		if(JSUtil.notNil(recentBoards)) {
+			boardsJson = this.json().decode(recentBoards);
+			if(boardsJson.hasOwnProperty(sysId))
+				return true;
+		}
+	},
+	entityObject: function(gr) {
+		var entity = {};
+		try{
+			//var entityColors = new EntityColors();
+			//var color = entityColors.entityColor(gr.getValue('table'));
+			var projRecCount = 0;
+			var teamspace = '';
+			if(JSUtil.notNil(gr.getValue('table'))) {
+				var projRecs = new GlideAggregate(gr.getValue('table'));
+				projRecs.addEncodedQuery(gr.getValue('filter'));
+				projRecs.addAggregate('COUNT');
+				projRecs.query();
+				if ( projRecs.next() )
+					projRecCount =projRecs.getAggregate('COUNT');
+				teamspace = this.getTeamspaceProject(gr.getValue('table'));
+			}
+
+			var demRecCount = 0;
+			if(JSUtil.notNil(gr.getValue('table2'))) {
+				var demRecs = new GlideAggregate(gr.getValue('table2'));
+				demRecs.addEncodedQuery(gr.getValue('filter2'));
+				demRecs.addAggregate('COUNT');
+				demRecs.query();
+				if ( demRecs.next() )
+					demRecCount =demRecs.getAggregate('COUNT');
+				teamspace = this.getTeamspaceDemand(gr.getValue('table2'));
+			}
+
+			var memberIds = [];
+			var ptc = new PortalBoard(gr.getValue('sys_id'));
+
+			var isPinned = ptc.isPinnedByUser(gs.getUserID());
+
+			var canEdit = false;
+			if (gr.getValue('owner') == gs.getUserID()){
+				canEdit = true;
+			}
+
+			var members = ptc.members();
+			while ( members.next() ) {
+				memberIds.push(members.getValue('user'));
+			}
+			var memberInfo = this.getMembersInfo(memberIds);
+
+			var groupIds = [];
+			var groups = ptc.groups();
+			while ( groups.next() ) {
+				groupIds.push(groups.getValue('user_group'));
+			}
+			var groupInfo = this.getGroupsInfo(groupIds);
+
+			var allSharedInfo = [];
+			for(var i=0;i&lt;memberInfo.length;i++){
+				allSharedInfo.push(memberInfo[i]);
+			}
+			for(var i=0;i&lt;groupInfo.length;i++){
+				allSharedInfo.push(groupInfo[i]);
+			}
+			var ownerId = [];
+			ownerId.push(gr.getValue('owner'));
+			var ownerInfo = this.getMembersInfo(ownerId);
+			
+			var type = gr.getValue('type') ? gr.getValue('type') : "";
+			var name = gr.getValue('name') ? gr.getValue('name') : "";
+			var groupType = gr.getValue('group_type') ? gr.getValue('group_type') : "";
+			var entityValue = gr.getValue('entity') ? gr.getValue('entity') : "";
+			var widgetsInfo = [];
+			if(groupType=='investment' || groupType=='')
+				widgetsInfo = this.getBoardWidgetDetails(gr.getValue('sys_id'));
+			
+			var that = this;
+			entity = {
+				sys_id: gr.getValue('sys_id'),
+				groupType:  groupType,
+				type:  type,
+				typeDisplayValue: gr.getDisplayValue('type'),
+				color: that._getColors(type),
+				name: name,
+				description: gr.getDisplayValue('filter')+'; '+gr.getDisplayValue('filter2'),
+				filter: gr.getValue('filter'),
+				filterDisplayValue: gr.getDisplayValue('filter'),
+				includeActive: gr.getValue('include_active') == '1' ? true : false,
+				filter2: gr.getValue('filter2'),
+				filter2DisplayValue: gr.getDisplayValue('filter2'),
+				short_description: gr.getValue('short_description'),
+				projects: projRecCount,
+				demands: demRecCount,
+				allShared: allSharedInfo,
+				sharedWith: memberInfo,
+				sharedWithGroup: groupInfo,
+				sharedWithMe: !canEdit,
+				owned_by_id: gr.getValue('owner'),
+				owner: ownerInfo[0],
+				widgets: widgetsInfo,
+				pinned: isPinned,
+				canEdit: canEdit,
+				recent: this._isRecent(gr.getValue('sys_id'),teamspace),
+				entity: {displayValue:this.getEntityName(gr.getValue('type'),gr.getValue('entity')), value: entityValue},
+				updated_on : gr.getDisplayValue('sys_updated_on'),
+				entities : ptc.getEntities(),
+				isOwner : ( ptc.owner() === gs.getUserID()) || gs.hasRole('admin'),
+				preferences : ptc.getPreferences(),
+				hasShared : ptc.hasShared()
+				//over_limit : parseInt(recCount) &gt; parseInt(gr.getValue('record_limit')) ? true: false
+			};
+			
+		}catch(e){
+			gs.error("PortalBoardGlideServices:entityObject :"+JSON.stringify(e));
+		}
+        return entity;
+    },
+    updateBoardDates: function(config){
+		var sysId = config['sysId'];
+		var startDate = config['startDate'];
+		var endDate = config['endDate'];
+		var boardGr=new GlideRecord('planned_task_custom_console');
+		boardGr.get(sysId);
+		if(boardGr.isValid() &amp;&amp; boardGr.canWrite()){
+			boardGr.start_date = startDate;
+			boardGr.end_date = endDate;
+			boardGr.update();
+		}
+		return boardGr;
+	},
+	getITProjectUsers: function (){
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var teamspace = config['teamspace'];
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var hasRoleGr = new GlideRecord('sys_user_has_role');
+		hasRoleGr.addQuery('role.name',teamspaceDataMap['project_user']);
+		hasRoleGr.query();
+		var users=[];
+		while(hasRoleGr.next()) {
+			var user={};
+			user['displayValue'] = hasRoleGr.getDisplayValue('user');
+			user['value'] = hasRoleGr.getValue('user');
+			users.push(user);
+		}
+		result.setAttribute("data", new JSON().encode( {'users':users}));
+	},
+	getITProjectGroups: function (){
+		var result = this.newItem("result");
+		var config = JSON.parse(this.getParameter('sysparm_config'));
+		var teamspace = config['teamspace'];
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		var hasRoleGr = new GlideRecord('sys_group_has_role');
+		hasRoleGr.addQuery('role.name',teamspaceDataMap['project_user']);
+		hasRoleGr.query();
+		var groups=[];
+		while(hasRoleGr.next()) {
+			var user={};
+			user['displayValue'] = hasRoleGr.getDisplayValue('group');
+			user['value'] = hasRoleGr.getValue('group');
+			groups.push(user);
+		}
+		result.setAttribute("data", new JSON().encode( {'groups':groups}));
+	},
+
+	getAllPortalBoards: function(){
+		var result = this.newItem("result");
+		
+		var config = {};
+		if(JSUtil.notNil(this.getParameter('sysparm_config')))
+			config = JSON.parse(this.getParameter('sysparm_config'));
+		var groupType = config['pagetype'] ? config['pagetype'] : 'investment';
+		var teamspace = config['teamspace'] ? config['teamspace'] : '';
+		var teamspaceDataMap = JSON.parse(this.getTeamspaceData(teamspace));
+		try{
+			var owner = gs.getUserID();
+			var gr = new GlideRecord('planned_task_custom_console');
+			gr.addQuery('owner', owner);
+			gr.addQuery('group_type',groupType);
+			if(groupType=='investment'){
+				gr.addEncodedQuery('tableIN'+teamspaceDataMap['project_tables']+'^ORtable2='+teamspaceDataMap['dmn_demand']);
+			}
+			gr.orderBy('name');
+			gr.query();
+			var records = [];
+			while (gr.next()){
+				records.push({
+					sys_id : gr.getUniqueValue(),
+					name: gr.getValue('name')
+				});
+			}
+
+			var ownerGroupsGr = new GlideRecord('sys_user_grmember');
+			ownerGroupsGr.addQuery('user', owner);
+			ownerGroupsGr.query();
+			var ownerGroups=[];
+			while (ownerGroupsGr.next()){
+                ownerGroups.push(ownerGroupsGr.getValue('group'));
+            }
+			var memberConsoles = new GlideAggregate('planned_task_custom_console_member');
+			memberConsoles.addEncodedQuery('user='+owner+'^ORuser_groupIN'+ownerGroups);
+			if(groupType=='investment'){
+				memberConsoles.addEncodedQuery('console.table='+teamspaceDataMap['pm_project']+'^ORconsole.table2='+teamspaceDataMap['dmn_demand']);
+			}
+			memberConsoles.groupBy('console');
+			memberConsoles.query();
+			while (memberConsoles.next()){
+                records.push({
+                    sys_id : memberConsoles.getValue('console'),
+                    name: memberConsoles.getDisplayValue('console')
+                });
+			}
+			result.setAttribute("data",  new JSON().encode({"allBoards":records, "error":''}));
+		}catch(e){
+			gs.log(JSON.stringify(e));
+			result.setAttribute("data",  new JSON().encode({"allBoards":[], "error":JSON.stringify(e)}));
+		}
+		
+	},
+	getBoardDetails: function(){
+		var result = this.newItem("result");
+		try{
+			var config = JSON.parse(this.getParameter('sysparm_config'));
+			var sysId = config['sysId'];
+			var gr = new GlideRecordSecure('planned_task_custom_console');
+			gr.get(sysId);
+			var board = this.entityObject(gr);
+			result.setAttribute("data",  new JSON().encode({"board":board, "error":''}));
+		}catch(e){
+			result.setAttribute("data",  new JSON().encode({"board":{}, "error":JSON.stringify(e)}));
+		}
+		
+	},
+	
+	getConsoleConfig: function() {
+		var result = this.newItem("result");
+		try {
+			var sysClassName = this.getParameter('sysparm_sys_class_name') || "pm_portfolio";
+			var context = this.getParameter('sysparm_context') || "Investment Portal";
+			var api = new SNC.PlannedTaskAPI();
+			var config = api.gridEntityMetadata(sysClassName, context);
+			result.setAttribute('status', 'success');
+			result.setAttribute('data', JSON.stringify(config));
+		} catch(e) {
+			result.setAttribute('status', 'error');
+		}
+	},
+	
+	saveBoardPreferences: function() {
+		var result = this.newItem("result");
+		try {
+			var sysId = this.getParameter('sysparm_sys_id');
+			var preferencesObj = JSON.parse(this.getParameter('sysparm_preferences'));
+			PortalBoardFactory.savePreferences(sysId, preferencesObj);
+		} catch(e) {
+			result.setAttribute('status', 'error');
+		}
+		result.setAttribute('status', 'success');
+	},
+	
+    type: 'PortalBoardGlideServices'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-01-02 06:04:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;47f5a2575f13030056976e303e46660d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;431&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PortalBoardGlideServices&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_47f5a2575f13030056976e303e46660d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-05-19 12:41:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;38689&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:14</sys_created_on>
+        <sys_id>6c8c0dba2f331110d8a4d5f62799b6c2</sys_id>
+        <sys_name>PortalBoardGlideServices</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6c8c0dba2f331110d8a4d5f62799b6c2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

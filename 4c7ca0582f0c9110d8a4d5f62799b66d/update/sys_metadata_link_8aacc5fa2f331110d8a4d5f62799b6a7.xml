@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5fd0e273e76333005e3b03a003f6a9a9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ButtonRefQualForUIParameter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Dynamically set the Button Reference Qual of UI parameter dictionary entry to allow UI parameters to be linked to more button types&lt;/description&gt;
+        &lt;name&gt;ButtonRefQualForUIParameter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ButtonRefQualForUIParameter = Class.create();
+ButtonRefQualForUIParameter.prototype = {
+    getReferenceQual: function() {
+		return "typeINwrite_back,chat_launcher";
+    },
+
+    type: 'ButtonRefQualForUIParameter'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-04 17:47:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5fd0e273e76333005e3b03a003f6a9a9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ButtonRefQualForUIParameter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile plugin" source="com.glide.sg"&gt;0ced34cb6d2220100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5fd0e273e76333005e3b03a003f6a9a9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-04 17:59:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;220&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:53</sys_created_on>
+        <sys_id>8aacc5fa2f331110d8a4d5f62799b6a7</sys_id>
+        <sys_name>ButtonRefQualForUIParameter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8aacc5fa2f331110d8a4d5f62799b6a7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

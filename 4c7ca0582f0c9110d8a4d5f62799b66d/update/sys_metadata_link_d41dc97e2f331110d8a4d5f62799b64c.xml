@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>92b7cf86873022001ac119fa84e3ec13</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FillShareableDashboards&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;FillShareableDashboards&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var FillShareableDashboards = Class.create();
+FillShareableDashboards.prototype = {
+	initialize: function() {
+	},
+ 
+	fillChoice:function() {
+		
+		if (gs.hasRole('admin'))
+			return "sys_idISNOTEMPTY";
+		else if (gs.hasRole('pa_admin') || gs.hasRole('pa_power_user')) {
+			var gp = [];
+			var gr = new GlideRecord('pa_dashboards');
+			gr.query();
+			while(gr.next()) {
+				if (gr.owner === gs.getUserID() || gr.canWrite())
+					gp.push(gr.getUniqueValue());
+			}
+			return "sys_idIN" + gp.toString();
+		}
+ 
+		return "owner=" + gs.getUserID();
+	},
+	type: 'FillShareableDashboards'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-07-25 12:19:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;92b7cf86873022001ac119fa84e3ec13&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FillShareableDashboards&lt;/sys_name&gt;
+        &lt;sys_package display_value="Responsive Dashboards" source="com.glideapp.dashboards"&gt;77d3cdc76da620100acb70b353433016&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_92b7cf86873022001ac119fa84e3ec13&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-07-25 13:24:56&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;581&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:41</sys_created_on>
+        <sys_id>d41dc97e2f331110d8a4d5f62799b64c</sys_id>
+        <sys_name>FillShareableDashboards</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d41dc97e2f331110d8a4d5f62799b64c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

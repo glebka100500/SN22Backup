@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>67e9344307101000e8735720e1021eff</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DataPolicyConversion&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides functions to convert UI Policy to Data Policy or converts Data Policy to UI Policy.&lt;/description&gt;
+        &lt;name&gt;DataPolicyConversion&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DataPolicyConversion = Class.create();
+
+DataPolicyConversion.prototype = {
+  initialize: function() {
+  },
+
+  convertUiPolicyToDataPolicy: function(uiPolicyGR) {
+     var dataPolicyGR = new GlideRecord("sys_data_policy2");
+     dataPolicyGR.setValue("active", uiPolicyGR.getValue("active"));
+     dataPolicyGR.setValue("sys_domain", uiPolicyGR.getValue("sys_domain"));
+     dataPolicyGR.setValue("model_table", uiPolicyGR.getValue("table"));
+     dataPolicyGR.setValue("model_id", uiPolicyGR.getValue("model_id"));
+     dataPolicyGR.setValue("conditions", uiPolicyGR.getValue("conditions"));
+     dataPolicyGR.setValue("short_description", uiPolicyGR.getValue("short_description"));
+     dataPolicyGR.setValue("description", uiPolicyGR.getValue("description"));
+     dataPolicyGR.setValue("inherit", uiPolicyGR.getValue("inherit"));
+     dataPolicyGR.setValue("reverse_if_false", uiPolicyGR.getValue("reverse_if_false"));
+     dataPolicyGR.setValue("apply_import_set", "true");
+     dataPolicyGR.setValue("apply_soap", "true");
+     dataPolicyGR.setValue("enforce_ui", "true");
+     var sysID = dataPolicyGR.insert();
+
+     var uiPolicyAction = this._queryUiPolicyAction(uiPolicyGR);
+     while (uiPolicyAction.next()) {
+        var dataPolicyRuleGR = new GlideRecord("sys_data_policy_rule");
+        dataPolicyRuleGR.setValue("sys_data_policy", sysID);
+        dataPolicyRuleGR.setValue("table", dataPolicyGR.getValue("model_table"));
+        dataPolicyRuleGR.setValue("field", uiPolicyAction.getValue("field"));
+        dataPolicyRuleGR.setValue("mandatory", uiPolicyAction.getValue("mandatory"));
+        dataPolicyRuleGR.setValue("disabled", uiPolicyAction.getValue("disabled"));
+        dataPolicyRuleGR.insert();
+     }
+
+     if (uiPolicyGR.getValue("active")) {
+        uiPolicyGR.setValue("active", false);
+        uiPolicyGR.update();
+     }
+     return dataPolicyGR;
+  },
+
+  // determine whether conversion to Data Policy is allowed.  If any actions set visibility, it is not allowed.
+  isConversionToDataPolicyAllowed: function(uiPolicyGR) {
+     if (uiPolicyGR.getRecordClassName() != "sys_ui_policy") // we don't want catalog UI policy, etc.
+        return false;
+
+     var uiPolicyAction = this._queryUiPolicyAction(uiPolicyGR);
+     while (uiPolicyAction.next()) {
+        var visible = uiPolicyAction.getValue("visible");
+        if (visible == "true" || visible == "false")
+           return false;
+     }
+
+     return true;
+  },
+
+  // set up query for UI Policy Actions for a particular UI Policy
+  _queryUiPolicyAction: function(uiPolicyGR) {
+     var uiPolicyAction = new GlideRecord("sys_ui_policy_action");
+     uiPolicyAction.addQuery("ui_policy", uiPolicyGR.getUniqueValue());
+     uiPolicyAction.query();
+     return uiPolicyAction;
+  },
+
+  convertDataPolicyToUiPolicy: function(dataPolicyGR) {
+     var uiPolicyGR = new GlideRecord("sys_ui_policy");
+     uiPolicyGR.setValue("active", dataPolicyGR.getValue("active"));
+     uiPolicyGR.setValue("sys_domain", dataPolicyGR.getValue("sys_domain"));
+     uiPolicyGR.setValue("table", dataPolicyGR.getValue("model_table"));
+     uiPolicyGR.setValue("conditions", dataPolicyGR.getValue("conditions"));
+     uiPolicyGR.setValue("short_description", dataPolicyGR.getValue("short_description"));
+     uiPolicyGR.setValue("description", dataPolicyGR.getValue("description"));
+     uiPolicyGR.setValue("inherit", dataPolicyGR.getValue("inherit"));
+     uiPolicyGR.setValue("reverse_if_false", dataPolicyGR.getValue("reverse_if_false"));
+     var sysID = uiPolicyGR.insert();
+
+     var dataPolicyRule = new GlideRecord("sys_data_policy_rule");
+     dataPolicyRule.addQuery("sys_data_policy", dataPolicyGR.getUniqueValue());
+     dataPolicyRule.query();
+     while (dataPolicyRule.next()) {
+        var uiPolicyActionGR = new GlideRecord("sys_ui_policy_action");
+        uiPolicyActionGR.setValue("ui_policy", sysID);
+        uiPolicyActionGR.setValue("table", dataPolicyRule.getValue("table"));
+        uiPolicyActionGR.setValue("field", dataPolicyRule.getValue("field"));
+        uiPolicyActionGR.setValue("mandatory", dataPolicyRule.getValue("mandatory"));
+        uiPolicyActionGR.setValue("disabled", dataPolicyRule.getValue("disabled"));
+        uiPolicyActionGR.setValue("visible", "ignore");
+        uiPolicyActionGR.insert();
+     }
+
+     if (dataPolicyGR.getValue("active")) {
+        dataPolicyGR.setValue("active", false);
+        dataPolicyGR.update();
+     }
+     return uiPolicyGR;     
+  }
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-08-09 18:22:34&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;67e9344307101000e8735720e1021eff&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DataPolicyConversion&lt;/sys_name&gt;
+        &lt;sys_package display_value="Data Policy 2" source="com.glide.data_policy2"&gt;a3acf4436d2220100acb70b353433061&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_67e9344307101000e8735720e1021eff&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;glide.maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-11-21 18:41:11&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4571&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:08</sys_created_on>
+        <sys_id>25bc0dfa2f331110d8a4d5f62799b6e4</sys_id>
+        <sys_name>DataPolicyConversion</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_25bc0dfa2f331110d8a4d5f62799b6e4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

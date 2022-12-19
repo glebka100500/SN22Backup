@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8a280f81c3731000b959fd251eba8f88</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.StockRuleTransfer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;StockRuleTransfer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var StockRuleTransfer = Class.create();
+StockRuleTransfer.prototype = {
+	initialize : function() {
+	},
+
+	/**
+	 * creates transfer order with a single consumable transfer order line
+	 */
+	consumableTransfer : function(parent, stockroom, model, amount) {
+		var to = new GlideRecord("alm_transfer_order");
+		to.initialize();
+		to.from_stockroom = parent;
+		to.to_stockroom = stockroom;
+		to.from_location = parent.location;
+		to.to_location = stockroom.location;
+		var transferId = to.insert();
+
+		var tol = new GlideRecord("alm_transfer_order_line");
+		tol.initialize();
+		tol.transfer_order = transferId;
+		tol.model = model;
+		tol.quantity_requested = amount;
+		tol.insert();
+	},
+
+	/**
+	 * creates transfer order with multiple asset transfer order line
+	 */
+	assetTransfer : function(parent, stockroom, model, amount) {
+		var to = new GlideRecord("alm_transfer_order");
+		to.initialize();
+		to.from_stockroom = parent;
+		to.to_stockroom = stockroom;
+		to.from_location = parent.location;
+		to.to_location = stockroom.location;
+	   
+	    var transferId = "";
+
+		var gr = new GlideRecord("alm_asset");
+		gr.addQuery("model", model);
+		gr.addQuery("stockroom", parent);
+		gr.addQuery("install_status", "6");
+		gr.addQuery("substatus", "available");
+		global.AssetUtils.addAssetQuery(gr, global.AssetUtils.ASSET_FUNCTION_FEATURE.STOCK_RULE);
+		gr.query();
+
+		for ( var i = 0; i &lt; amount; ++i) {
+			if (gr.next()) {
+
+				if (i == 0) {
+					transferId = to.insert();
+				}
+
+				var tol = new GlideRecord("alm_transfer_order_line");
+				tol.initialize();
+				tol.transfer_order = transferId;
+				tol.model = model;
+				tol.asset = gr.sys_id;
+				tol.insert();
+			} else {
+				gs.addErrorMessage(gs.getMessage("Parent stockroom ran out of assets to transfer. Aborting transfer"));
+				break;
+			}
+		}
+	},
+
+	checkStockroomAvailability : function(stockroom, model) {
+		// retrieve all matching assets in the stockroom
+		var gr = new GlideRecord("alm_asset");
+		gr.addQuery("stockroom", stockroom);
+		gr.addQuery("model", model);
+		gr.addQuery("install_status", "6");
+		gr.addQuery("substatus", "available").addOrCondition("substatus",
+				"reserved");
+		gr.addQuery('active_to', 'false').addOrCondition('active_to', null);
+		global.AssetUtils.addAssetQuery(gr, global.AssetUtils.ASSET_FUNCTION_FEATURE.STOCK_RULE);
+		gr.query();
+		// count quantity
+		var count = 0;
+		while (gr.next())
+			count += parseInt(gr.quantity,10);
+
+		return count;
+	},
+
+	checkStockroomTransferAvailability : function(stockroom, model) {
+		// retrieve all matching assets in the stockroom
+		var gr = new GlideRecord("alm_asset");
+		gr.addQuery("stockroom", stockroom);
+		gr.addQuery("model", model);
+		gr.addQuery("install_status", "6");
+		gr.addQuery("substatus", "available");
+		gr.addQuery('active_to', 'false').addOrCondition('active_to', null);
+		global.AssetUtils.addAssetQuery(gr, global.AssetUtils.ASSET_FUNCTION_FEATURE.STOCK_RULE);
+		gr.query();
+
+		// count quantity
+		var count = 0;
+		while (gr.next())
+			count += parseInt(gr.quantity,10);
+
+		return count;
+	},
+
+	getTotalRecordCount : function(stockroom, model) {
+		return this.checkStockroomAvailability(stockroom, model) +
+				this.transferOrderAvailability(stockroom, model);
+	},
+
+	/**
+	 * retrieves record count for assets that are currently in a transfer order
+	 * going to that stockroom
+	 */
+	transferOrderAvailability : function(stockroom, model) {
+
+		var tols = new GlideRecord('alm_transfer_order_line');
+		tols.addQuery('transfer_order.to_stockroom', stockroom);
+		tols.addQuery('model', model);
+		tols.addQuery('stage', 'NOT IN', 'received,delivered,cancelled');
+		tols.query();
+
+		var count = 0;
+		while (tols.next()) {
+
+			if (global.AssetUtils.isAssetLoanerInTOL(tols)) {
+                continue;
+            }
+			if (!tols.quantity_remaining.nil())
+				count += parseInt(tols.quantity_remaining,10);
+			else
+				count += parseInt(tols.quantity_requested,10);
+
+			count -= parseInt(tols.quantity_returned,10);
+		}
+
+		return count;
+	},
+
+	type : 'StockRuleTransfer'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-01-24 23:17:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8a280f81c3731000b959fd251eba8f88&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;77&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;StockRuleTransfer&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8a280f81c3731000b959fd251eba8f88&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-02 14:33:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4009&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:20</sys_created_on>
+        <sys_id>9ffc857e2f331110d8a4d5f62799b6a3</sys_id>
+        <sys_name>StockRuleTransfer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9ffc857e2f331110d8a4d5f62799b6a3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

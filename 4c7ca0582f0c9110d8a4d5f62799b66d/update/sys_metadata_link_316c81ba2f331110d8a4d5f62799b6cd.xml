@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>330068a6d773220034d145bcce6103c4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.cxs_Base&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base object to extend for Contextual Search objects.&lt;/description&gt;
+        &lt;name&gt;cxs_Base&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var cxs_Base = Class.create();
+cxs_Base.prototype = {
+    initialize: function(_gr, _gs) {
+		this._gr = _gr ? _gr : current;
+		this._gs = _gs ? _gs : gs;
+		this._log = new GSLog("com.snc.contextual_search.log", this.type).setLog4J();
+    },
+
+    type: 'cxs_Base'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-12-22 16:33:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;330068a6d773220034d145bcce6103c4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;cxs_Base&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Search" source="com.snc.contextual_search"&gt;947281c76d6620100acb70b35343306d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_330068a6d773220034d145bcce6103c4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-12-29 12:14:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;265&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:47</sys_created_on>
+        <sys_id>316c81ba2f331110d8a4d5f62799b6cd</sys_id>
+        <sys_name>cxs_Base</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_316c81ba2f331110d8a4d5f62799b6cd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

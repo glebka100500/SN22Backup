@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>76baaef47320330081e06502edf6a7de</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VTBGlobalTags&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Check if the user can create global tags from VTB&lt;/description&gt;
+        &lt;name&gt;VTBGlobalTags&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VTBGlobalTags = Class.create();
+VTBGlobalTags.prototype = {
+    initialize: function() {
+    },
+
+	checkCanCreateGlobalTag: function() {
+		if (String(gs.getProperty('glide.vtb.check_global_tags_creator_role', true)) !== 'false')
+			return false;
+
+		var boardId = String(gs.getSession().getClientData('global_tag_for_vtb_board'));
+		if (!boardId) return false;
+		var gr = new GlideRecord('vtb_board');
+		gr.get(boardId);
+		return new VTBBoardSecurity().canUserAccess(gr, gs.getUser().getID());
+	},
+
+    type: 'VTBGlobalTags'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-03-30 07:59:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;76baaef47320330081e06502edf6a7de&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VTBGlobalTags&lt;/sys_name&gt;
+        &lt;sys_package display_value="Visual Task Boards" source="com.glide.ui.vtb"&gt;a16db0c76d2220100acb70b3534330b4&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_76baaef47320330081e06502edf6a7de&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-30 07:59:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;529&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:38</sys_created_on>
+        <sys_id>0ddc853e2f331110d8a4d5f62799b6cb</sys_id>
+        <sys_name>VTBGlobalTags</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0ddc853e2f331110d8a4d5f62799b6cb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

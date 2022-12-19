@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>87c17ec80a0a0bb0006137d28c5606fe</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SimplifiedDiffer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Diff a specific field in an XML file.&lt;/description&gt;
+        &lt;name&gt;SimplifiedDiffer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SimplifiedDiffer = Class.create();
+
+SimplifiedDiffer.prototype = Object.extendsObject(Differ, {
+
+    diffXML: function(root1, root2, fileName){ 
+        var list1 = this._getList(root1);
+        var list2 = this._getList(root2);
+        if (list1 == "" &amp;&amp; list2 == "") 
+            return this._noInfo();
+		var listDiff = "";
+		if (list1 != "" &amp;&amp; list2 != "")
+            listDiff = this._getActionCompare(root1.getChildNodes().item(0),root2.getChildNodes().item(0));  
+		else 
+			listDiff = this._getActionCompare(root1,root2); 
+	    listDiff += this.diff(list1, list2, "fields", true);
+        return listDiff;
+    },
+    
+    getURL: function(root){
+        var sys_id = root.getAttribute("section_id");
+        return "sys_ui_section.do?sys_id=" + sys_id;
+    },
+    
+    diffUpdateSet: function(root1){
+        var gr = this._getParentRecord(root1);
+        var list2 = "";
+        while (gr.next()) 
+            list2 += gr.getValue(this._getFieldType()) + "\n";
+        if (list2 == "") 
+            return this._noInfo();
+        
+        list2 = list2.substring(0, list2.length - 1);
+        var listDiff = this.diff(list2 , this._getList(root1), "fields", true);
+        return this.diff(root1.getTagName() + "", root1.getTagName() + "", "name", true) + listDiff;
+    },
+    
+    _getList: function(root){
+        var length = root.getChildNodes().getLength();
+        var list = "";
+        for (var i = 0; i &lt; length; i++) {
+            if (root.getChildNodes().item(i).getNodeType() == 3) 
+                continue;
+            
+            var element = root.getChildNodes().item(i);
+            for (var n = 0; n &lt; element.getChildNodes().getLength(); n++) 
+                if (element.getChildNodes().item(n).getTagName() == this._getFieldType() &amp;&amp; element.getChildNodes().item(n).getFirstChild() != null) 
+                    list += element.getChildNodes().item(n).getFirstChild().getNodeValue() + "\n";
+        }
+        return list.substring(0, list.length - 1);
+    },
+    
+    _getFieldType: function(){
+        return "element";
+    },
+    
+    _getParentType: function(){
+        return "sys_ui_section";
+    },
+    
+    _getParentRecord: function(root){
+        var sys_ids = root.getElementsByTagName("sys_id");
+        var sys_id = sys_ids.item(sys_ids.getLength() - 1).getFirstChild().getNodeValue();
+  
+        if (root.getFirstChild().getTagName() == "sys_ui_element")
+           root = root.getFirstChild()
+        var gr = new GlideRecord(root.getTagName());
+        if (gr.isValidField(this._getParentType()))
+          gr.addQuery(this._getParentType(), sys_id + "");
+        else
+          gr.addQuery("sys_id",sys_id +"");
+        gr.orderBy("position");
+        gr.query();
+        return gr;
+    },
+    
+    _exists: function(table, sys_id){
+        gs.print(table + " " + sys_id);
+        var exists = new GlideRecord(table + "");
+        exists.query("sys_id", sys_id + "");
+        if (!exists.next()) 
+            return false;
+        return true;
+    },
+
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;juell.solaegui&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-03-22 21:24:37&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;87c17ec80a0a0bb0006137d28c5606fe&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;96&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SimplifiedDiffer&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_87c17ec80a0a0bb0006137d28c5606fe&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-22 19:47:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3007&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:12</sys_created_on>
+        <sys_id>19fc057e2f331110d8a4d5f62799b613</sys_id>
+        <sys_name>SimplifiedDiffer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_19fc057e2f331110d8a4d5f62799b613</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

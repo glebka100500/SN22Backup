@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>30d3e589873313003dcceb2936cb0b99</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ViewCloneDefaultWorker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ViewCloneDefaultWorker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ViewCloneDefaultWorker = Class.create();
+
+ViewCloneDefaultWorker.prototype = {
+
+	initialize: function (parameters) {
+		parameters = (typeof parameters !== 'undefined') ? String(parameters) : "{}";
+
+		this.currentStep = 0;
+		this.paramObj = JSON.parse(parameters);
+		this.tracker = SNC.GlideExecutionTracker.getLastRunning();
+
+		this.defaultSections = JSON.parse(this.paramObj.sysparm_sections || "[]");
+		this.table = this.paramObj.sysparm_table;
+		this.title = this.paramObj.sysparm_title;
+		this.view = this.paramObj.sysparm_view;
+	},
+
+	process: function() {
+
+		var defaultSectionID;
+		var gr;
+		var hasMultipleSections;
+		var i;
+		var msg;
+		var numberOfSections;
+		var position = 0;
+		var sectionNumber;
+		var sl;
+		var ss;
+		var tableName;
+		var targetFormID;
+		var targetSectionID;
+		var targetViewID;
+
+		try {
+
+			// Make sure we have an array of at least one section
+			if (!Array.isArray(this.defaultSections) || this.defaultSections.length === 0)
+				throw "no sections provided";
+			numberOfSections = this.defaultSections.length;
+			hasMultipleSections = numberOfSections &gt; 1;
+
+			// Determine total number of steps and percent to increment
+			if (hasMultipleSections)
+				this.totalSteps = 2 + (numberOfSections * 3);
+			else
+				this.totalSteps = 1 + (numberOfSections * 2);
+			this.percentJump = Math.floor(100 / this.totalSteps);
+
+			// Get SYS_UI_VIEW sys_id or create it
+			this._updateTracker("Getting UI View [sys_ui_view] record");
+			sl = new GlideScriptViewManager(this.view);
+			sl.setTitle(this.title);
+			targetViewID = String(sl.getID());
+			if (targetViewID === "")
+				throw "error getting target view id";
+
+			// If more than one section, create SYS_UI_FORM
+			if (hasMultipleSections) {
+				this._updateTracker("Creating UI Form [sys_ui_form] record");
+				// Create SYS_UI_FORM for target view
+				ss = new GlideSysSection(null, this.table);
+				tableName = ss.getTableName();
+				if (!tableName)
+					throw "could not get table name from " + this.table;
+				gr = new GlideRecord("sys_ui_form");
+				gr.newRecord();
+				gr.setValue("name", tableName);
+				gr.setValue("view", targetViewID);
+				targetFormID = gr.insert();
+				if (targetFormID === null)
+					throw "error inserting sys_ui_form";
+			}
+
+			// For each SYS_UI_SECTION in Default View
+			for (i = 0; i &lt; numberOfSections; i++) {
+				sectionNumber = String(i + 1);
+				defaultSectionID = this.defaultSections[i];
+				gr = new GlideRecord("sys_ui_section");
+				if (!gr.get(defaultSectionID))
+					continue;
+
+				// Modify view to target view and insert
+				this._updateTracker("Section {0}: Cloning UI Section [sys_ui_section] record", sectionNumber);
+				gr.setValue("view", targetViewID);
+				targetSectionID = gr.insert();
+				if (targetSectionID === null)
+					throw "error inserting sys_ui_section";
+
+				// If more than one section, create SYS_UI_FORM_SECTION
+				if (hasMultipleSections) {
+					this._updateTracker("Section {0}: Creating Form Section [sys_ui_form_section] record", sectionNumber);
+					gr = new GlideRecord("sys_ui_form_section");
+					gr.newRecord();
+					gr.setValue("sys_ui_form", targetFormID);
+					gr.setValue("sys_ui_section", targetSectionID);
+					gr.setValue("position", position++);
+					if (!gr.insert())
+						throw "error inserting sys_ui_form_section";
+				}
+
+				// Clone SYS_UI_ELEMENT records from default to target section
+				this._updateTracker("Section {0}: Cloning Section Elements [sys_ui_section] records", sectionNumber);
+				gr = new GlideRecord("sys_ui_element");
+				gr.addQuery("sys_ui_section", defaultSectionID);
+				gr.query();
+				while (gr.next()) {
+					gr.setValue("sys_ui_section", targetSectionID);
+					if (!gr.insert())
+						throw "error inserting sys_ui_element";
+				}
+			}
+			msg = gs.getMessage("Default view successfully cloned");
+			this.tracker.success(msg);
+			this.tracker.updateResult(msg);
+		} catch (e) {
+			msg = gs.getMessage("An error occurred while cloning the Default view");
+			this.tracker.fail(msg);
+			this.tracker.updateResult(e);
+		}
+	},
+
+	_updateTracker: function(key, keyArgs) {
+		var msg = gs.getMessage(key, keyArgs);
+		this.currentStep += 1;
+		this.tracker.updatePercentComplete(this.currentStep * this.percentJump);
+		this.tracker.updateMessage(msg);
+	},
+
+	type: 'ViewCloneDefaultWorker'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;andrew.kincaid&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-06 18:11:11&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;30d3e589873313003dcceb2936cb0b99&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;56&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ViewCloneDefaultWorker&lt;/sys_name&gt;
+        &lt;sys_package display_value="View Management" source="com.glide.view_management"&gt;6ecc34836d2220100acb70b35343306c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_30d3e589873313003dcceb2936cb0b99&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;andrew.kincaid&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-14 21:56:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4284&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:43</sys_created_on>
+        <sys_id>f46c41ba2f331110d8a4d5f62799b664</sys_id>
+        <sys_name>ViewCloneDefaultWorker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f46c41ba2f331110d8a4d5f62799b664</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

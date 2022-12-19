@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4b657be60b21230001d36c4d37673a0a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SAML2_internal&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;SAML2_internal script has out of the box implementation of SAML web SSO request generation, response parsing and validation. In order to support customization customers can override these methods in SAML2_custom Script Include. Below are some methods with their intended functionality.&amp;#13;
+&amp;#13;
+getAuthnOptions: &amp;#13;
+    this method provides a way to set Authn request options to support request generation customizations.&amp;#13;
+&amp;#13;
+customizeAuthnRequest: &amp;#13;
+    if the Authn request customization can not be achieved through the options available in getAuthnOptions, customized Authn request can be build using GlideXML API and set the modified request using this method.&amp;#13;
+&amp;#13;
+getValidationOptions: &amp;#13;
+    this method is to support custom response validation options.&amp;#13;
+&amp;#13;
+customizeLogoutRequest:  &amp;#13;
+    customize the logout request using GlideXML API and set the modified request using this method.&amp;#13;
+&amp;#13;
+getComputedRequestURI, getComputedRequestQueryString, getComputedBaseURL, setCustomRelayState: &amp;#13;
+    These 4 methods are to support relay state generation customizations.&lt;/description&gt;
+        &lt;name&gt;SAML2_internal&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var SAML2_internal = Class.create();
+SAML2_internal.prototype = {
+	initialize: function () {
+		this.glidesaml2api = new SNC.GlideSAML2();
+	},
+	
+	getGlideSaml2Api: function() {
+		return this.glidesaml2api;
+	},
+
+	/**
+	*	returns Identity Provider GlideRecord
+	*/
+	getSSORecord: function() {
+		return this.glidesaml2api.getSSORecord();
+	},
+	
+	/** 
+	*	param - ssoRecord: Identity Provider GlideRecord
+	*/
+	setSSORecord: function(ssoRecord) {
+		this.glidesaml2api.setSSORecord(ssoRecord);
+	},
+	
+	/**
+	* Authn request options available to customize SAML request
+		forceAuthn  // true/false
+		isPassive	// true/false
+		assertionConsumerServiceURL
+		assertionConsumerServiceIndex
+		providerName
+		skipNavFrame
+		deepLink    // true/false
+	*/
+	getAuthnOptions : function() {
+		var authGenerationOptions = {};
+		if(this.isTestSAMLConnection())	{
+			authGenerationOptions.forceAuthn = true;   
+        }
+		return authGenerationOptions;
+	},
+
+	/**
+	* Response validation options (true/false) available to support customizations.
+		skip_responseissuer_check
+		skip_assertionissuer_check
+		skip_audiencerestriction_check
+		skip_onetimeuse_check
+		skip_proxyrestriction_check
+		skip_inresponseto_check
+		skip_sessionindex_check
+		skip_unknown_attribute_check
+		support_httppost_login_only
+	*/
+	getValidationOptions : function() {
+		var responseValidationOptions = {};
+		return responseValidationOptions;
+	},
+	
+	customizeAuthnRequest: function (xmlAuthnRequestElement) {
+		return;
+	},
+
+	customizeLogoutRequest: function (xmlLogoutRequestElement) {
+		return;
+	},
+
+	getHttpBinding: function () {
+		return this.glidesaml2api.getHttpBinding();
+	},
+
+	logDebug: function (msg) {
+		SNC.GlideSAML2.logDebug(msg);
+	},
+	
+	logError: function (msg) {
+		SNC.GlideSAML2.logError(msg);
+	},
+	
+	isOk: function () {
+		return this.glidesaml2api.isOk();
+	},
+
+	doAuthnRequest: function () {
+		var authGenerationOptions = this.getAuthnOptions();
+		this.glidesaml2api.setAuthnOptions(authGenerationOptions);
+		
+		this.glidesaml2api.buildHTTPAuthnRequest();
+		if(!this.isOk())
+			return this.glidesaml2api.getErrorCode();
+		
+		this.customizeAuthnRequest();
+		return this.glidesaml2api.getGeneratedHTTPRequest();
+	},
+
+	doLogoutRequest: function () {
+		this.glidesaml2api.buildHTTPLogoutRequest();
+		if(!this.isOk())
+			return this.glidesaml2api.getErrorCode();
+		
+		this.customizeLogoutRequest();
+		return this.glidesaml2api.getGeneratedHTTPRequest();
+	},
+
+	doValidateLoginResponse: function () {
+		var responseValidationOptions = this.getValidationOptions();
+		this.glidesaml2api.setValidationOptions(responseValidationOptions);
+		return this.glidesaml2api.validateLoginResponse();
+	},
+
+	doValidateLogoutResponse: function () {
+		var responseValidationOptions = this.getValidationOptions();
+		this.glidesaml2api.setValidationOptions(responseValidationOptions);
+		return this.glidesaml2api.validateLogoutResponse();
+	},
+	
+	doValidateLogoutRequest: function() {
+		gs.info("calling logout request validation");
+		return this.glidesaml2api.doValidateLogoutRequest();
+	},
+	
+	doLogoutResponse: function(){
+		this.glidesaml2api.buildLogoutResponse();
+		if(!this.isOk())
+			return this.glidesaml2api.getErrorCode();
+		return this.glidesaml2api.getGeneratedLogoutResponse();
+	},
+	
+	isSAMLResponse: function(){
+		return this.glidesaml2api.isSAMLResponse();
+	},
+	
+	isSAMLLoginResponse: function(){
+		return this.glidesaml2api.isSAMLLoginResponse();
+	},
+	
+	/**
+	*	return the subject (UserName/NameId) from assertion.
+	*/
+	getSubjectName: function(){
+		return this.glidesaml2api.getSubjectName();
+	},
+	
+	isSAMLLogoutResponse: function(){
+		return this.glidesaml2api.isSAMLLogoutResponse();
+	},
+	
+	/**
+	*	return true if the login flow is triggered from IDP
+	*/
+	isIdPInitiated: function() {
+		return this.glidesaml2api.isIdPInitiated();
+	},
+
+	isTestSAMLConnection: function(){
+		return this.glidesaml2api.isTestSAMLConnection();
+	},
+	
+	getErrorURL: function() {
+		return this.glidesaml2api.getErrorURL();
+	},
+	
+	saveSSOIdInCookie: function(ssoId) {
+		this.glidesaml2api.saveSSOIdInCookie(ssoId);
+	},
+
+	getResponseElement: function() {
+		return this.glidesaml2api.getResponseElement();
+	},
+
+
+	/*** Relay State Customization Support ***/
+	
+	/**
+	 * 	returns starting_page. if login_redirect_url or starting_page property value is not null
+	 * 	else return transaction request URI 
+	 */
+	getComputedRequestURI: function(){
+		var startPage = this.glidesaml2api.getStartPage();
+		return GlideStringUtil.nil(startPage) ? GlideTransaction.get().getRequest().getRequestURI() : startPage;
+	},
+	
+	/**
+	 * returns empty string. if login_redirect_url or starting_page property value is not null
+	 * 	else return transaction request query string 
+	 */
+	getComputedRequestQueryString: function(){
+		var startPage = this.glidesaml2api.getStartPage();
+		return GlideStringUtil.nil(startPage) ? GlideTransaction.get().getRequest().getQueryString() : "";
+	},
+	
+	/**
+	 * Getting Base URL from Service URL.
+		Service URL : https://yourinstance.service-now.com/navpage.do
+		Base URL    : https://yourinstance.service-now.com
+	 */
+	getComputedBaseURL: function() {
+		return this.glidesaml2api.getComputedBaseURL();
+	},
+	
+	/**
+	 * Final relay state value can be set based on custom logic.
+	 */
+	setCustomRelayState: function(customRelayState){
+		this.glidesaml2api.setRequestParameter('RelayState',customRelayState);
+	},
+	
+	getRelayStateById: function(requestSysID) {
+		return this.glidesaml2api.getRelayStateById(requestSysID);
+	},
+	
+	getInResponseTo: function() {
+		return this.glidesaml2api.getInResponseTo();
+	},
+	
+	type: 'SAML2_internal'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-11-06 20:27:24&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4b657be60b21230001d36c4d37673a0a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;51&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SAML2_internal&lt;/sys_name&gt;
+        &lt;sys_package display_value="SAML 2.0 Single Sign-On - Update 1: security enhancements(do not activate...use 'Integration - Multi" source="com.snc.integration.sso.saml20.update1"&gt;c762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4b657be60b21230001d36c4d37673a0a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-07-19 13:09:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5598&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:19</sys_created_on>
+        <sys_id>758c4dba2f331110d8a4d5f62799b648</sys_id>
+        <sys_name>SAML2_internal</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_758c4dba2f331110d8a4d5f62799b648</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

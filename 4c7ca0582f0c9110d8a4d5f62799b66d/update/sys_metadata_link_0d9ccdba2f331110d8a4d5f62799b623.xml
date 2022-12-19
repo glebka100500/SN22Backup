@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>53b33710c33111003d2ae219cdba8fc3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_CatalogItemVariable&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper for catalog item variables&lt;/description&gt;
+        &lt;name&gt;sc_ic_CatalogItemVariable&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_CatalogItemVariable = Class.create();
+sc_ic_CatalogItemVariable.prototype = Object.extendsObject(sc_ic_Base, {
+    initialize: function(_gr,_gs) {
+		sc_ic_Base.prototype.initialize.call(this,_gr,_gs);
+    },
+
+	/**
+	 * Refreshes the meta information for the variable.  Anything that doesn't change it's definition.
+	 */
+	refresh: function(source) {
+		var preconfigured = false;
+		if (JSUtil.notNil(source[sc_ic.QUESTION_TYPE]))
+			preconfigured = (source[sc_ic.QUESTION_TYPE].preconfigured+"" == "true");
+     if(!JSUtil.nil(source.help_text)) {
+      this._gr.help_text = source.getValue('help_text');
+			this._gr.show_help = true;
+		} else {
+			this._gr.help_text = "";
+			this._gr.show_help = false;
+		}
+		
+		if (preconfigured &amp;&amp; source[sc_ic.QUESTION_TYPE].read_only+"" == "true") {
+			this.write_roles = "admin";
+			this.create_roles = "admin";
+			this._gr.read_only = source[sc_ic.QUESTION_TYPE].read_only;
+		}
+		else {
+			if (source.read_only+"" == "true") {
+				this.write_roles = "admin";
+				this.create_roles = "admin";
+			}
+			else {
+				this.write_roles = "";
+				this.create_roles = "";
+			}
+			this._gr.read_only = source.read_only;
+		}
+		
+		this._gr.order = source.order;
+		this._gr.update();
+	},
+
+	_copyFields: function(source) {
+		
+		// Copy the variable type from the question type.
+		this._gr.type = source[sc_ic.QUESTION_CLASS][sc_ic.TYPE];
+		
+		//Copy fields from question record unless predefined, in which case copy from question type table.
+		if (JSUtil.notNil(source[sc_ic.QUESTION_TYPE]) &amp;&amp; source[sc_ic.QUESTION_TYPE].preconfigured+"" == "true") {
+			this._fldCp(source[sc_ic.QUESTION_TYPE]);
+
+			// If we have fields overloaded in the question copy those.
+			if (JSUtil.notNil(source.question_text))
+				this._gr.question_text = source.getValue('question_text');
+		
+			// read_only on the variable gr will not be persisted but we can use it here.
+			if (this._gr.read_only+"" != "true") {
+				if (source.read_only+"" == "true") {
+					this._gr.write_roles = "admin";
+					this._gr.create_roles = "admin";
+				}
+				else {
+					this._gr.write_roles = "";
+					this._gr.create_roles = "";
+				}
+				this._gr.read_only = source.read_only;
+			}
+			// Lets Override the HelpText from Source.
+			if (JSUtil.notNil(source.help_text)) {
+				this._gr.show_help = true;
+				this._gr.help_text = source.getValue('help_text');
+			} else {
+				this._gr.show_help = false;
+				this._gr.help_text = "";
+			}
+		}
+		else
+			this._fldCp(source);
+
+		// Copy the data always taken from the question
+		this._gr.order = source.order;
+		this._gr.mandatory = source.mandatory;
+		this._gr.name = source.name;
+		
+		// Hardcoded values
+		if (this._gr.type == "3") {
+			this._gr.do_not_select_first = true;
+			this._gr.include_none = false;
+		}
+		
+		return this;
+		
+	},
+	
+	/**
+	 * Simple internal field copy function to do the bulk of the heavy lifting.
+	 */
+	_fldCp: function fldCp(src) {
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_copyFields] fldCpy from: " + src.name + " &lt;" + src.getUniqueValue() + "&gt;");
+
+		this._gr.question_text = src.question_text;
+		this._gr.default_value = src.default_value;
+
+		if (JSUtil.notNil(src.help_text)) {
+			this._gr.show_help = true;
+			this._gr.help_text = src.help_text;
+		}
+		
+		//Set a temporary read_only, for convenience, and the roles
+		this._gr.read_only = src.read_only;
+		if (src.read_only + "" == "true") {
+			this._gr.write_roles = "admin";
+			this._gr.create_roles = "admin";
+		}
+		else {
+			this._gr.write_roles = "";
+			this._gr.create_roles = "";
+		}
+		
+		this._gr.reference = (JSUtil.notNil(src.reference) ? src.reference : "");
+		if (JSUtil.notNil(src.reference_qual)) {
+			this._gr.use_reference_qualifier = "advanced";
+			this._gr.reference_qual = src.reference_qual;
+		} else
+			this._gr.reference_qual = "";
+			
+		this._gr.scale_min = src.scale_min;
+		this._gr.scale_max = src.scale_max;
+		
+		this._gr.include_none = true;
+			
+		// If we have a price
+		if (parseFloat(src.cost.getCurrencyValue()+"") &gt; 0 || parseFloat(src.recurring_cost.getCurrencyValue()+"") &gt; 0) {					
+			this._gr.pricing_implications = true;
+			this._gr.price_if_checked = src.cost.getCurrencyValue();
+			this._gr.rec_price_if_checked = src.recurring_cost.getCurrencyValue();
+		}
+	},
+
+	_copyChoices: function(source) {
+		//Copy choices from question choices record unless predefined in which case copy tom type choice table.
+		var qcGr;
+		
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_copyChoices] Copying choices for variable: " + source.getValue('name'));
+		
+		if (JSUtil.notNil(source[sc_ic.QUESTION_TYPE]) &amp;&amp; source[sc_ic.QUESTION_TYPE].preconfigured+"" == "true") {
+			this._log.debug("[_copyChoices] Copying preconfigured choices");
+			//Query the sc_ic_question_type_choice table
+			qcGr = new GlideRecord(sc_ic.QUESTION_TYPE_CHOICE);
+			qcGr.addQuery(sc_ic.QUESTION_TYPE,source[sc_ic.QUESTION_TYPE]);
+		}
+		else {
+			//Query the sc_ic_question_choice table
+			qcGr = new GlideRecord(sc_ic.QUESTION_CHOICE);
+			qcGr.addQuery(sc_ic.QUESTION,source.getUniqueValue());
+		}
+		
+		qcGr.query();
+		
+		// Copy fields into the variable choice table.
+		// grab the wrapper, call create with the source and the question
+		var questChoice = sc_ic_Factory.getWrapperClass(sc_.QUESTION_CHOICE);
+		
+		while (qcGr.next())
+			questChoice.create(this._gr,qcGr);
+	},
+	
+	_copyTranslations: function(source) {
+		this.copyElementTranslations(source, "question_text", "question_text");
+		this.copyElementTranslations(source, "help_text", "help_text");
+	},
+	
+    type: 'sc_ic_CatalogItemVariable'
+});
+
+/**
+ * Creates a variable (item option) for the given Catalog Item
+ * based on them creator question provided
+ */
+sc_ic_CatalogItemVariable.create = function(prnt, source) {
+	var ioGr = new GlideRecord(sc_.ITEM_OPTION);
+	ioGr.cat_item = prnt.getUniqueValue(); // Set up the cat item reference
+	
+	var itemOption = sc_ic_Factory.wrap(ioGr);
+	itemOption._copyFields(source);
+	ioGr.insert();
+	itemOption._copyChoices(source);
+	itemOption._copyTranslations(source);
+	
+	return ioGr;
+};
+
+sc_ic_CatalogItemVariable.createContainerVar = function(prnt,type,index,label) {
+	var ioGr = new GlideRecord(sc_.ITEM_OPTION);
+	ioGr.initialize();
+	ioGr.cat_item = prnt.getUniqueValue();
+	ioGr.name = "container_" + (index &lt; 10 ? '0' + index : index);
+	ioGr.type = type;
+	ioGr.order = index;
+	if (label) {
+		ioGr.display_title = true;
+		ioGr.question_text = label;
+	}
+	ioGr.insert();
+	return ioGr;
+};
+
+sc_ic_CatalogItemVariable.createContainerStart = function(prnt,index,label) {
+	return sc_ic_CatalogItemVariable.createContainerVar(prnt, 19, index, label);
+};
+
+sc_ic_CatalogItemVariable.createContainerEnd = function(prnt,index) {
+	return sc_ic_CatalogItemVariable.createContainerVar(prnt, 20, index);
+};
+
+sc_ic_CatalogItemVariable.createContainerSplit = function(prnt,index) {
+	return sc_ic_CatalogItemVariable.createContainerVar(prnt, 24, index);
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-12-18 17:09:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;53b33710c33111003d2ae219cdba8fc3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;63&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_CatalogItemVariable&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_53b33710c33111003d2ae219cdba8fc3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-17 05:30:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6889&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:32</sys_created_on>
+        <sys_id>0d9ccdba2f331110d8a4d5f62799b623</sys_id>
+        <sys_name>sc_ic_CatalogItemVariable</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0d9ccdba2f331110d8a4d5f62799b623</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

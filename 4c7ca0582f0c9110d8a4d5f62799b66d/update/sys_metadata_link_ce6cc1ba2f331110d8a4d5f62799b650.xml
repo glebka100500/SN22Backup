@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3436d13673313300b39f84c2c4f6a709</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CloneConstants&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CloneConstants&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CloneConstants = { 
+	SYSTEM_PROFILE_SYS_ID: "874b7e423b7333001b420896c3efc4c0",
+	
+	cloneOptions: {
+		DEFAULT_MAX_CLONE_DURATION: "3M"
+	},
+	
+	tableName: {
+		CLONE_PROFILE_EXCLUSION: "clone_profile_exclusions",
+		CLONE_PROFILE_PRESERVER: "clone_profile_preservers",
+		CLONE_PROFILE_CLEANUP_SCRIPT: "clone_profile_cleanup_scripts",
+		CLONE_DATA_PRESERVER: "clone_data_preserver",
+		CLONE_DATA_EXCLUSION: "clone_data_exclude",
+		CLONE_CLEANUP_SCRIPT: "clone_cleanup_script"
+	},
+	
+	status: {
+		CLONE_STATUS_DRAFT: "Draft",
+		CLONE_STATUS_SCHEDULED: "Scheduled",
+		CLONE_STATUS_REQUESTED: "Requested",
+		CLONE_STATUS_HOLD: "Hold"
+	},
+
+	cancelOptions: {
+		CANCEL_OPTION_INCORRECT_TARGET: "I chose an incorrect target instance",
+		CANCEL_OPTION_LATEST_BACKUP: "I need a different backup",
+		CANCEL_OPTION_OTHER: "Other"
+	},
+
+	rollbackOptions: {
+		ROLLBACK_OPTION_CORRUPTED_INSTANCE: "Target instance was corrupted",
+		ROLLBACK_OPTION_LOST_DATA: "I Lost My Data",
+		ROLLBACK_OPTION_OTHER: "Other"
+	},
+	
+	errorMsg: {
+		EMPTY_PRESERVERS: "Preservers cannot be empty.",
+		EXCLUSION_NOT_ALLOWED: "cannot be excluded.",
+		CLEANUP_SCRIPT_EXISTS: "Cleanup script already exists with this name.",
+		PRESERVER_EXISTS: "Preserver already exists with the this table name and condition.",
+		PRESERVER_DB_VIEW: "DB views cannot be preserved.",
+		PRESERVER_DB_VIEWS: "Following DB views cannot be preserved: ",
+		EXCLUSION_EXISTS: "Exclusion already exists with this same table name."
+	}
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-06-06 10:05:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3436d13673313300b39f84c2c4f6a709&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CloneConstants&lt;/sys_name&gt;
+        &lt;sys_package display_value="High Availability Cloning" source="com.snc.ha"&gt;e9adf40b6d2220100acb70b35343303a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3436d13673313300b39f84c2c4f6a709&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-13 18:47:18&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1471&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:48</sys_created_on>
+        <sys_id>ce6cc1ba2f331110d8a4d5f62799b650</sys_id>
+        <sys_name>CloneConstants</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ce6cc1ba2f331110d8a4d5f62799b650</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

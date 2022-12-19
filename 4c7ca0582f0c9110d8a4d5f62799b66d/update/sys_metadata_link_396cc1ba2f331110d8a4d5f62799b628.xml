@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3338795153420300f521ddeeff7b12df</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PWDWorkflowHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PWDWorkflowHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PWDWorkflowHelper = Class.create();
+
+PWDWorkflowHelper.startFlow = function (name, params, operation) {
+	var wf = new Workflow();
+	var workflowId = wf.getWorkflowFromName(name);
+	
+	var resetReq = new GlideRecord('pwd_reset_request');
+	var requestId = params.u_request_id; 
+	var getRequest = resetReq.get(requestId);
+	
+	var gr = wf.startFlow(workflowId, resetReq || null, operation || null, params);
+	
+	return gs.nil(gr) ? null : gr.getUniqueValue();
+};
+
+PWDWorkflowHelper.getWorkflowData = function (ctxId, getRelatedRecords) {
+	var res = {
+		result : 'failure',
+		state  : 'Executing'
+	};
+	
+	var ctxGr = new GlideRecord('wf_context');
+	
+	if (ctxGr.get(ctxId)) {
+		res.result = ctxGr.getValue('result');
+		res.state = ctxGr.getValue('state');
+		
+		if (getRelatedRecords) {
+			res.contextGr = ctxGr;
+			res.historyGr = _getHistoryGr(ctxGr);
+		}
+	}
+	
+	return res;
+};
+
+_getHistoryGr = function (ctxGr) {
+	var historyGr = new GlideRecord('wf_history');
+	historyGr.addQuery('context', ctxGr.getUniqueValue());
+	historyGr.orderBy('activity_index');
+	historyGr.addJoinQuery('wf_activity', 'activity', 'sys_id');
+	historyGr.query();
+	
+	return historyGr;
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;adam.moguel&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-10-25 18:21:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3338795153420300f521ddeeff7b12df&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PWDWorkflowHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3338795153420300f521ddeeff7b12df&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-10-06 22:26:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1152&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:47</sys_created_on>
+        <sys_id>396cc1ba2f331110d8a4d5f62799b628</sys_id>
+        <sys_name>PWDWorkflowHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_396cc1ba2f331110d8a4d5f62799b628</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

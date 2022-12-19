@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7705fcb2eb1101006a668c505206fe80</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdQuestionsEnrollmentCheck&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Extension that determines if a user has enrolled for Security Questions verification&lt;/description&gt;
+        &lt;name&gt;PwdQuestionsEnrollmentCheck&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdQuestionsEnrollmentCheck = Class.create();
+PwdQuestionsEnrollmentCheck.prototype = {
+  category: 'password_reset.extension.enrollment_check',    // DO NOT REMOVE THIS LINE!
+
+  LOG_ID : '[PwdQuestionsEnrollmentCheck] ',
+  
+  initialize: function() {
+  },
+
+  /**********
+   * Returns boolean telling whether the user is enrolled.
+   * 
+   * @param params.enrolledUserId The sys-id of the user being checked (table: sys_user)
+   * @param params.verificationId The sys-id of the verification being checked (table: pwd_verification)
+   * @return boolean telling whether the user is enrolled into the specified verification
+   **********/
+  process: function(params) {
+    return this.isEnrolled(params.verificationId, params.enrolledUserId);
+  },
+    
+    isEnrolled: function(verificationId, userId) {
+        this._log('Regular enrollment check for security questions');
+        var enrolledCount = this._getEnrolledCount(verificationId, userId);
+        var requiredCount = this._getRequiredCount(verificationId);
+        if (enrolledCount &lt; requiredCount){
+            this._log("Enrollment is not complete because there is not enough questions enrolled.");
+            return false;
+        }
+        this._log('Regular enrollment check verified user is enrolled with ' + requiredCount + ' ver:' + verificationId);
+        return true;
+    },
+    // simple log
+    _log: function(msg){
+        gs.log(this.LOG_ID + ' ' + msg);
+    },
+    // get number of questions currently enrolled
+    _getEnrolledCount: function(verificationId, userId){
+        var gr_answers = new GlideRecord('pwd_active_answer');
+        gr_answers.addJoinQuery('pwd_enrollment', 'enrollment', 'sys_id');
+        gr_answers.addQuery('enrollment.verification', verificationId);
+        gr_answers.addQuery('enrollment.user', userId);
+        gr_answers.query();
+        return gr_answers.getRowCount()
+    },
+    // get number of questions required for enrollment
+    _getRequiredCount: function(verificationId){
+        var required = 0;
+        var grParam = new GlideRecord('pwd_verification_param');    
+        grParam.addQuery('verification', verificationId);
+        grParam.addQuery('name', 'num_enroll');
+        grParam.query();
+        if (grParam.next())
+            required = parseInt(grParam.getValue('value'));
+        grParam.close();
+        return required;
+    },
+
+  type: 'PwdQuestionsEnrollmentCheck'
+
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-05-16 05:02:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7705fcb2eb1101006a668c505206fe80&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdQuestionsEnrollmentCheck&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7705fcb2eb1101006a668c505206fe80&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-12-24 22:27:04&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2406&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:39</sys_created_on>
+        <sys_id>51dcc53e2f331110d8a4d5f62799b66c</sys_id>
+        <sys_name>PwdQuestionsEnrollmentCheck</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_51dcc53e2f331110d8a4d5f62799b66c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

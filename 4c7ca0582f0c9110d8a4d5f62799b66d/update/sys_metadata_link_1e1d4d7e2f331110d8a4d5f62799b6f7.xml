@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>95f29e309f013200598a5bb0657fcf82</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PPMDebug&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Debug Logger for PPM, Use this for logging Debug Messages&lt;/description&gt;
+        &lt;name&gt;PPMDebug&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PPMDebug = Class.create();
+PPMDebug.prototype = {
+    initialize: function() {
+    },
+
+    type: 'PPMDebug'
+};
+
+PPMDebug.PROJECT_DEBUG_PROPERTY = 'com.snc.pm.debug.enable';
+
+PPMDebug.isLoggingEnabled = function () {
+    var debugValue = gs.getProperty(PPMDebug.PROJECT_DEBUG_PROPERTY, 'false');
+    if(debugValue &amp;&amp; debugValue == 'true')
+        return true;
+    return false;
+};
+
+PPMDebug.isSessionDebug = function () {
+    var debugValue = GlideSessionDebug.isDebugging('log');
+    if(debugValue)
+        return true;
+    return false;
+};
+
+PPMDebug.log = function(msg) {
+    if(PPMDebug.isSessionDebug() || PPMDebug.isLoggingEnabled()) {
+        gs.log(msg, "PPM");
+    }  
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-02-17 17:43:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;95f29e309f013200598a5bb0657fcf82&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PPMDebug&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_95f29e309f013200598a5bb0657fcf82&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-02-17 17:56:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;682&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:49</sys_created_on>
+        <sys_id>1e1d4d7e2f331110d8a4d5f62799b6f7</sys_id>
+        <sys_name>PPMDebug</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1e1d4d7e2f331110d8a4d5f62799b6f7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

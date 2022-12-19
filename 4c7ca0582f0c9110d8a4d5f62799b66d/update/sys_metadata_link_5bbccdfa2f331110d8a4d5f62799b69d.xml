@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6a8717349f413200598a5bb0657fcf4d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PPMTableCheck&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Table Checker Utility&lt;/description&gt;
+        &lt;name&gt;PPMTableCheck&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PPMTableCheck = Class.create();
+PPMTableCheck.prototype = {
+    initialize: function() {
+    },
+
+    type: 'PPMTableCheck'
+};
+
+PPMTableCheck.isPortfolio = function (table) {
+    PPMDebug.log('PPMTableCheck.isPortfolio: ' + table);
+	var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("pm_portfolio");
+	return res;
+};
+
+PPMTableCheck.isProgram = function (table) {
+    PPMDebug.log('PPMTableCheck.isProgram: ' + table);
+    var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("pm_program");
+	return res;
+};
+
+PPMTableCheck.isProgramTask = function (table) {
+    PPMDebug.log('PPMTableCheck.isProgramTask: ' + table);
+    var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("pm_program_task");
+	return res;
+};
+
+//Returns true if table is instnaceOf release or product
+PPMTableCheck.isRelease = function (table) {
+    PPMDebug.log('PPMTableCheck.isRelease: ' + table);
+	var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("rm_release") || record.instanceOf("rm_product");
+	return res;
+    
+};
+
+PPMTableCheck.isProject = function (table) {
+    PPMDebug.log('PPMTableCheck.isProject: ' + table);
+    var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("pm_project");
+	return res;
+};
+
+PPMTableCheck.isProjectTask = function (table) {
+    PPMDebug.log('PPMTableCheck.isProjectTask: ' + table);
+    var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("pm_project_task");
+	return res;
+};
+
+PPMTableCheck.isDemand = function (table) {
+    PPMDebug.log('PPMTableCheck.isDemand: ' + table);
+    var res = false;
+	var record = new GlideRecord(table);
+	res = record.instanceOf("dmn_demand");
+	return res;
+};
+
+PPMTableCheck.isPlannedTask = function (table) {
+    var plannedTaskExtensions = GlideDBObjectManager.get().getAllExtensions('planned_task');
+    PPMDebug.log('PPMTableCheck.isPlannedTask: ' + table + " -&gt; " + plannedTaskExtensions.contains(table));
+    return plannedTaskExtensions.contains(table);
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-02-17 22:42:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6a8717349f413200598a5bb0657fcf4d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PPMTableCheck&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6a8717349f413200598a5bb0657fcf4d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-27 19:14:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2066&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:15</sys_created_on>
+        <sys_id>5bbccdfa2f331110d8a4d5f62799b69d</sys_id>
+        <sys_name>PPMTableCheck</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5bbccdfa2f331110d8a4d5f62799b69d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

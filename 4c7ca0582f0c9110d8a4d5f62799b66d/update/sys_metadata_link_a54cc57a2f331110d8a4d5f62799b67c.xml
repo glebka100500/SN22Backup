@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1a2e796b53310110a260ddeeff7b1272</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;false&lt;/active&gt;
+        &lt;api_name&gt;global.OneAPIOutputProcessorTemplate&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;OneAPIOutputProcessorTemplate&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// Template script to process response from ONE API call. 
+// For every service plan in one_api_service_plan table, there should be a output processor script.
+
+var OneAPIOutputProcessorTemplate = Class.create();
+OneAPIOutputProcessorTemplate.prototype = {
+    initialize: function() {
+    },
+	
+	// Mandatory function in every processor. This method is called after a completed response is received from One API invocation.
+	processCompleted: function(oneApiResponse) {
+		
+	},
+	
+	// Mandatory function in every processor. This method is called after an error response is received from One API invocation.
+	processErrored: function(oneApiResponse) {
+		
+	},
+	
+	// Mandatory function in every processor. This method is called if the one api call is cancelled.
+	processCancelled: function(oneApiResponse) {
+		
+	},
+
+    type: 'OneAPIOutputProcessorTemplate'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-02-27 02:51:09&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1a2e796b53310110a260ddeeff7b1272&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OneAPIOutputProcessorTemplate&lt;/sys_name&gt;
+        &lt;sys_package display_value="One API FlowDesigner/IntegrationHub execution environment" source="com.glide.oneapi.fdih"&gt;fcc3d1252f221110d8a4d5f62799b6a4&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1a2e796b53310110a260ddeeff7b1272&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-02 15:11:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;854&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:12</sys_created_on>
+        <sys_id>a54cc57a2f331110d8a4d5f62799b67c</sys_id>
+        <sys_name>OneAPIOutputProcessorTemplate</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a54cc57a2f331110d8a4d5f62799b67c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

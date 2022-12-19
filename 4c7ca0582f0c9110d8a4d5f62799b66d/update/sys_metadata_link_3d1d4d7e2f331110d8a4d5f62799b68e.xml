@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>94c8d2d6c0a8006f00027d4fc446bf30</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RegisterInstanceClient&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Client Registration Process&lt;/description&gt;
+        &lt;name&gt;RegisterInstanceClient&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("SOAPEnvelope");
+gs.include("SOAPRequest");
+
+var RegisterInstanceClient = Class.create();
+
+RegisterInstanceClient.prototype = {
+  initialize: function() {
+
+  },
+
+  process: function() {
+    if (this._shouldSkip()) {
+        this.setStatus("skipped instance registration");
+        return;
+    }
+
+    gs.log("Starting instance registration");  
+
+    var instance_name = this.getInstanceName();
+    this.log("got instance name: " + instance_name);
+
+    var instance_id = this.getInstanceID(instance_name);
+    this.log("got instance id: " + instance_id);
+
+    try {
+      var new_instance_name = this.registerInstance(instance_id, instance_name);
+
+      if (new_instance_name == null) {
+        this.log("unsuccessful: trying again in 5 minutes", "warning");
+        this.updateTriggerType("10"); // Interval
+        return;
+      }
+
+      gs.log("register instance returned instance name: " + new_instance_name);
+
+      // always set instance information... (When zbooting we want to make sure we
+      // set the instance_id the same as before we zbooted)
+      gs.setProperty("instance_name", new_instance_name);
+      gs.setProperty("instance_id", instance_id);
+
+      this.log("completed");
+      this.updateTriggerType("9"); // Run at Startup
+    } catch (e) {
+      this.log("failed: " + e + " (" + gs.getProperty("glide.register_server_url") + ")", "error");
+      this.updateTriggerType("10"); // Interval
+    }
+  },
+
+  log: function(msg, type) {
+    gs.log("instance registration: " + msg);
+    this.setStatus(msg, type);
+  },
+
+  updateTriggerType: function(type) {
+    // schedule a run once to update myself because at 
+    // end of job execution, my trigger type is preserved
+    var job = new GlideRunScriptJob();
+    job.scheduleScript("var sgr = new GlideRecord('sys_trigger');\n" +
+                              "sgr.addQuery('name', 'Register Instance');\n" +
+                              "sgr.query();\n" +
+                              "if (sgr.next()) {\n" +
+                              "gs.log('Updating trigger to type: " + type + "');\n" + 
+                              "sgr.trigger_type = '" + type + "';\n" +
+                              "sgr.update();}\n");
+  },
+
+  registerInstance: function(id, name) {
+    var register_server_url = gs.getProperty("glide.register_server_url");
+
+    // create the soap document
+    var soapdoc = new SOAPEnvelope("RegisterInstance", "http://www.service-now.com/");
+    soapdoc.setFunctionName("execute");
+    soapdoc.addFunctionParameter("instance_name", name);
+    soapdoc.addFunctionParameter("instance_id", id);
+    soapdoc.addFunctionParameter("current_build_date", gs.getProperty("glide.builddate"));
+    soapdoc.addFunctionParameter("current_build_tag", gs.getProperty("glide.buildtag"));
+
+    // post the request
+    var soapRequest = new SOAPRequest(register_server_url + "RegisterInstance.do?SOAP");
+    var soapResponse = soapRequest.post(soapdoc);
+    var new_instance_name = gs.getXMLText(soapResponse, "//executeResponse/instance_name");
+
+    return new_instance_name;
+  },
+
+  getInstanceName: function() {
+    var iname = gs.getProperty("instance_name");
+    if (iname == null || iname == "")
+      iname = gs.getProperty("glide.db.name");
+
+    var instance_name = this._cleanName(iname);
+    gs.setProperty("instance_name", instance_name, "Instance name");
+    return instance_name;
+  },
+
+  getDBName: function() {
+    var iname = gs.getProperty("glide.db.name");
+    return this._cleanName(iname);
+  },
+
+  _cleanName: function (iname) {
+    if (iname.indexOf("_") == -1)
+      return iname;
+
+      var names = iname.split("_");
+      var port = names[names.length - 1];
+      if(isNaN(port)) {
+        return iname;
+      } else {
+        // its a number - must be port, strip it
+        names = names.slice(0, names.length - 1);
+        return names.join('_');
+      }
+
+    return iname;
+  },
+
+  getInstanceID: function(instance_name) {
+    var instance_id = gs.getProperty("instance_id");
+    if (instance_id == null || instance_id == "") {
+      // generate an instance_id
+      instance_id = gs.generateGUID(instance_name);
+      gs.log("saving instance_id property: " + instance_id);
+      gs.setProperty("instance_id", instance_id, "Instance ID");
+    }
+
+    return instance_id;
+  },
+
+  setStatus: function(msg, type) {
+    if (!type)
+      type = "info";
+
+    var s = GlideStatus;
+    s.set("instance_registration", msg, type);
+  },
+
+  _shouldSkip: function() {
+    return GlideUtil.isDeveloperInstance();
+  },
+
+  type: "RegisterInstanceClient"
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-06-17 04:29:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;94c8d2d6c0a8006f00027d4fc446bf30&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;96&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RegisterInstanceClient&lt;/sys_name&gt;
+        &lt;sys_package display_value="Instance Registration - Client" source="com.glide.instance_registration_client"&gt;c4dcb8836d2220100acb70b35343301b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_94c8d2d6c0a8006f00027d4fc446bf30&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;glide.maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2009-06-03 23:33:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4723&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:47</sys_created_on>
+        <sys_id>3d1d4d7e2f331110d8a4d5f62799b68e</sys_id>
+        <sys_name>RegisterInstanceClient</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3d1d4d7e2f331110d8a4d5f62799b68e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

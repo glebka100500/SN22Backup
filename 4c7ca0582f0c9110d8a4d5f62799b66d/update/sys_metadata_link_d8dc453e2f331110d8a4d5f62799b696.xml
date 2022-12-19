@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>75c819d373330010cf1ac9c38bf6a708</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CreateChoiceListUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CreateChoiceListUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CreateChoiceListUtil = Class.create();
+CreateChoiceListUtil.prototype = {
+	initialize: function() {
+	},
+
+	isVisibleButton: function(current) {
+		if (current.choice != '1' &amp;&amp; current.choice != '3')
+			return false;
+
+		if ( ['reference', 'glide_list', 'domain_id', 'collection'].indexOf(current.internal_type.toString()) &gt;= 0 )
+			return false;
+
+		return !current.instanceOf('var_dictionary');
+	},
+
+	type: 'CreateChoiceListUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-01 05:43:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;75c819d373330010cf1ac9c38bf6a708&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CreateChoiceListUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Tables and Columns" source="com.glide.tables_and_columns"&gt;538db8c76d2220100acb70b3534330aa&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_75c819d373330010cf1ac9c38bf6a708&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-01 05:47:05&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;433&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:35</sys_created_on>
+        <sys_id>d8dc453e2f331110d8a4d5f62799b696</sys_id>
+        <sys_name>CreateChoiceListUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d8dc453e2f331110d8a4d5f62799b696</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

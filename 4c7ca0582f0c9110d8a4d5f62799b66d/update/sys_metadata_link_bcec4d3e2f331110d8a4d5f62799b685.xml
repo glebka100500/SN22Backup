@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7f127e600f6200104202c6b1df767e4c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UpgradeHistoryTaskUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Utility to assist with upgrade center related tasks and the interaction with the upgrade history log&lt;/description&gt;
+        &lt;name&gt;UpgradeHistoryTaskUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UpgradeHistoryTaskUtil = Class.create();
+
+UpgradeHistoryTaskUtil.DISPOSITIONS = {
+    'INSERTED': '1',
+    'UPDATED': '2',
+    'DELETED': '3',
+    'SKIPPED': '4',
+    'REVERTED': '5',
+    'TABLE_NOT_FOUND': '6',
+    'UNCHANGED': '7',
+    'SKIPPED_ERROR': '9',
+    'SKIPPED_MERGED_MANUAL': '10',
+    'SKIPPED_APPLY_ONCE': '11',
+    'NOT_LATEST': '12',
+    'INSERTED_SECOND_PASS': '101',
+    'UPDATED_SECOND_PASS': '102',
+    'DELETED_SECOND_PASS': '103',
+    'SKIPPED_SECOND_PASS': '104',
+	'REVERTED_SECOND_PASS': '105',
+    'TABLE_NOT_FOUND_SECOND_PASS': '106',
+    'UNCHANGED_SECOND_PASS': '107',
+    'BASE_INSERTED': '201',
+    'BASE_UPDATED': '202',
+    'BASE_DELETED': '203',
+    'FATAL_ERROR': '301',
+    'NOT_LOADED': '302',
+    'SANITIZED': '303'
+};
+
+UpgradeHistoryTaskUtil.UPGRADE_HISTORY_TASK = 'upgrade_history_task';
+UpgradeHistoryTaskUtil.SYS_UPGRADE_HISTORY_LOG = 'sys_upgrade_history_log';
+
+UpgradeHistoryTaskUtil.canResolveConflictsCustomerUpdated = function(upgradeHistoryLogId) {
+    var upgradeHistoryLogGr = GlideRecordSecure(UpgradeHistoryTaskUtil.SYS_UPGRADE_HISTORY_LOG);
+    if (upgradeHistoryLogGr.get(upgradeHistoryLogId))
+        return upgradeHistoryLogGr.canRead() &amp;&amp; (upgradeHistoryLogGr.getValue('disposition') == UpgradeHistoryTaskUtil.DISPOSITIONS.SKIPPED ||
+			upgradeHistoryLogGr.getValue('disposition') == UpgradeHistoryTaskUtil.DISPOSITIONS.SKIPPED_MERGED_MANUAL);
+
+    return false;
+};
+
+UpgradeHistoryTaskUtil.canRevertToBaseSystem = function(upgradeHistoryLogId) {
+    var upgradeHistoryLogGr = GlideRecordSecure(UpgradeHistoryTaskUtil.SYS_UPGRADE_HISTORY_LOG);
+    if (upgradeHistoryLogGr.get(upgradeHistoryLogId))
+        return upgradeHistoryLogGr.canRead() &amp;&amp; UpgradeHistoryTaskUtil.hasBaseVersion(upgradeHistoryLogId) &amp;&amp;
+			(upgradeHistoryLogGr.getValue('disposition') == UpgradeHistoryTaskUtil.DISPOSITIONS.SKIPPED ||
+			upgradeHistoryLogGr.getValue('disposition') == UpgradeHistoryTaskUtil.DISPOSITIONS.SKIPPED_ERROR);
+
+    return false;
+};
+
+UpgradeHistoryTaskUtil.hasBaseVersion = function(upgradeHistoryLogId) {
+
+    var current = new GlideRecordSecure('sys_upgrade_history_log');
+    current.get(upgradeHistoryLogId);
+
+    var name = current.file_name;
+    var grHead = GlideappUpdateVersion.getHeadVersion(name);
+    if (grHead.isValidRecord()) {
+        current.payload = grHead.payload;
+    }
+
+    // if the record is from a store app, the baseline version has its source_table and source set to sys_store_app and the app ID
+    var storeAppID = GlideappUpdateVersion.getStoreAppID(current);
+    var grBaselineHead;
+    if (storeAppID != null)
+        grBaselineHead = GlideappUpdateVersion.getVersion(name, storeAppID, "sys_store_app", null);
+    else
+        grBaselineHead = GlideappUpdateVersion.getVersion(name, current.upgrade_history, "sys_upgrade_history", null);
+
+    if (grBaselineHead.isValidRecord())
+		return true;
+
+	return false;
+};
+
+UpgradeHistoryTaskUtil.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getHistoryLogId: function() {
+		var response = {};
+		var historyTaskId = this.getParameter('historyTaskId');
+		var historyTaskGr = new GlideRecordSecure(UpgradeHistoryTaskUtil.UPGRADE_HISTORY_TASK);
+		if (historyTaskGr.get(historyTaskId))
+			response.historyLogId = historyTaskGr.getValue('upgrade_detail');
+		else
+			response.historyLogId = 'NOT_FOUND';
+
+		return JSON.stringify(response);
+	},
+
+    type: 'UpgradeHistoryTaskUtil'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-01-21 19:51:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7f127e600f6200104202c6b1df767e4c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;39&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UpgradeHistoryTaskUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Upgrade Center" source="com.glide.upgrade_center"&gt;1dbdb04b6d2220100acb70b35343302b&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7f127e600f6200104202c6b1df767e4c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-19 17:57:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3419&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:53</sys_created_on>
+        <sys_id>bcec4d3e2f331110d8a4d5f62799b685</sys_id>
+        <sys_name>UpgradeHistoryTaskUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bcec4d3e2f331110d8a4d5f62799b685</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

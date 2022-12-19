@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>71b05bc90a0a2c39393625f7b47c032c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TaskSLAworkflow&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Control the Task SLA workflows.&amp;#13;
+&amp;#13;
+Expects to run after the Task SLA record exists and the record has been updated.&lt;/description&gt;
+        &lt;name&gt;TaskSLAworkflow&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TaskSLAworkflow = Class.create();
+
+TaskSLAworkflow.prototype = {
+
+	// sys_properties
+	SLA_WORKFLOW_LOG: 'com.snc.sla.workflow.log',
+	SLA_WORKFLOW_RUN_FOR_BREACHED: 'com.snc.sla.workflow.run_for_breached',
+	SLA_DATABASE_LOG: 'com.snc.sla.log.destination',
+
+	initialize : function(taskSLAgr, slaDefGR) {
+		this.runForBreached = (gs.getProperty(this.SLA_WORKFLOW_RUN_FOR_BREACHED, 'false') == 'true');
+		this.taskSLAgr = new GlideRecord(taskSLAgr.getTableName());
+		this.taskSLAgr.get(taskSLAgr.sys_id);
+
+		if (slaDefGR &amp;&amp; slaDefGR.isValidRecord())
+			this.slaDefGR = slaDefGR;
+		else
+			this.slaDefGR = taskSLAgr.sla.getRefRecord();
+
+		this.lu = new GSLog(this.SLA_WORKFLOW_LOG, this.type);
+		this.lu.includeTimestamp();
+		if (gs.getProperty(this.SLA_DATABASE_LOG, "db") == "node")
+			this.lu.disableDatabaseLogs();
+
+		// if enable logging has been checked on the SLA definition up the log level to "debug"
+		if (this.slaDefGR &amp;&amp; this.slaDefGR.enable_logging)
+			this.lu.setLevel(GSLog.DEBUG);
+
+		if (this.lu.atLevel(GSLog.INFO))
+			this.lu.logInfo('initialize: with task_sla ' + taskSLAgr.getUniqueValue());
+	},
+
+	start: function() {
+		if (!this.taskSLAgr || !this.taskSLAgr.isValidRecord()) {
+			this.lu.logError('start: no Task SLA record supplied');
+			return;
+		}
+		
+		if (!this.slaDefGR) {
+			this.lu.logError('start: no SLA definition supplied');
+			return;
+		}
+
+		if (this.slaDefGR.workflow.nil()) {
+			if (this.lu.atLevel(GSLog.INFO))
+				this.lu.logInfo('start: no workflow specified on SLA Definition ' + this.slaDefGR.getDisplayValue());
+			return;
+		}
+		
+		if (this.lu.atLevel(GSLog.INFO))
+			this.lu.logInfo('start: copy of workflow ' + this.slaDefGR.workflow + ' started for ' + this.slaDefGR.name);
+
+		// If the SLA has already breached then unless the appropriate property has been set true don't run the workflow
+		if (this.taskSLAgr.has_breached &amp;&amp; !this.runForBreached) {
+			if (this.lu.atLevel(GSLog.INFO))
+				this.lu.logInfo('start: SLA has already breached so workflow will not be started for ' + this.slaDefGR.name);
+			return;
+		}
+
+		var wfid = this.slaDefGR.workflow + '';
+
+		var startTime = new GlideDateTime(this.taskSLAgr.start_time.getGlideObject());
+		var now = new GlideDateTime();
+		var msecs = this._truncSeconds(this._calculateRetroAdjust(startTime, now));
+		var scratchPad = {};
+		scratchPad.slaDataJSON = this._getSLADefJSON();
+		scratchPad.timezoneForSchedule = new SLAUtil().getTimezone(this.taskSLAgr);
+
+		// retroactive, if started more than 5 seconds ago (or due to start in the future)
+		if (msecs &lt;= 0 || msecs &gt; 5000)
+			if (!isNaN(msecs))
+				scratchPad.retroactiveSecsLeft = String(Number(msecs) / 1000);
+
+		this._startFlow(wfid, this.taskSLAgr, null, scratchPad);
+		this.taskSLAgr.update();
+	},
+
+	pause: function() {
+		if (!this.slaDefGR) {
+			this.lu.logError('pause: no SLA definition supplied');
+			return;
+		}
+		
+		if (this.lu.atLevel(GSLog.INFO))
+			this.lu.logInfo('pause: copy of workflow ' + this.taskSLAgr.sla.workflow + ' paused for ' + this.taskSLAgr.sla.name);
+
+		var wf = new Workflow().getRunningFlows(this.taskSLAgr);
+		while (wf.next())
+			new Workflow().broadcastEvent(wf.sys_id, 'pause');
+	},
+
+	resume: function() {
+		if (!this.slaDefGR) {
+			this.lu.logError('resume: no SLA definition supplied');
+			return;
+		}
+
+		if (this.lu.atLevel(GSLog.INFO))
+			this.lu.logInfo('resume: copy of workflow ' + this.slaDefGR.workflow + ' resumed for ' + this.slaDefGR.name);
+
+		var wf = new Workflow().getRunningFlows(this.taskSLAgr);
+		while (wf.next())
+			new Workflow().broadcastEvent(wf.sys_id, 'resume');
+	},
+
+	stop: function() {
+		if (!this.slaDefGR) {
+			this.lu.logError('stop: no SLA definition supplied');
+			return;
+		}
+
+		if (this.lu.atLevel(GSLog.INFO))
+			this.lu.logInfo('stop: copy of workflow ' + this.slaDefGR.workflow + ' stopped for ' + this.slaDefGR.name);
+
+		var wf = new Workflow();
+		wf.cancel(this.taskSLAgr);
+	},
+
+	// return the retroactive-start adjustment, in milliseconds.
+	_calculateRetroAdjust: function(startTime, now) {
+		var pause = this.taskSLAgr.pause_duration.dateNumericValue();
+		if (this.taskSLAgr.pause_time) {
+			// must be a paused "retroactively starting" SLA, so add on the current period of pause duration (total time, ignoring schedule)
+			var dc = new DurationCalculator();
+			dc.calcScheduleDuration(this.taskSLAgr.pause_time, now); // pause_time may not be a GlideDateTime, let DurationCalculator work it out
+			var extraPause = dc.getTotalSeconds() * 1000;
+			pause += extraPause;
+			if (this.lu.atLevel(GSLog.DEBUG))
+				this.lu.logDebug('extraPause: ' + extraPause);
+		}
+
+		// allow for accumulated pause_duration on a retroactively starting SLA
+		// by subtracting the pause duration and any current period of pause
+		// (result is -ve, if start is in the future. Don't count pause before an SLA starts)
+		var msecs = now.getNumericValue() - startTime.getNumericValue();
+		if (startTime.compareTo(now) &lt;= 0)
+			msecs -= pause;
+
+		if (this.lu.atLevel(GSLog.DEBUG))
+			this.lu.logDebug('_calculateRetroAdjust: startTime=' + startTime.getDisplayValueInternal() + '; now=' + now.getDisplayValueInternal() + '; msecs=' + msecs + '; (pause=' + pause + ')');
+
+		return msecs;
+	},
+
+	_truncSeconds: function(ms) {
+		var ri = 1000;
+		return Math.floor(ms/ri)*ri;
+	},
+
+	_startFlow: function(workflowId, current, vars, scratchPad) {
+		new SNC.WorkflowScriptAPI().startFlow(workflowId, current, vars, scratchPad);
+	},
+
+	_getSLADefJSON: function() {
+		var slaDef = {};
+		
+		if (!this.slaDefGR)
+			return slaDef;
+
+		slaDef = {
+			name: this.slaDefGR.getValue("name"),
+			duration_type: "" + this.slaDefGR.duration_type,
+			duration: this.slaDefGR.duration.dateNumericValue(),
+			relative_duration_works_on: this.slaDefGR.getValue("relative_duration_works_on"),
+		};
+		
+		return JSON.stringify(slaDef);
+	},
+
+	type: 'TaskSLAworkflow'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-03-01 16:03:55&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;71b05bc90a0a2c39393625f7b47c032c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;92&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TaskSLAworkflow&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service level management" source="com.snc.sla"&gt;367209c76d6620100acb70b35343304f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_71b05bc90a0a2c39393625f7b47c032c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-19 01:49:21&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5830&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:26</sys_created_on>
+        <sys_id>4accc13e2f331110d8a4d5f62799b6f2</sys_id>
+        <sys_name>TaskSLAworkflow</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4accc13e2f331110d8a4d5f62799b6f2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

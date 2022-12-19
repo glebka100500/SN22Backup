@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>98203c627f3302005f58108c3ffa9127</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MigrateNotificationItemField&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Migrate from the notification's item field to the affected_field_on_event field.&lt;/description&gt;
+        &lt;name&gt;MigrateNotificationItemField&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MigrateNotificationItemField = Class.create();
+MigrateNotificationItemField.prototype = {
+    initialize: function() {
+    },
+
+	/**
+	 * Migrates the sysevent_email_action's (notification) item field to the
+	 * affected_field_on_event field (on the same notification) instead. This
+	 * pulls off the 'event.' portion in the item table (typically leaving just
+	 * 'parm1').
+	 */
+	migrate_notifications_from_item_to_affected_field_on_event: function() {
+		// Go through every notification
+		var notification = new GlideRecord("sysevent_email_action");
+		notification.query();
+		while (notification.next()) {
+			// Ignore notifications where item or item_table are not filled out
+			if (notification.item == "" || notification.item_table == "")
+				continue;
+			else if (notification.item != "event.parm1") {
+				if (notification.item.substring(0, 6) != "event.") {
+					gs.warn("While migrating a notification's (" +
+							notification.sys_id + ") item column to " +
+							"affected_field_on_event, unexpectedly a value " +
+							"in item was '" + notification.item + "' and did " +
+							"not start with 'event.'");
+				}
+
+				var field = notification.item.substring(6);
+				if (field != "") {
+					// Add the choice if it exists
+					if (!this._doesChoiceExist(field)) {
+						this._insertChoice(field);
+					}
+
+					notification.affected_field_on_event = field;
+					notification.update();
+				}
+			} else {
+				notification.affected_field_on_event = "parm1";
+				notification.update();
+			}
+		}
+	},
+
+	/**
+	 * Determines if this particular field is already in the choice list.
+	 *
+	 * @param field The field value that is being checked
+	 * @return true if it is in the choice list, false otherwise
+	 */
+	_doesChoiceExist: function(field) {
+		var choices = new GlideRecord("sys_choice");
+		choices.addQuery("name", "sysevent_email_action");
+		choices.addQuery("element", "affected_field_on_event");
+		choices.addQuery("value", field);
+		choices.query();
+		return choices.next();
+	},
+
+	/**
+	 * Inserts the choice field to the choice list.
+	 *
+	 * @param field The field value that is being inserted
+	 */
+	_insertChoice: function(field) {
+		var choices = new GlideRecord("sys_choice");
+		choices.setValue("name", "sysevent_email_action");
+		choices.setValue("element", "affected_field_on_event");
+		choices.setValue("label", field);
+		choices.setValue("value", field);
+		choices.insert();
+	},
+
+    type: 'MigrateNotificationItemField'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-11-21 01:23:18&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;98203c627f3302005f58108c3ffa9127&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MigrateNotificationItemField&lt;/sys_name&gt;
+        &lt;sys_package display_value="Subscription Based Notifications 2.0" source="com.glide.notification.subscription"&gt;1bdcf0c36d2220100acb70b3534330eb&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_98203c627f3302005f58108c3ffa9127&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-11-21 01:23:18&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2442&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:14</sys_created_on>
+        <sys_id>dc3d05be2f331110d8a4d5f62799b675</sys_id>
+        <sys_name>MigrateNotificationItemField</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dc3d05be2f331110d8a4d5f62799b675</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

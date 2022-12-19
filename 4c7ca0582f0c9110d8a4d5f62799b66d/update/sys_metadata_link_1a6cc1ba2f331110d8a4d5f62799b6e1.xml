@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>34f6aa1a0a0a0aa700dcdf350bfc122a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RoleSupport&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Support class for role management plugin&lt;/description&gt;
+        &lt;name&gt;RoleSupport&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var RoleSupport = Class.create();
+
+RoleSupport.prototype = {
+	initialize : function() {
+		this.getRoleMap();
+	},
+
+	upgradeRoles : function() {
+		var user = new GlideRecord('sys_user');
+		user.query();
+		while (user.next()) {
+			var roles = user.roles + '';
+			roles = roles.split(',');
+			for (var x=0; x &lt; roles.length; x++) {
+				var r = roles[x];
+				if (r == 'START' || r == 'END' || r == '')
+					continue;
+				var role_id = this.map(r);
+				this.saveRole(user.sys_id, role_id);
+			}
+		}
+        	
+	},
+
+	upgradeGroups : function() {
+		var gr = new GlideRecord('sys_user_group');
+		gr.query();
+		while (gr.next()) {
+			var roles = gr.roles + '';
+			roles = roles.split(',');
+			for (var x=0; x&lt;roles.length; x++) {
+				var r = roles[x];
+				if (r == 'START' || r == 'END' || r == '')
+					continue;
+				var role_id = this.map(r);
+				this.saveGroupRole(gr.sys_id, role_id);
+			}
+		}
+	},
+
+        expandRoles: function() {
+                var gr = new GlideRecord('sys_user_role');
+                gr.query();
+                while (gr.next()) {
+                    var included = gr.includes_roles + '';
+                    if (included == null || included == '')
+                        continue;
+                    
+                    included = included.split(',');
+                    for (var i=0;i &lt; included.length; i ++) {
+                       var r = included[i];
+                       var role_id = this.map(r);
+                       var contains = new GlideRecord('sys_user_role_contains');
+                       contains.addQuery('role',gr.sys_id);
+                       contains.addQuery('contains',role_id);
+                       contains.query();
+                       if (!contains.hasNext()) {
+                          contains.initialize();
+                          contains.role = gr.sys_id;
+                          contains.contains = role_id;
+                          contains.insert();
+                       }
+                    }
+                } 
+        },
+
+	getRoleMap : function() {
+		var map = new Packages.java.util.HashMap();
+		var gr = new GlideRecord('sys_user_role');
+		gr.query();
+		while (gr.next()) {
+			map.put(gr.name.toString(), gr.sys_id.toString());
+		}
+		this.roleMap = map;
+	},
+
+	map : function(role, scope) {
+		role = role + '';
+		/**
+		 * Fix for PRB628832 - Roles having Capital letters on them causes them 
+		 * to be ignored when converting from SimpleSecurity to ContextualSecurity.
+		 **/
+		//role = role.toLowerCase();
+		var id = this.roleMap.get(role);
+		if (id == null) {
+			var newRole = new GlideRecord('sys_user_role');
+			newRole.initialize();
+			newRole.name = role;
+			if(typeof scope != 'undefined' &amp;&amp; newRole.isValidField('sys_scope'))
+				newRole.sys_scope = scope;	
+			id = newRole.insert();
+			this.roleMap.put(role, id);
+		}
+		return id;
+	},
+
+	saveRole : function(user_id, role_id, granted_by) {
+		var gr = new GlideRecord('sys_user_has_role');
+		// don't allow duplicates
+		gr.addQuery('user', user_id);
+		gr.addQuery('role', role_id);
+		gr.query();
+		if (!gr.hasNext()) {
+			gr.initialize();
+			gr.role = role_id;
+			gr.user = user_id;
+          	if (typeof(granted_by) != 'undefined') {
+				gr.granted_by = granted_by;
+				gr.inherited = true;
+			}
+			gr.insert();
+		}
+	},
+
+	saveGroupRole : function(group_id, role_id) {
+		var gr = new GlideRecord('sys_group_has_role');
+		gr.initialize();
+		gr.role = role_id;
+		gr.group = group_id;
+		gr.inherits = true;
+		gr.insert();
+	}
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-04-27 21:33:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;34f6aa1a0a0a0aa700dcdf350bfc122a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;27&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RoleSupport&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Security: Role Management" source="com.glide.role_management"&gt;46ccf0836d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_34f6aa1a0a0a0aa700dcdf350bfc122a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-11-17 20:31:46&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3498&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:49</sys_created_on>
+        <sys_id>1a6cc1ba2f331110d8a4d5f62799b6e1</sys_id>
+        <sys_name>RoleSupport</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1a6cc1ba2f331110d8a4d5f62799b6e1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

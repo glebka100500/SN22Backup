@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3e06d4b0c7910110abf4d6e827c26056</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PluginsData&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PluginsData&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PluginsData = Class.create();
+PluginsData.prototype = {
+    initialize: function() {},
+
+    refreshPluginCache: function(userPluginData) {
+        var existingTracker = this.isRefreshInProgress();
+        if (!gs.nil(existingTracker))
+            return existingTracker;
+        var worker = new GlideScriptedHierarchicalWorker();
+        worker.setProgressName("Update plugin cache");
+        worker.setBackground(true);
+        worker.setCannotCancel(true);
+        worker.setScriptIncludeName("global.PluginsData");
+        worker.setScriptIncludeMethod("getPlugins");
+        worker.putMethodArg("userPluginData", userPluginData);
+        worker.start();
+        return worker.getProgressID();
+    },
+
+    isRefreshInProgress: function() {
+        var gr = new GlideRecord("sys_progress_worker");
+        gr.addQuery("name", "Update plugin cache");
+        gr.addQuery("state", 'IN', "starting,running");
+        gr.orderByDesc("sys_created_on");
+        gr.setLimit(1);
+        gr.query();
+        if (gr.next()) {
+            var currentDateTime = new GlideDateTime().getNumericValue();
+            var progressWorkerCreatedTime = new GlideDateTime(gr.sys_created_on).getNumericValue();
+            if ((currentDateTime - progressWorkerCreatedTime) &gt; 3600000)
+                return "";
+            return gr.getUniqueValue();
+        }
+        return "";
+    },
+
+    getPlugins: function(userPluginData) {
+        var allPlugins = "";
+        try {
+            allPlugins = gs.nil(userPluginData) ? SNC.UAAppInfo.getAllPluginInfo() : userPluginData;
+        } catch (e) {
+            gs.log(e, "Plugin list access attempted by a non admin user");
+            allPlugins = "[]";
+        }
+        var encodedResponse = new global.JSON().decode(allPlugins);
+        var plugins = [];
+        encodedResponse.forEach(function(plugin) {
+            if (plugin.scope.toLowerCase().startsWith("x_"))
+                return;
+            plugin.isPlugin = true;
+            plugin.name = plugin.app_name;
+            plugin.id = plugin.app_id;
+            plugin.isInstalled = plugin.active == 0 ? false : true;
+            plugin.free = plugin.for_fee == 0;
+            plugin.paid = plugin.for_fee == 1;
+            plugin["all_lobs"] = [plugin.lob_id];
+            plugin.isOutOfBandApp = (plugin.scope.toLowerCase().startsWith("sn_") &amp;&amp; plugin.id.toLowerCase() == plugin.scope.toLowerCase()) ? true : false;
+
+            plugin.is_customized_app = sn_app_customization.AppCustomizationAPI.isInactivePluginCustomizedApp(plugin.id);
+            if (plugin.is_customized_app)
+                plugin.can_install_or_upgrade_customization = true;
+
+            plugin.can_edit_in_studio = false;
+            plugin.can_open_in_studio = false;
+            if (plugin.active === "1" &amp;&amp; plugin.scope !== "global") {
+                var storeAppGR = new GlideRecord("sys_store_app");
+                storeAppGR.addQuery("scope", plugin.scope);
+                storeAppGR.setLimit(1);
+                storeAppGR.query();
+                if (storeAppGR.next()) {
+                    var isCustomizationSupported = sn_app_customization.AppCustomizationAPI.isAppCustomizationCapableByScopeName(plugin.scope);
+                    var canEditInStudio = storeAppGR.can_edit_in_studio == true ? true : false;
+                    plugin.can_edit_in_studio = canEditInStudio &amp;&amp; isCustomizationSupported;
+                    plugin.can_open_in_studio = !canEditInStudio &amp;&amp; isCustomizationSupported;
+                    plugin.store_app_sys_id = storeAppGR.getUniqueValue();
+                    if (plugin.is_customized_app)
+                        plugin.can_install_or_upgrade_customization = sn_app_customization.AppCustomizationAPI
+                        .canInstallOrRepairCustomization(plugin.store_app_sys_id);
+                }
+            }
+
+            plugin.customized_version_info = sn_app_customization.AppCustomizationAPI.getInactivePluginCustomizationVersionInfo(plugin.id);
+            plugin.indicators = this.generateIndicatorObjectList(plugin.indicators);
+
+            plugins.push(plugin);
+        });
+        new global.AppManagerCache().putResponseInCache("pluginResponse", plugins);
+
+        return plugins;
+    },
+
+    getpluginsdata: function(isFirstLoad, forceCallLUA) {
+        var result = {};
+        var pluginResponseFromCache = new global.AppManagerCache().getResponseFromCache("pluginResponse");
+
+        if (gs.nil(pluginResponseFromCache) || forceCallLUA) {
+            pluginResponseFromCache = this.getPlugins();
+        }
+
+        if (isFirstLoad) {
+            var userPluginData = gs.getUser().hasRole("maint") ? SNC.UAAppInfo.getAllPluginInfo() : '';
+            result.pluginTrackerId = this.refreshPluginCache(userPluginData);
+        }
+
+        result.pluginData = pluginResponseFromCache;
+        return result;
+    },
+
+    generateIndicatorObjectList: function(indicatorKeys) {
+        var indicatorKeyMessageMap = {
+            "unsupported_environment": gs.getMessage("Unsupported Environment"),
+        };
+
+        var indicatorObjList = [];
+        var parsedKeys = JSON.parse(indicatorKeys || '[]');
+        parsedKeys.forEach(function(key, index) {
+            indicatorObjList[index] = {
+                id: key,
+                message: indicatorKeyMessageMap[key]
+            };
+        });
+
+        return indicatorObjList;
+    },
+
+    type: 'PluginsData'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-01-24 08:34:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3e06d4b0c7910110abf4d6e827c26056&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PluginsData&lt;/sys_name&gt;
+        &lt;sys_package display_value="Unified plugin experience client" source="com.snc.unified_plugin"&gt;9c3549476de620100acb70b353433058&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3e06d4b0c7910110abf4d6e827c26056&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-01-27 06:36:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5400&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:03</sys_created_on>
+        <sys_id>397c09ba2f331110d8a4d5f62799b6ed</sys_id>
+        <sys_name>PluginsData</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_397c09ba2f331110d8a4d5f62799b6ed</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

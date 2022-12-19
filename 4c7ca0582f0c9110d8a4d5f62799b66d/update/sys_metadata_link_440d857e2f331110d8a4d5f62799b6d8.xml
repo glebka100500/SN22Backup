@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8c1748dc0a0a0b010064958d7b896b72</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DeliveryPlan&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;A javascript wrapper over our execution plan code to wrap a few common calls into one thing&lt;/description&gt;
+        &lt;name&gt;DeliveryPlan&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("DeliveryPlanTaskGenerator");
+var DeliveryPlan = Class.create();
+
+DeliveryPlan.prototype = {
+    initialize: function( /*GlideRecord*/ gr) {
+        this.parentRecord = gr;
+        this.planID = gr.delivery_plan + '';
+        this.plan = GlideAbstractExecutionPlan.get(this.planID);
+    },
+
+    createChildren: function() {
+        if (!this.plan)
+            return;
+
+        var gen = new DeliveryPlanTaskGenerator(this.plan, this.parentRecord);
+        gen.createTasks();
+
+    },
+
+    rejectTask: function( /* GlideRecord */ rejectedTask) {
+        if (!this.plan)
+            return;
+
+        var action = rejectedTask.upon_reject;
+        var reject_goto = rejectedTask.rejection_goto;
+
+        if (action == 'goto')
+            this._rollBackTo(reject_goto, rejectedTask);
+        else
+            this._cancelPendingOrOpen(rejectedTask);
+    },
+
+    initTasks: function() {
+        var kids = new GlideRecord('task');
+        kids.addQuery('parent', this.parentRecord.sys_id);
+        kids.query();
+        while (kids.next()) {
+            var canStart = this._canStart(kids.sys_id);
+            if (canStart) {
+                var className = kids.sys_class_name;
+                var gr = new GlideRecord(className);
+                gr.get(kids.sys_id);
+                if (this._shouldSkip(gr))
+                    this._skip.call(this, gr);
+                else
+                    this._start.call(this, gr);
+                gr.update();
+            }
+        }
+    },
+
+    startTasks: function( /* GlideRecord */ closed) {
+        var depends = new GlideRecord('execution_plan_local');
+        depends.addQuery('predecessor', closed.sys_id);
+        depends.query();
+        while (depends.next()) {
+            // depends might conceivably start if there are no other dependencies
+            if (this._canStart(depends.successor)) {
+                var className = depends.successor.sys_class_name;
+                var realThing = new GlideRecord(className);
+                realThing.get(depends.successor);
+                if (this._shouldSkip(realThing))
+                    this._skip.call(this, realThing);
+                else
+                    this._start.call(this, realThing);
+                realThing.update();
+            }
+        }
+    },
+
+    canStartTasks: function( /* GlideRecord */ task) {
+        var id = task.delivery_task;
+        var tt = this.plan.getToken(id);
+        if (!tt)
+            return false;
+        var approvalTasks = tt.getPredecessorApprovalIds();
+
+        // we have all predeccesor approval Ids', just check any of them are rejected. 
+        // if any of them is rejected we should not start the next task in sequence.
+        var parent = new GlideRecord(current.getTableName());
+        parent.addQuery('parent', current.parent);
+        parent.addQuery('delivery_task', approvalTasks);
+        parent.addQuery('approval', 'rejected');
+        parent.query();
+        if (parent.getRowCount() &gt; 0)
+            return false;
+        return true;
+
+    },
+
+    _canStart: function( /* String */
+        task_id) {
+        // look for a predecessor which is still running
+        // still running is defined as work_end is not null
+        var depends = new GlideRecord('execution_plan_local');
+        depends.addQuery('successor', task_id);
+        depends.addQuery('predecessor.work_end', '=', '');
+        depends.query();
+        if (depends.next())
+            return false;
+
+        return true;
+    },
+
+    _shouldSkip: function( /* GlideRecord */ task) {
+        if (!this.plan)
+            return false;
+
+        var id = task.delivery_task;
+        var tt = this.plan.getToken(id);
+        if (!tt)
+            return false;
+
+        return tt.shouldSkip(task);
+    },
+
+    _calcBasis: function() {
+        var gr = new GlideRecord(this.plan.getTaskTable());
+        var basis = this.parentRecord.sys_updated_on.getGlideObject();
+        gr.addQuery('parent', this.parentRecord.sys_id);
+        gr.query();
+        while (gr.next()) {
+            if (gr.delivery_task.nil())
+                continue;
+
+            var tt = this.plan.getToken(gr.delivery_task);
+            if (!tt)
+                continue;
+
+            var due_date = tt.getDueDate(basis);
+            var expected_start = tt.getExpectedStart(basis);
+
+            gr.due_date.setValue(due_date);
+            gr.expected_start.setValue(expected_start);
+            if (gr.due_date.changes() || gr.expected_start.changes())
+                gr.update();
+        }
+    },
+
+    _cancelPendingOrOpen: function( /* GlideRecord */ rejectedTask) {
+        this._stop.call(this, rejectedTask);
+        if (!this.plan)
+            return;
+
+        var gr = new GlideRecord(this.plan.getTaskTable());
+        gr.addQuery('parent', this.parentRecord.sys_id);
+        gr.addQuery('sys_id', '!=', rejectedTask.sys_id);
+        var qc = gr.addQuery('state', '1'); // open
+        qc.addOrCondition('state', '-5'); // pending
+        gr.query();
+        while (gr.next()) {
+            this._cancel.call(this, gr);
+            gr.update();
+        }
+    },
+
+    _rollBackTo: function( /* String */ reject_goto, /* GlideRecord */ rejectedTask) {
+        if (!this.plan)
+            return;
+        var gr = new GlideRecord(this.plan.getTaskTable());
+        gr.addQuery('parent', this.parentRecord.sys_id);
+        gr.query();
+        while (gr.next()) {
+
+            gs.print('&lt;&lt;&lt;&lt;&lt; Testing ' + gr.number);
+            // this is the task we want to roll to
+            if (gr.sys_id == reject_goto) {
+                this._start.call(this, gr);
+                gr.update();
+                continue;
+            }
+
+            if (this._hasPredecessor(gr.sys_id, reject_goto)) {
+
+                gs.print('PENDING ' + gr.number);
+                if (gr.sys_id != rejectedTask.sys_id) {
+                    this._pend.call(this, gr);
+                    gr.update();
+                } else {
+                    this._pendSelf.call(this, rejectedTask);
+                }
+            }
+        }
+    },
+
+    _hasPredecessor: function( /* String */ test_id, /* String */ pred_id) {
+
+        gs.print('TEST ID = ' + test_id);
+        var gr = new GlideRecord('execution_plan_local');
+        gr.addQuery('successor', test_id);
+        gr.query();
+        while (gr.next()) {
+            gs.print('PRED = ' + gr.predecessor + ' PRED_ID = ' + pred_id);
+            if (gr.predecessor == pred_id)
+                return true;
+
+            if (this._hasPredecessor(gr.predecessor, pred_id))
+                return true;
+        }
+        return false;
+    },
+
+    _start: function( /* GlideRecord */ gr) {
+        gr.work_start = gs.nowDateTime();
+        gr.work_end = null;
+        gr.state = '1';
+    },
+
+    _stop: function( /* GlideRecord */ gr) {
+        gr.work_end = gs.nowDateTime();
+        gr.state = '4';
+    },
+
+    _skip: function( /* GlideRecord */ gr) {
+        gr.work_start = gs.nowDateTime();
+        gr.work_end = gs.nowDateTime();
+        gr.state = '7';
+    },
+
+    _pend: function( /* GlideRecord */ gr) {
+        gr.work_start = null;
+        gr.work_end = null;
+        gr.work_notes = "Task set back to pending due to a subsequent task being rejected";
+        gr.state = '-5';
+    },
+
+    _pendSelf: function( /* GlideRecord */ gr) {
+        gr.work_start = null;
+        gr.work_end = null;
+        gr.work_notes = "Task set back to pending due its being rejected and a previous task being restarted";
+        gr.state = '-5';
+    },
+
+
+
+    _cancel: function( /* GlideRecord */ gr) {
+        gr.work_start = gs.nowDateTime();
+        gr.work_end = gs.nowDateTime();
+        gr.state = '4';
+    }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-10-10 22:46:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8c1748dc0a0a0b010064958d7b896b72&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;85&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DeliveryPlan&lt;/sys_name&gt;
+        &lt;sys_package display_value="Execution Plan Plugin" source="com.glide.execution_plan"&gt;6eb149036d6620100acb70b35343305f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8c1748dc0a0a0b010064958d7b896b72&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-25 13:36:47&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7682&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:23</sys_created_on>
+        <sys_id>440d857e2f331110d8a4d5f62799b6d8</sys_id>
+        <sys_name>DeliveryPlan</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_440d857e2f331110d8a4d5f62799b6d8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

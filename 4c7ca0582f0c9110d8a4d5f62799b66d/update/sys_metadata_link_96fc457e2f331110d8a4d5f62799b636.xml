@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>89839b71473221004695d7527c9a71a3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.HttpResponseEccPayloadConverter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Converts HTTP response to XML payload &amp;#13;
+&amp;#13;
+Response payload in XML :-&amp;#13;
+&amp;#13;
+&amp;lt;?xml version="1.0" encoding="UTF-8" ?&amp;gt;&amp;#13;
+&amp;lt;results error=${httpresponse.error_message}&amp;gt;&amp;#13;
+    &amp;lt;result&amp;gt;&amp;#13;
+        &amp;lt;output&amp;gt;${httpresponse.body}&amp;lt;/output&amp;gt;&amp;#13;
+&amp;lt;!-- OR --&amp;gt;&amp;#13;
+        &amp;lt;attachment_output&amp;gt;${httpresponse.body}&amp;lt;/attachment_output&amp;gt;&amp;#13;
+    &amp;lt;/result&amp;gt;&amp;#13;
+    &amp;lt;httpHeaders&amp;gt;&amp;#13;
+        &amp;lt;httpHeader name=${name} value=${value}  /&amp;gt;&amp;#13;
+    &amp;lt;/httpHeaders&amp;gt;&amp;#13;
+    &amp;lt;httpCookies&amp;gt;&amp;#13;
+        &amp;lt;httpCookie value=${value}  /&amp;gt;&amp;#13;
+    &amp;lt;/httpCookies&amp;gt;&amp;#13;
+    &amp;lt;parameters&amp;gt;&amp;#13;
+        &amp;lt;parameter name="http_status_code" value=${value} /&amp;gt;&amp;#13;
+    &amp;lt;/parameters&amp;gt;&amp;#13;
+&amp;lt;/results&amp;gt;&lt;/description&gt;
+        &lt;name&gt;HttpResponseEccPayloadConverter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var HttpResponseEccPayloadConverter = Class.create();
+HttpResponseEccPayloadConverter.prototype = {
+	initialize: function() {
+		this.params = {};
+		this.headers = {};
+		this.cookies = [];
+		this.body;
+		this.errMsg;
+		this.stringUtil = new GlideStringUtil();
+		this.payload = new GlideXMLDocument("results");
+		this.status;
+		this.responseAttachSysid = '';
+	},
+	
+	getPayload: function() {
+		this._buildResult();
+		this._buildHeaders();
+		this._buildCookies();
+		this._buildParams();
+		this._buildError();
+		return this.payload;
+	},
+	
+	_buildHeaders:function(){
+		if(!JSUtil.isEmpty(this.headers)){
+			var httpHeaders = new GlideXMLDocument("httpHeaders");
+			
+			for(var name in this.headers) {
+				var h = httpHeaders.createElement("httpHeader");
+				httpHeaders.setCurrent(h);
+				httpHeaders.setAttribute("name",name);
+				httpHeaders.setAttribute("value",this.headers[name]);
+				httpHeaders.pop();
+			}
+			var hElem = httpHeaders.getDocumentElement();
+			var pElem = this.payload.getDocumentElement();
+			this.payload.importElementToParent(hElem,pElem);
+		}
+	},
+	
+	_buildCookies:function(){
+		if(this.cookies.size() &gt; 0){
+			var httpCookies = new GlideXMLDocument("httpCookies");
+			
+			// this.cookies has been set to ArrayList via
+			// setCookies function below
+			for	(idx = 0; idx &lt; this.cookies.size(); idx++) {
+				var h = httpCookies.createElement("httpCookie");
+				httpCookies.setCurrent(h);
+				httpCookies.setAttribute("value", this.cookies.get(idx));
+				httpCookies.pop();
+			}
+			
+			var cElem = httpCookies.getDocumentElement();
+			var pElem = this.payload.getDocumentElement();
+			this.payload.importElementToParent(cElem,pElem);
+		}
+	},
+	
+	_buildParams:function(){
+		if(!JSUtil.isEmpty(this.params)){
+			var params = new GlideXMLParameters();
+			for(var name in this.params) {
+				params.put(name,this.params[name]);
+			}
+			var pElem = params.getDocumentElement();
+			var payloadElem = this.payload.getDocumentElement();
+			
+			this.payload.importElementToParent(pElem,payloadElem);
+		}
+	},
+	
+	_buildResult:function() {
+		if(JSUtil.notNil(this.body) || JSUtil.notNil(this.responseAttachSysid)) {
+			var rElem = this.payload.createElement("result");
+			this.payload.setCurrent(rElem);
+			if (JSUtil.notNil(this.body)) {
+				this.body = this.stringUtil.stripSuffix(this.body,"\r\n");
+				this.payload.createElement("output",this.body);
+			} else {
+				this.payload.createElement("attachment_output",this.responseAttachSysid);
+			}
+			this.payload.pop();
+		}
+	},
+	
+	_buildError:function() {
+		if(JSUtil.notNil(this.errMsg)){
+			var pDocElem =  this.payload.getDocumentElement();
+			this.setCurrentElement(pDocElem);
+			this.payload.setAttribute("error",this.errMsg);
+		}
+	},
+	
+	setHttpHeader:function(name, val){
+		this.headers[name] = val;
+	},
+	
+	setHttpHeaders:function(headers){
+		if(!JSUtil.isEmpty(headers)){
+			for(var key in headers) {
+				this.setHttpHeader(key, headers[key]);
+			}			
+		}
+	},
+	
+	setCookies:function(cookies){
+		this.cookies = cookies;
+	},
+	
+	setBody:function(body){
+		this.body = body;
+	},
+	
+	setResponseAttachmentSysid:function(respAttachSysid) {
+		this.responseAttachSysid = respAttachSysid;
+	},
+	
+	setStatus:function(code){
+		this.params.http_status_code = code;
+	},
+	
+	setErrorMsg:function(msg){
+		this.errMsg = msg;
+	},
+	
+	setParam:function(name,value){
+		this.params[name] = value;
+	},
+	
+	type: 'HttpResponseEccPayloadConverter'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-08-28 19:53:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;89839b71473221004695d7527c9a71a3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;109&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;HttpResponseEccPayloadConverter&lt;/sys_name&gt;
+        &lt;sys_package display_value="REST API Provider" source="com.glide.rest"&gt;d30d3cc36d2220100acb70b3534330fb&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_89839b71473221004695d7527c9a71a3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-07-24 20:18:01&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3383&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:16</sys_created_on>
+        <sys_id>96fc457e2f331110d8a4d5f62799b636</sys_id>
+        <sys_name>HttpResponseEccPayloadConverter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_96fc457e2f331110d8a4d5f62799b636</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

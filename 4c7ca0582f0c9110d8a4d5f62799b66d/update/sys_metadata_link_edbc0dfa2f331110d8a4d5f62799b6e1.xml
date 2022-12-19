@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>67e4b16db70123008ef6eac7ee11a954</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeApprovalDefSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ChangeApprovalDefSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeApprovalDefSNC = Class.create();
+ChangeApprovalDefSNC.prototype = {
+
+	APPROVAL_ACTION: "approval_action",
+	APPROVER_SOURCE: "approver_source",
+	CHG_APPROVAL_DEF: "chg_approval_def",
+	CHANGE_REQUEST: "change_request",
+	MANDATORY: "mandatory",
+	GROUP: "group",
+	GROUP_FIELD: "group_field",
+	USER: "user",
+	USER_FIELD: "user_field",
+	WAIT_FOR: "wait_for",
+	PERCENTAGE: "percentage",
+
+	initialize: function(_gr, _gs) {
+		this._gr = _gr || current;
+		this._gs = _gs || gs;
+		this.MAP_ACTION_TYPE = {
+			"approve": this.USER,
+			"reject": this.USER,
+			"user": this.USER,
+			"group": this.GROUP
+		};
+		this.MAP_FIELD_ACTION_TYPE = {
+			"approve": this.USER_FIELD,
+			"reject": this.USER_FIELD,
+			"user": this.USER_FIELD,
+			"group": this.GROUP_FIELD
+		};
+    },
+
+	getApproval: function(chgReqGR, appAction, field, value, approverId) {
+		var approval = {
+			approval_action: "",
+			approval_state: "",
+			chg_approval_def: this._gr.getUniqueValue(),
+			sysapproval_approver: "",
+			sysapproval_group: "",
+			sys_decision_question: "",
+			target_id: "",
+			target_type: "",
+			mandatory: this._gr.getValue(this.MANDATORY) === "1" ? "true" : "false",
+			wait_for: this._gr.getValue(this.WAIT_FOR),
+			percentage: parseFloat(this._gr.getValue(this.PERCENTAGE))
+		};
+
+		var currAppAction = appAction || this._gr.getValue(this.APPROVAL_ACTION);
+		var currField = field || this.getApprovalField(currAppAction);
+		var fieldValue = value || this._gr.getValue(field);
+		var currApproverId = approverId || fieldValue;
+		if (!approverId) {
+			if (this.GROUP_FIELD === currField)
+				currApproverId = chgReqGR.getElement(fieldValue);
+			else if (this.USER_FIELD === currField)
+				currApproverId = chgReqGR.getElement(fieldValue);
+		}	
+		approval.approval_action = (currAppAction === "approve" || currAppAction === "reject") ? currAppAction : "";
+		approval.target_id = currApproverId;
+		approval.target_type = this.MAP_ACTION_TYPE[currAppAction];
+		return approval;
+	},
+
+	getApprovals: function(chgReqGR) {
+		var appAction = this._gr.getValue(this.APPROVAL_ACTION);
+		var field = this.getApprovalField(appAction);
+		var value = this._gr.getValue(field);
+		var approverId = value;
+		if (this.GROUP_FIELD === field)
+			approverId = chgReqGR.getElement(value);
+		else if (this.USER_FIELD === field)
+			approverId = chgReqGR.getElement(value);
+		var approvals = [];
+		if (JSUtil.nil(approverId))
+			return approvals;
+		var approverIdArr = approverId.split(",");
+		approverIdArr = approverIdArr || [];
+		for (var i = 0; i &lt; approverIdArr.length; i++) {
+			var currApprovalObj = this.getApproval(chgReqGR, appAction, field, value, approverIdArr[i]);
+			if (JSUtil.nil(currApprovalObj.target_id))
+				continue;
+			approvals.push(currApprovalObj);
+		}
+		return approvals;
+	},
+
+	getApprovalField: function(appAction) {
+		var approvalField = "";
+		var approverSource = this._gr.getValue(this.APPROVER_SOURCE);
+		if (this.CHG_APPROVAL_DEF === approverSource)
+			approvalField = this.MAP_ACTION_TYPE[appAction];
+		else if (this.CHANGE_REQUEST === approverSource)
+			approvalField = this.MAP_FIELD_ACTION_TYPE[appAction];
+		return approvalField;
+	},
+
+    type: 'ChangeApprovalDefSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-10-09 12:01:22&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;67e4b16db70123008ef6eac7ee11a954&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;77&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeApprovalDefSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Change Policy Core Components" source="com.snc.change_management.policy"&gt;48b409cf6da620100acb70b353433042&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_67e4b16db70123008ef6eac7ee11a954&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-26 09:00:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3166&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:08</sys_created_on>
+        <sys_id>edbc0dfa2f331110d8a4d5f62799b6e1</sys_id>
+        <sys_name>ChangeApprovalDefSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_edbc0dfa2f331110d8a4d5f62799b6e1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

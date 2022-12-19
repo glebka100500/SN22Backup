@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>67b25a9ab7763300a2828644de11a9c9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeManagementLUAUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Track the usage analytics data for Changes created by REST API &lt;/description&gt;
+        &lt;name&gt;ChangeManagementLUAUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeManagementLUAUtil = Class.create();
+ChangeManagementLUAUtil.prototype = {
+
+    ORIGIN_TYPE_REST_CHANGE_API: 'REST Change API',
+    ORIGIN_TYPE_REST_TABLE_API: 'REST Table API',
+
+    STREAM_ID_CHANGE_REQUEST: "sn.change_request",
+
+    EVENT_TYPE_CREATE: 'create',
+
+    initialize: function() {},
+
+    sendChangeRequestRESTCreateAnalytics: function(transaction, userSysID) {
+
+        var origin = this._getOrigin(transaction);
+
+        if (!origin)
+            return;
+
+        var data = {};
+        data["user.sys_id"] = userSysID;
+        data["origin"] = origin;
+
+        this._sendAnalytics(this.STREAM_ID_CHANGE_REQUEST, this.EVENT_TYPE_CREATE, [], data);
+
+    },
+
+    _sendAnalytics: function(streamID, eventType, obfuscationList, dataObj) {
+
+        if (sn_uapaf.ScopedAnalyticsFramework.isDisabled() || sn_uapaf.ScopedAnalyticsFramework.isBlocked(streamID)) {
+            gs.info(this.type + ": Analytics Framework is disabled or Blocked");
+            return;
+        }
+
+        if (!streamID || !eventType)
+            return;
+
+        dataObj["event.type"] = eventType;
+
+        var status = sn_uapaf.ScopedAnalyticsFramework.open(streamID);
+
+        if (status === 0) {
+            status = sn_uapaf.ScopedAnalyticsFramework.sendJSON(streamID, obfuscationList, JSON.stringify(dataObj));
+            if (status !== 0)
+                gs.warn('Unable to send analytics for stream:' + streamID + '; status = ' + status);
+
+            sn_uapaf.ScopedAnalyticsFramework.close(streamID);
+        } else
+            gs.warn('Unable to open Usage Analytics for  stream ' + streamID + '; status = ' + status);
+
+    },
+
+    _getOrigin: function(transaction) {
+
+        var requestURL = '' + transaction.getURL();
+
+        if (!requestURL)
+            return '';
+        else if (requestURL === '/api/now/table/change_request')
+            return this.ORIGIN_TYPE_REST_TABLE_API;
+        else if (requestURL.startsWith('/api/sn_chg_rest/'))
+            return this.ORIGIN_TYPE_REST_CHANGE_API;
+        else
+            return '';
+
+    },
+
+    type: 'ChangeManagementLUAUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-07-24 18:29:58&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;67b25a9ab7763300a2828644de11a9c9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;69&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeManagementLUAUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Core" source="com.snc.change_management"&gt;a39309476da620100acb70b35343307a&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_67b25a9ab7763300a2828644de11a9c9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-14 10:23:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2087&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:07</sys_created_on>
+        <sys_id>69bc0dfa2f331110d8a4d5f62799b6dd</sys_id>
+        <sys_name>ChangeManagementLUAUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_69bc0dfa2f331110d8a4d5f62799b6dd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

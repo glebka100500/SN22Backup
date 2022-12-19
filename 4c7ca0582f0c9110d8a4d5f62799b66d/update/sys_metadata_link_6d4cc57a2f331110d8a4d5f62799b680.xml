@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1a52a44d0712101028ef0a701ad3000d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VANLUInterface&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implements extension point global.NLUInterface&amp;#13;
+VA Implementation to provide details to NLU&lt;/description&gt;
+        &lt;name&gt;VANLUInterface&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VANLUInterface = Class.create();
+var APPLICATION_NAME = 'VA';
+var TOPIC_TYPE = 'VA Topic';
+var TOPIC_LANG_TABLE = 'sys_cb_topic_language';
+var CS_TOPIC_LANG_TABLE = 'sys_cs_topic_language';
+var CS_TOPIC_TABLE = 'sys_cs_topic';
+var CB_TOPIC_TABLE = 'sys_cb_topic';
+var MODEL_FIELD = 'nlu_model';
+var INTENT_FIELD = 'nlu_intent';
+var TOPIC_ID_FIELD = 'cb_topic_id';
+
+function _getMappedIntentCount(model, intents) {
+    var result = {};
+
+    var aggr = new GlideAggregate(TOPIC_LANG_TABLE);
+    if (model) aggr.addQuery(MODEL_FIELD, model);
+    if (intents) aggr.addQuery(INTENT_FIELD, intents);
+    aggr.addNotNullQuery(INTENT_FIELD);
+    aggr.addAggregate('COUNT', MODEL_FIELD);
+    aggr.query();
+    while (aggr.next()) {
+        result[aggr.getValue(MODEL_FIELD)] = aggr.getAggregate('COUNT', MODEL_FIELD);
+    }
+
+    return result;
+}
+
+VANLUInterface.prototype = {
+
+    /**
+        Returns all the mapped intents count for each model
+        Supports optional filter 'models' in format:
+        {
+            &lt;model1&gt;: [&lt;intent11&gt;, &lt;intent12&gt;, ...],
+            &lt;model2&gt;: [&lt;intent21&gt;, &lt;intent22&gt;, ...],
+            ...
+        }
+        Result:
+        {
+            &lt;model&gt;: &lt;intent count&gt;
+            ...
+        }
+    */
+    getAllMappedIntentsCount: function(models) {
+        if (models) {
+            var result = {};
+            for (var model in models) {
+                result[model] = _getMappedIntentCount(model, models[model])[model] || 0;
+            }
+            return result;
+        } else {
+            return _getMappedIntentCount();
+        }
+    },
+
+    /**
+        Returns all mapped intent details for given model
+        Optionally we can provide list of intents to filter the result.
+        Result:
+        {
+            application: &lt;Consumer application name: VA or Search&gt;,
+            mappings: {
+                &lt;intent name&gt;: [{
+                    id: &lt;Unique ID - topic sys_id or template id&gt;,
+                    name: &lt;Type of the mapping (VA Topic or Genius Template): Topic name or genius template name&gt;,
+                    link: &lt;Direct link to the topic or template&gt;,
+                    isTopicActive: &lt;Whether or not the mapped topic is active in sys_cs_topic&gt;,
+                    isIntentPublished: &lt;Whether or not the intent is published with the mapped topic in sys_cs_topic_language&gt;,
+                    isIntentSaved: &lt;Whether or not the intent is saved with the mapped topic in sys_cb_topic_language&gt;
+                }]
+                ...
+            }
+        }
+    */
+    getMappedIntents: function(model, intents) {
+        var mappings = {};
+        var allTopicIds = {};
+        var mappedTopic;
+        var existing;
+        var publishedIntent;
+        var savedIntent;
+        var isTopicActive;
+        var topicName;
+        var cbTopicId;
+        var intentName;
+        var csTopicId;
+
+        var cbTopicsWithSavedIntents = {};
+        var gr = new GlideRecord(TOPIC_LANG_TABLE);
+        gr.addQuery(MODEL_FIELD, model);
+        gr.addNotNullQuery(INTENT_FIELD);
+        if (intents) gr.addQuery(INTENT_FIELD, intents);
+        gr.query();
+        while (gr.next()) {
+            cbTopicId = gr.getValue(TOPIC_ID_FIELD);
+            intentName = gr.getValue(INTENT_FIELD);
+            allTopicIds[cbTopicId] = true;
+            cbTopicsWithSavedIntents[cbTopicId] = intentName;
+        }
+
+        var csTopicIds = {};
+        var csTopicsWithPublishedIntents = {};
+        var gr2 = new GlideRecord(CS_TOPIC_LANG_TABLE);
+        gr2.addQuery(MODEL_FIELD, model);
+        gr2.addNotNullQuery(INTENT_FIELD);
+        gr2.addQuery('cs_topic_id.name', 'NOT LIKE', '_PRVW__%');
+        if (intents) gr2.addQuery(INTENT_FIELD, intents);
+        gr2.query();
+        while (gr2.next()) {
+            csTopicId = gr2.getValue('cs_topic_id');
+            intentName = gr2.getValue(INTENT_FIELD);
+            csTopicIds[csTopicId] = true;
+            csTopicsWithPublishedIntents[csTopicId] = intentName;
+        }
+
+        var csCbTopicMap = {};
+        var csGr = new GlideRecord(CS_TOPIC_TABLE);
+        csGr.addQuery('sys_id', 'IN', Object.keys(csTopicIds));
+        csGr.query();
+        while (csGr.next()) {
+            csCbTopicMap[csGr.getValue('sys_id')] = csGr.getValue('cb_topic_id');
+        }
+
+        var cbTopicsWithPublishedIntents = {};
+        Object.keys(csTopicsWithPublishedIntents).forEach(function(csTopicId) {
+            cbTopicId = csCbTopicMap[csTopicId];
+            allTopicIds[cbTopicId] = true;
+            cbTopicsWithPublishedIntents[cbTopicId] = csTopicsWithPublishedIntents[csTopicId];
+        });
+
+        var topicNamesMap = {};
+        var cbTopicGr = new GlideRecord(CB_TOPIC_TABLE);
+        cbTopicGr.addQuery('sys_id', 'IN', Object.keys(allTopicIds));
+        cbTopicGr.query();
+        while (cbTopicGr.next()) {
+            topicNamesMap[cbTopicGr.getValue('sys_id')] = cbTopicGr.getValue('name');
+        }
+
+        var activeTopicsMap = {};
+        var csTopicGr = new GlideRecord(CS_TOPIC_TABLE);
+        csTopicGr.addActiveQuery();
+        csTopicGr.addQuery('name', 'NOT LIKE', '_PRVW__%');
+        csTopicGr.addQuery('cb_topic_id', 'IN', Object.keys(allTopicIds));
+        csTopicGr.query();
+        while (csTopicGr.next()) {
+            activeTopicsMap[csTopicGr.getValue('cb_topic_id')] = true;
+        }
+
+        function _buildTopic(topicId, topicName, isTopicActive, isIntentPublished, isIntentSaved) {
+            return {
+                id: topicId,
+                name: TOPIC_TYPE + ': ' + topicName,
+                link: '/$conversation-builder.do#/topic/' + topicId,
+                isTopicActive: isTopicActive,
+                isIntentPublished: isIntentPublished,
+                isIntentSaved: isIntentSaved
+            };
+        }
+
+        Object.keys(allTopicIds).forEach(function(topicId) {
+            publishedIntent = cbTopicsWithPublishedIntents[topicId];
+            savedIntent = cbTopicsWithSavedIntents[topicId];
+            isTopicActive = activeTopicsMap[topicId] === true;
+            topicName = topicNamesMap[topicId];
+            if (savedIntent) {
+                mappedTopic = _buildTopic(topicId, topicName, isTopicActive, savedIntent === publishedIntent, true);
+                existing = mappings[savedIntent];
+                mappings[savedIntent] = existing ? existing.concat(mappedTopic) : [mappedTopic];
+            }
+            if (publishedIntent &amp;&amp; publishedIntent !== savedIntent) {
+                mappedTopic = _buildTopic(topicId, topicName, isTopicActive, true, false);
+                existing = mappings[publishedIntent];
+                mappings[publishedIntent] = existing ? existing.concat(mappedTopic) : [mappedTopic];
+            }
+        });
+        return {
+            application: APPLICATION_NAME,
+            mappings: mappings
+        };
+    },
+    initialize: function() {},
+    type: 'VANLUInterface'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-07-27 08:34:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1a52a44d0712101028ef0a701ad3000d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VANLUInterface&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Virtual Agent" source="com.glide.cs.chatbot"&gt;0a077ecb2f400110d8a4d5f62799b62b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1a52a44d0712101028ef0a701ad3000d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-01 00:29:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6886&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:13</sys_created_on>
+        <sys_id>6d4cc57a2f331110d8a4d5f62799b680</sys_id>
+        <sys_name>VANLUInterface</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6d4cc57a2f331110d8a4d5f62799b680</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

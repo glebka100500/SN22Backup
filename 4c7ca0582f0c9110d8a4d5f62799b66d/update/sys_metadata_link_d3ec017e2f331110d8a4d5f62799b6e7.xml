@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8432c3ee5b33330012868473b881c799</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VMWarevCenterClusterDRSSensor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implementation of the "VMWare - vCenter Cluster DRS Sensor" sensor.  Create Host Groups, VM Groups, create relationship between hostgroup and host, create cluster drs VM - Host rules&lt;/description&gt;
+        &lt;name&gt;VMWarevCenterClusterDRSSensor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/* jshint -W030 */
+
+var VMWarevCenterClusterDRSSensor;
+
+(function() {
+
+    var vCenterSysId, vCenterUuid, datacenterMorId, datacenterSysId, _this, refreshOnly,
+		clusterHostGroups = { },
+		clusterVMGroups = { },
+		clusterVMHostRules = { },
+		clusterAffinityRules = { },
+        schema = {
+            cmdb_ci_vcenter_host_group: {
+                index: ['cluster', 'name'],
+				fixup: fixupHostGroup,
+                preWriteRels: preWriteHostGroupRels,
+				postWrite: postWriteGroups,
+                parentOf: {
+                    cmdb_ci_esx_server: 'Contains::Contained by'
+                }
+            },
+			cmdb_ci_vcenter_vm_group: {
+				index: ['cluster', 'name'],
+				fixup: fixupVMGroup,
+				preWriteRels: preWriteVMGroupAffinityRuleRels,
+				postWrite: postWriteGroups,
+				parentOf: {
+					cmdb_ci_vmware_instance: 'Contains::Contained by'
+				}
+			},
+            cmdb_ci_cluster_vm_host_rule: {
+                index: ['cluster', 'rule_uuid'],
+                fixup: fixupVMHostRules,
+				postWrite: postWriteRules
+            },
+			cmdb_ci_cluster_vm_affinity_rule: {
+				index: ['cluster', 'rule_uuid'],
+				fixup: fixupAffinityRule,
+				preWriteRels: preWriteVMGroupAffinityRuleRels,
+				postWrite: postWriteRules,
+				parentOf: {
+					cmdb_ci_vmware_instance: 'Contains::Contained by'
+				}
+			}
+        },
+        args = {
+            schema: schema
+        };
+
+    VMWarevCenterClusterDRSSensor = {
+        process: process,
+        type: "DiscoverySensor"
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    function process(result) {
+        _this = this;
+
+        getProbeParms();
+
+        args.location = this.getLocationID();
+        args.statusId = new DiscoveryStatus(g_probe.getParameter('agent_correlator') + '');
+        args.mutexPrefix = datacenterMorId;
+
+        // During normal discovery g_probe_parameters should always be defined.
+        // It's only undefined during test execution.
+        if (typeof g_probe_parameters != 'undefined') {
+            g_probe_parameters.cidata = this.getParameter('cidata');
+            g_probe_parameters.source = this.getParameter('source');
+        }
+
+        this.root = g_probe.getDocument().getDocumentElement();
+        this.statusID = new DiscoveryStatus(g_probe.getParameter('agent_correlator') + '');
+
+        output = JsonCi.reattach(output);
+
+        VMUtils.triggerNextPage(_this, output.leftOverMors);
+
+        args.results = {
+            cmdb_ci_vcenter_host_group: output.hostGroups,
+			cmdb_ci_vcenter_vm_group: output.vmGroups,
+			cmdb_ci_cluster_vm_affinity_rule: output.vmAffinityRules
+        };
+
+        JsonCi.prepare(args);
+        JsonCi.writeJsObject(args);
+        JsonCi.updateRelationships(args);
+		
+		args.results = {
+            cmdb_ci_cluster_vm_host_rule: output.vmHostRules
+        };
+
+        JsonCi.prepare(args);
+        JsonCi.writeJsObject(args);
+        JsonCi.updateRelationships(args);
+
+        var clustersList = JSON.parse(g_probe.getParameter('clusters')+'');
+        clustersList.forEach(function(clusterObj) {
+            if (!clusterObj.morid)
+                return;
+            
+            var clustersysId = VMUtils.lookupSysIds(clusterObj.morid, 'cmdb_ci_vcenter_cluster', vCenterSysId);
+            deleteGroupOrRuleRecords('cmdb_ci_vcenter_host_group', clusterHostGroups, clustersysId);
+            deleteGroupOrRuleRecords('cmdb_ci_vcenter_vm_group', clusterVMGroups, clustersysId);
+            deleteGroupOrRuleRecords('cmdb_ci_cluster_vm_host_rule', clusterVMHostRules, clustersysId);
+            deleteGroupOrRuleRecords('cmdb_ci_cluster_vm_affinity_rule', clusterAffinityRules, clustersysId);
+        });
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    function getProbeParms() {
+        vCenterSysId = '' + g_probe.getParameter('vcenter_sys_id');
+        vCenterUuid = '' + g_probe.getParameter('vcenter_uuid');
+        datacenterSysId = '' + g_probe.getParameter('datacenter_sys_id');
+        datacenterMorId = '' + g_probe.getParameter('datacenter_mor_id');
+    }
+
+    function fixupVMHostRules(vmHostRule) {
+        //holds the map of the 'cluster = rules' pair. This will be used to delete the records from cmdb if the same is deleted from vcenter.
+        var rules;
+        var clustersysId = VMUtils.lookupSysIds(vmHostRule.cluster.morid, 'cmdb_ci_vcenter_cluster', vCenterSysId);
+
+        rules = clusterVMHostRules[clustersysId] = clusterVMHostRules[clustersysId] || [];
+        rules.push(vmHostRule.name);
+
+        vmHostRule.vm_group = lookupSysIds(vmHostRule.vm_group, 'cmdb_ci_vcenter_vm_group', clustersysId, 'name');
+        vmHostRule.host_group = lookupSysIds(vmHostRule.host_group, 'cmdb_ci_vcenter_host_group', clustersysId, 'name');
+		vmHostRule.cluster.sys_id = clustersysId;
+    }
+	
+	function fixupVMGroup(vmGroup) {
+		//holds the map of the 'cluster = vm-groups' pair. This will be used to delete the records from cmdb if the same is deleted from vcenter.
+		var groups;
+		var clustersysId = VMUtils.lookupSysIds(vmGroup.cluster.morid, 'cmdb_ci_vcenter_cluster', vCenterSysId);
+		groups = clusterVMGroups[clustersysId] = clusterVMGroups[clustersysId] || [];
+		groups.push(vmGroup.name);
+		
+		vmGroup.cluster.sys_id = clustersysId;
+	}
+	
+	function fixupHostGroup(hostGroup) {
+		//holds the map of the 'cluster = vm-groups' pair. This will be used to delete the records from cmdb if the same is deleted from vcenter.
+		var groups;
+		var clustersysId = VMUtils.lookupSysIds(hostGroup.cluster.morid, 'cmdb_ci_vcenter_cluster', vCenterSysId);
+		
+		groups = clusterHostGroups[clustersysId] = clusterHostGroups[clustersysId] || [];
+		groups.push(hostGroup.name);
+
+		hostGroup.cluster.sys_id = clustersysId;
+	}
+
+	function preWriteHostGroupRels(hostGroup) {
+		hostGroup.cmdb_ci_esx_server = VMUtils.lookupSysIds(hostGroup.host, 'cmdb_ci_esx_server', vCenterSysId, 'object_id');
+	}
+	
+	function fixupAffinityRule(affinityRule) {
+		//holds the map of the 'cluster = affinity vm' pair. This will be used to delete the records from cmdb if the same is deleted from vcenter.
+		var groups;
+		var clustersysId = VMUtils.lookupSysIds(affinityRule.cluster.morid, 'cmdb_ci_vcenter_cluster', vCenterSysId);
+		groups = clusterAffinityRules[clustersysId] = clusterAffinityRules[clustersysId] || [];
+		groups.push(affinityRule.name);
+		
+		affinityRule.cluster.sys_id = clustersysId;
+	}
+	
+	function preWriteVMGroupAffinityRuleRels(vmGroup) {
+		vmGroup.cmdb_ci_vmware_instance = VMUtils.lookupSysIds(vmGroup.vm, 'cmdb_ci_vmware_instance', vCenterSysId, 'object_id');
+	}
+	
+    //Deletes an entry from cmdb_ci_host_group/cmdb_ci_vm_group/cmdb_ci_vcenter_cluster_drs_rule/cmdb_ci_cluster_vm_affinity_rule if the setting is removed from vcenter cluster.
+    function deleteGroupOrRuleRecords(table, settingsObject, clustersysId) {
+        // If "settingsObject" is an empty map then it means no affinity/anti-affinity/vm groups/host groups exists in the vCenters
+        // for the current cluster so we need to query the above 4 types of CMDB entries belonging to the cluster and wipe them off
+        // as they are discovered in past runs but nothing discovered in current run
+        if ((typeof settingsObject == 'object') &amp;&amp; !Object.keys(settingsObject).length &amp;&amp; clustersysId) {
+            var groupOrRuleGR = new GlideRecord(table);
+            groupOrRuleGR.addQuery('cluster', clustersysId);
+            groupOrRuleGR.query();
+            groupOrRuleGR.deleteMultiple();
+            return;
+        }
+
+        for (var cluster in settingsObject) {
+            var groupOrRuleGR = new GlideRecord(table);
+            groupOrRuleGR.addQuery('cluster', cluster);
+            groupOrRuleGR.addQuery('name', 'NOT IN', settingsObject[cluster]);
+            groupOrRuleGR.query();
+            groupOrRuleGR.deleteMultiple();
+        }
+    }
+
+    //we can't use the lookupSysIds from 'VMUtils'. The check on the 'VMUtils.lookupSysIds' is always based on vCenterSysId which don't exist in this table.
+    function lookupSysIds(name, table, cluster, morColumn) {
+        var gr = new GlideRecord(table);
+        gr.addQuery('cluster', cluster);
+        gr.addQuery(morColumn, name);
+        gr.query();
+
+        if (gr.next())
+            return gr.sys_id;
+    }
+	
+	function deleteDuplicatesifExists(table, cluster, column, value) {
+		//Do a duplicate check on the record based on the indexes and delete the duplicate records from different tables
+		//Duplicates will be created only if the DRSSensor triggers at the same time after ESX &amp; VM Sensor completes it's processing.
+		var gr = new GlideRecord(table);
+		gr.addQuery(column, value);
+		gr.addQuery('cluster', cluster);
+		gr.query();
+		gr.next();
+		while (gr.next()) {
+			gr.deleteRecord();
+			gs.info(gs.getMessage('Deleted duplicate record from table {0} with values cluster - {1} and {2} - {3}', [table, cluster, column, value]));
+		}
+	}
+	
+	function postWriteRules(rule) {
+		deleteDuplicatesifExists(rule.sys_class_name, rule.cluster.sys_id, 'rule_uuid', rule.rule_uuid);
+	}
+	
+	function postWriteGroups(group) {
+		deleteDuplicatesifExists(group.sys_class_name, group.cluster.sys_id, 'name', group.name);
+	}
+
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-13 09:16:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8432c3ee5b33330012868473b881c799&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VMWarevCenterClusterDRSSensor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8432c3ee5b33330012868473b881c799&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;srikanth.nelapudi&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-07-31 00:00:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;9183&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:04</sys_created_on>
+        <sys_id>d3ec017e2f331110d8a4d5f62799b6e7</sys_id>
+        <sys_name>VMWarevCenterClusterDRSSensor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d3ec017e2f331110d8a4d5f62799b6e7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

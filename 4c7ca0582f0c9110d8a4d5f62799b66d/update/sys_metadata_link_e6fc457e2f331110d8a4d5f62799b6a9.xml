@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>89a96e4a0f01230096f9d6892f767ea5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SprintTrackingCommonService&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SprintTrackingCommonService&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SprintTrackingCommonService = Class.create();
+SprintTrackingCommonService.prototype = {
+    initialize: function(parentSysClassName, childSysClassName, relationField, viewName, listViewName, tableMap, isMultiTaskActive) {
+		this.parentSysClassName = parentSysClassName;
+		this.childSysClassName = childSysClassName;
+		this.relationField = relationField;
+		this.viewName = viewName;
+		this.listViewName = listViewName;
+		this.tableMap = tableMap;
+		this.isMultiTaskActive = isMultiTaskActive;
+    },
+	
+	getCurrentSprintData: function(groupId, pageSize, offset, recordType) {
+		var records = [];
+		var sprint = new GlideRecordSecure(this.parentSysClassName);
+		var result = {};
+		var getFieldAsObject = function(rec, fieldName) {
+			return {
+				value: rec.getValue(fieldName),
+				display_value: rec.getDisplayValue(fieldName)
+			};
+		};
+
+		sprint.addQuery('sys_class_name', this.parentSysClassName);
+		sprint.addQuery('state', 2);
+		sprint.addQuery('assignment_group', groupId);
+		sprint.query();
+
+		if(sprint.next()) {
+			var gr = new GlideRecordSecure(this.childSysClassName);
+			gr.addQuery(this.relationField, sprint.getValue('sys_id'));
+			gr.orderBy('global_rank');
+			
+			offset = parseInt(offset);
+			pageSize = parseInt(pageSize);
+			if(JSUtil.notNil(offset) &amp;&amp; JSUtil.notNil(pageSize))
+				gr.chooseWindow(offset, offset + pageSize);
+
+			gr.query();
+			result.totalCount = gr.getRowCount();
+
+			while(gr.next()) {
+				var record = {};
+				var assignedTo;
+				var canReadRecord = false;
+				var originalTaskObj;
+
+				if(this.isMultiTaskActive) {
+					if(JSUtil.notNil(gr.original_task)) {
+						originalTaskObj = gr.original_task.getRefRecord();
+						canReadRecord = originalTaskObj.canRead();
+
+						if(canReadRecord) {
+							record.sys_class_name = getFieldAsObject(gr, 'sys_class_name');
+							record['original_task.sys_class_name'] = getFieldAsObject(originalTaskObj, 'sys_class_name');
+							record['original_task.sys_id'] = getFieldAsObject(originalTaskObj, 'sys_id');
+							record.number = originalTaskObj.getValue('number');
+							record.sysId = gr.getValue('sys_id');
+							record.sys_id = gr.getValue('sys_id');
+							record.short_description = originalTaskObj.getValue('short_description');
+							record.state = gr.getDisplayValue('state');
+							assignedTo = gr.getValue('assigned_to');
+						}
+					}
+				} else {
+					record.sys_class_name = getFieldAsObject(gr, 'sys_class_name');
+					record.number = gr.getValue('number');
+					record.sysId = gr.getValue('sys_id');
+					record.sys_id = gr.getValue('sys_id');
+					record.short_description = gr.getDisplayValue('short_description');
+					record.state = gr.getDisplayValue('state');
+					assignedTo = gr.getValue('assigned_to');
+					canReadRecord = true;
+				}
+
+				if(canReadRecord) {
+					if(assignedTo)
+						record.assignedTo = new UserProfileService().generateProfile(assignedTo);
+
+					record.table = this.tableMap[recordType];
+					if(recordType === 'test')
+						record.query = 'task=' + record.sysId + '^ORDERBYsys_created_on&amp;ORDERBYnumber';
+					else if( recordType === 'scrum_task' )	
+						record.query = 'story=' + record.sysId + '^ORDERBYsys_created_on&amp;ORDERBYnumber';
+
+					record.view = this.viewName;
+					record.listView = this.listViewName;
+					record.pageSize = parseInt(gs.getUser().getPreference('rowcount'));
+
+					records.push(record);
+				}
+			}
+		}
+
+		result.records = records;
+		return result;
+	},
+	
+    type: 'SprintTrackingCommonService'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-10-11 05:19:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;89a96e4a0f01230096f9d6892f767ea5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SprintTrackingCommonService&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_89a96e4a0f01230096f9d6892f767ea5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-30 02:23:01&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3460&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:17</sys_created_on>
+        <sys_id>e6fc457e2f331110d8a4d5f62799b6a9</sys_id>
+        <sys_name>SprintTrackingCommonService</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e6fc457e2f331110d8a4d5f62799b6a9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

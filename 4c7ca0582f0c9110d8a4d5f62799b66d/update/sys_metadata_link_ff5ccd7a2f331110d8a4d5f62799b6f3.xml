@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2e59987d0a0a2c3946f7118c070c03e3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GSLog&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Authors: James Grinter, Chris Henson&amp;#13;
+&amp;#13;
+Make logging and debugging from Script easier by implementing levels of log output, selectable by per-caller identified sys_properties values.&amp;#13;
+&amp;#13;
+This implements both Log4j style logging and BSD Syslog style logging.  As default, the logger will use BSD style logging.&amp;#13;
+PLEASE CHOOSE ONE AND STICK TO IT (within a class anyhow)&amp;#13;
+&amp;#13;
+This can only be used server side.&amp;#13;
+&amp;#13;
+__Log4j Style Logging__&amp;#13;
+&amp;#13;
+Log4j logging levels are available, Trace, Debug, Info, Warn, Error and Fatal.&amp;#13;
+&amp;#13;
+Usage:&amp;#13;
+&amp;#13;
+var [this.]_log = new GSLog("[logging level property to lookup]" ,"[class, method, script name logged as the caller]");&amp;#13;
+_log.setLog4J(); //Tells the logging class you want to use Log4J style logging.&amp;#13;
+&amp;#13;
+To set the log level:&amp;#13;
+_log.setLevel(GSLog.TRACE);  [If you're logging at trace you're probably logging too much]&amp;#13;
+_log.setLevel(GSLog.DEBUG);&amp;#13;
+_log.setLevel(GSLog.INFO); [The default]&amp;#13;
+_log.setLevel(GSLog.WARN);&amp;#13;
+_log.setLevel(GSLog.ERROR);&amp;#13;
+_log.setLevel(GSLog.FATAL);&amp;#13;
+&amp;#13;
+If you use any of the BSD log levels not part of Log4J they will be set to the appropriate Log4J level.&amp;#13;
+&amp;#13;
+To log a message:&amp;#13;
+&amp;#13;
+_log.trace("Message");&amp;#13;
+_log.debug("Message");&amp;#13;
+_log.info("Message");&amp;#13;
+_log.warn("Mesage");&amp;#13;
+_log.error("Mesasge");&amp;#13;
+_log.fatal("Message");&amp;#13;
+&amp;#13;
+For some improvement in performance you can use the atLevel method to prevent string manipulations/concatenations in the logging method call:&amp;#13;
+&amp;#13;
+if (_log.atLevel(GSLog.ERROR)) { _log.error("Message" +x +" " +y+ " " + z); }&amp;#13;
+&amp;#13;
+Additional methods:&amp;#13;
+_log.getLevel();  // Returns the current logging level&amp;#13;
+_log.debugOn();  //Sets the log level to debug&amp;#13;
+_log.disableDatabaseLogs(); //Switches output to only use gs.print and not gs.log&amp;#13;
+&amp;#13;
+__BSD Syslog Style Logging__&amp;#13;
+&amp;#13;
+Logs can be at the level of Debug, Info, Notice, Warning, Err, Crit (after BSD syslog.h and followers).&amp;#13;
+The default logging level would normally be Notice, so levels should be chosen accordingly.&amp;#13;
+&amp;#13;
+- caller (optional - a string), indicates who the caller is, and will be logged with every message.&amp;#13;
+- message is written to the log if the current level is the same, or lower. (i.e. a level of 'notice' will lead to emerg, alert, crit, err, warning, and notice level messages being logged) &amp;#13;
+&amp;#13;
+Status of Interface: Evolving, subject to change.&amp;#13;
+&amp;#13;
+// Usage:&amp;#13;
+&amp;#13;
+// use the level set in named property, and optionally set caller (can use 'this.type' if calling from a "Script Include" Class)&amp;#13;
+// Default threshold, if unspecified by the named property, is 'notice'.&amp;#13;
+var lu = new GSLog(property, caller);&amp;#13;
+&amp;#13;
+// log messages, at specific levels&amp;#13;
+lu.logDebug(message);&amp;#13;
+lu.logInfo(message);&amp;#13;
+lu.logNotice(message);&amp;#13;
+lu.logWarning(message);&amp;#13;
+lu.logErr(message); // or lu.logError(message);&amp;#13;
+lu.logCrit(message);&amp;#13;
+lu.logAlert(message);&amp;#13;
+lu.logEmerg(message);&amp;#13;
+&amp;#13;
+// log a message at loglevel &amp;#13;
+// logLevel (a string) can be one of: 'emerg', 'alert', 'crit', 'err', 'warning', 'notice', 'info', 'debug' (after BSD syslog.h, and many followers)&amp;#13;
+lu.log(loglevel, message);&amp;#13;
+&amp;#13;
+// change log threshold level&amp;#13;
+lu.setLevel(loglevel);&amp;#13;
+// get current log level&amp;#13;
+var loglevel = lu.getLevel();&amp;#13;
+&amp;#13;
+if (lu.debugOn())&amp;#13;
+   // do more extensive debugging operations ...&lt;/description&gt;
+        &lt;name&gt;GSLog&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var GSLog = Class.create();
+
+GSLog.prototype = {
+
+    /* GSLog(traceProperty,caller): Instanciates a logging instance
+     *
+     * traceProperty: The name of the property containing the logging level for the targeted script/object
+     * caller: The name of the script, object etc. calling the logger
+     *
+     * To use Log4J style logging:
+     *      [this]._log = (new GSLog(traceProperty,caller))).setLog4J();
+     */
+    initialize : function(traceProperty,caller) {
+        this.whoami = '';
+        if (caller !== null)
+            this.whoami = caller;
+         
+        this._logLevel = (typeof gs.logWarning == 'function');
+        this._devel = true; // Look up the dev instance property?
+
+        // support properties
+        if (traceProperty)
+            this.setLevel(gs.getProperty(traceProperty, ''));
+        else
+            this.setLevel(this._getCallerThreshold(caller));
+
+        // Want to use log4j style logging?
+        this._log4j = false;
+        
+        //Default logging to gs.log and not gs.print
+        this._printLog = false;
+		
+		//Option to prefix each log message with a milliseconds value
+		this._timestampPrefix = false;
+
+        // gs.print('GSLog.initialize: [' + this.whoami + '] level=' + this.logLevel + ' [' + this._levelOrder[this.logLevel] + ']');
+    },
+
+    // System Log has Debug, Error, Information, Warning
+     
+    logDebug: function(msg) {
+         this.log('debug', msg);
+    },
+
+    logInfo: function(msg) {
+         this.log('info', msg);
+    },
+
+    logNotice: function(msg) {
+         this.log('notice', msg);
+    },
+
+    logWarning: function(msg) {
+         this.log('warning', msg);
+    },
+
+    logErr: function(msg) {
+         this.log('err', msg);
+    },
+
+    logError: function(msg) {
+         this.log('err', msg);
+    },
+     
+    logCrit: function(msg) {
+         this.log('crit', msg);
+    },
+
+    logAlert: function(msg) {
+         this.log('alert', msg);
+    },
+
+    logEmerg: function(msg) {
+         this.log('emerg', msg);
+    },
+
+    // Log4j style logging
+    trace: function(msg) {
+        this.log('trace', msg);
+    }, // If you're logging trace, you're probably logging too much.
+
+    debug: function(msg) {
+         this.log('debug', msg);
+    },
+
+    info: function(msg){
+        this.log('info', msg);
+    },
+
+    warn: function(msg){
+        this.log('warning', msg);
+    },
+
+    error: function(msg){
+        this.log('err', msg);
+    },
+
+    fatal: function(msg){
+        this.log('fatal', msg);
+    },
+
+    /* log(level,msg): Log a message at the specified level
+     *
+     * level: The level at which to log
+     * msg: The message
+     */
+    log: function(level, msg) {
+        // (always log a message at an invalid log level)
+        if (typeof this._levelOrder[level] !== undefined &amp;&amp; this._levelOrder[level] &gt; this._levelOrder[this.logLevel] )
+             return;
+
+        var whomsg='';
+        var scriptPrefix='*** Script';
+        if (!this._logLevel &amp;&amp; this._devel)
+            scriptPrefix = '*** Script [' + this._logPrefix[level] + ']';
+        else if (this.whoami) {
+            whomsg = '[' + this.whoami + '] ';
+            scriptPrefix = '*** Script [' + this.whoami + ']';
+        }
+         
+        // override 'Script: ' prefix in log, and log at the given level if the right function exists 
+        if (this._printLog)
+			//Removal of '*** Script' as gs.print prefixes this on.
+        	gs.print(scriptPrefix.replace('*** Script','') + ': [' + this._logPrefix[level] + '] ' + msg);
+        else {
+        	var logFunction = gs.log;
+        	switch (level) {
+            	case 'debug': 
+            		msg = '[' + this._logPrefix[level] + '] ' + msg;
+            		break;
+            	case 'warning':
+            		if (typeof gs.logWarning == 'function')
+            			logFunction = gs.logWarning;
+            		break;
+            	case 'err':
+            	case 'error':
+            		if (typeof gs.logError == 'function')
+            			logFunction = gs.logError;
+                    break;
+                // case 'info':
+            	default:
+            		if (typeof gs.log == 'function')
+            			logFunction = gs.log;
+        	}
+			
+			if (this._timestampPrefix) {
+				var gdt = new GlideDateTime();
+				var gdtMs = gdt.getNumericValue().toString();
+				msg = gdt.getDisplayValueInternal() + "." + gdtMs.substr(gdtMs.length - 3) + " " + msg;
+			}
+
+        	logFunction(msg, scriptPrefix);
+        }
+    },
+
+    setLevel: function(level) {
+
+        if (level.toString() == 'true')
+             level = 'debug';    // compatibility with true|false logging properties
+        else if (!level || level.toString() == 'false')
+             level = 'notice'; // default
+        else if (!this._levelOrder[level]) {
+             level = 'notice'; // invalid, so set to default
+        }
+
+        /* If you want to use log4j style logging we have to cut down some of the error states.
+         * Everything higher than an error -&gt; FATAL, NOTICE -&gt; INFO
+         * We also have to disallow FATAL and TRACE for BSD style logging.  FATAL -&gt; EMERG, TRACE-&gt;DEBUG
+         */
+        if (this._log4j) { //Only allow Log4J log levels
+            switch (level) {
+                case GSLog.EMERG:
+                case GSLog.ALERT:
+                case GSLog.CRIT:
+                    level=GSLog.FATAL;
+                    break;
+                case GSLog.NOTICE:
+                    level = GSLog.INFO;
+                    break;
+                default:
+                    break;
+            }
+        } else {  //Only allow BSD log levels
+            switch (level) {
+                case GSLog.FATAL:
+                    level=GSLog.EMERG;
+                    break;
+                case GSLog.TRACE:
+                    level=GSLog.DEBUG;
+                    break;
+                default:
+                    break;
+            }
+        }
+        // gs.print('GSLog.setLevel: ' + level);
+        this.logLevel = level; 
+    },
+
+    /* getLevel(): Returns the current logging level */
+    getLevel: function(level) {
+        return this.logLevel;
+    },
+
+    /* debugOn(): sets the log level to GSLog.DEBUG */
+    debugOn: function() {
+        return (this.logLevel == 'debug');
+    },
+
+    /* atLevel(logLevel) : Returns true if the logging level of the logger is the same as or above minLogLevel
+     *
+     * minLogLevel: The minimum logging level to compare against.
+     */
+    atLevel: function(minLogLevel) {
+        if (!this._levelOrder[minLogLevel]) {
+            return false;
+        }
+
+        if (this._levelOrder[minLogLevel]&lt;=this._levelOrder[this.logLevel]) {
+            return true;
+        }
+        return false;
+    },
+
+    /* setLog4J(): Switches the logging class into Log4J mode */
+    setLog4J: function() {
+        this._log4J = true;
+        this.setLevel(this.logLevel); //Checking that the log levels are OK for Log4J style logging
+        return this; // allows type to be set at instanciation without a sepperate parameter in the constructor.  Easier to understand.
+    },
+	
+	/* disableDatabaseLogs(): Switches the output of the GSLog to use gs.print instead of gs.log */
+    disableDatabaseLogs: function() {
+        this._printLog = true;
+        return this; // allows type to be set at instanciation without a separate parameter in the constructor.  Easier to understand.
+    },
+	
+	includeTimestamp: function() {
+		this._timestampPrefix = true;
+	},
+
+    ///
+
+    // logging levels
+    _levelOrder: {
+        fatal:   0,
+        emerg:   1,
+        alert:   2,
+        crit:    3,
+        err:     4,
+        warning: 5,
+        notice:  6,
+        info:    7,
+        debug:   8,
+        trace:   9
+    },
+     
+    // logging prefixes
+     _logPrefix: {
+         fatal:   'FATAL',
+         emerg:   'EMERG',
+         alert:   'ALERT',
+         crit:    'CRIT ',
+         err:     'ERROR',
+         warning: 'WARN ',
+         notice:  'NOTIC',
+         info:    'INFO ',
+         debug:   'DEBUG',
+         trace:   'TRACE'
+     },
+
+    _getCallerThreshold: function(caller) {
+         // TODO: consider performing a record lookup, on the caller name, to pick a log level
+         return 'notice';
+    },
+
+    type: 'GSLog'
+
+};
+
+// BSD style log level constants
+GSLog.EMERG  = "emerg";
+GSLog.ALERT  = "alert";
+GSLog.CRIT   = "crit";
+GSLog.ERR    = "err";
+GSLog.WARNING= "warning";
+GSLog.NOTICE = "notice";
+GSLog.INFO   = "info";
+GSLog.DEBUG  = "debug";
+
+// Additions for Log4j style logging
+GSLog.FATAL = "fatal";
+GSLog.TRACE = "trace";
+GSLog.ERROR = GSLog.ERR;
+GSLog.WARN  = GSLog.WARNING;
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-02-16 12:06:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2e59987d0a0a2c3946f7118c070c03e3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;82&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GSLog&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2e59987d0a0a2c3946f7118c070c03e3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-04-25 14:45:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8552&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:38</sys_created_on>
+        <sys_id>ff5ccd7a2f331110d8a4d5f62799b6f3</sys_id>
+        <sys_name>GSLog</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ff5ccd7a2f331110d8a4d5f62799b6f3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

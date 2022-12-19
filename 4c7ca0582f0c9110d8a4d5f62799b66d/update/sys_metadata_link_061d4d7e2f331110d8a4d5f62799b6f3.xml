@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>95a2c52f5f011300e6333654de73138d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VaRecordCardRenderer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Generates html that can be rendered in a Virtual Agent Topic&lt;/description&gt;
+        &lt;name&gt;VaRecordCardRenderer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VaRecordCardRenderer = Class.create();
+VaRecordCardRenderer.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+
+	_htmlAllowedTypes: ['html', 'journal_input', 'journal_list'],
+
+	initialize: function(skipNullField) {
+		this.skipNullField = skipNullField ? skipNullField : false;
+	},
+
+	createFields: function (fieldList, gr) {
+		var fields = [];
+		for (var i in fieldList) {
+			fields.push(this.createField(fieldList[i], gr, null, null));
+		}
+		return fields;
+	},
+
+	createField: function(field, gr, url, value) {
+		var fieldObject = {label: null, value: null, url: null};
+		try {
+			var element = gr.getElement(field);
+			fieldObject.label = element.getLabel();
+			fieldObject.value = value == null ? gr.getDisplayValue(field) : value;
+			fieldObject.type = element.getED().getInternalType();
+			fieldObject.url = url;
+		}
+		catch (exception) {
+			gs.error('Error creating field for the card view ' + field);
+		}
+		return fieldObject;
+	},
+
+	createStaticField: function(label, value, url) {
+		return {label: label, value: value, url: url};
+	},
+
+	// Generate the HTML with a title as a URL to the record(first row in the table) and table with rows as fields and corresponding values.
+	renderCard: function(title, fields) {
+		var html = '';
+		html += '&lt;div style="border: 1px solid rgb(230, 232, 234); border-radius: 5px; background-color: white; word-break: normal;"&gt;';
+
+		html += '&lt;table&gt;';
+		// Title is the first row in the table.
+		if (title &amp;&amp; title.url &amp;&amp; title.label)
+			html += this._getTitleRow(title.url, title.label);
+
+		// Generate HTML for table rows.
+		for (var i in fields) {
+			var label = fields[i].label;
+
+			var value = this._htmlAllowedTypes.indexOf('' + fields[i].type) != -1
+				? fields[i].value
+				: GlideStringUtil.escapeHTML(fields[i].value);
+			value = this._removeCodeTags(value);
+
+			var url = fields[i].url;
+
+			// Do not add the value to the table if skipNullField flag is set to true and value is null (or empty)
+			if (this.skipNullField &amp;&amp; !value)
+				continue;
+
+			html += url ? this._getTableRow(label, this._getHyperLink(url, value)) : this._getTableRow(label, value);
+		}
+
+		html += '&lt;/table&gt;&lt;/div&gt;';
+
+		return html;
+	},
+
+	_hasCodeTags: function(value) {
+		if (gs.nil(value)) return 'false';
+		if (gs.getProperty('glide.ui.security.allow_codetag') !== 'true') return 'false';
+		return value.indexOf('[code]') !== -1 &amp;&amp; value.indexOf('[/code]') !== -1 ? 'true' : 'false';
+	},
+
+	_removeCodeTags: function(value) {
+		if (gs.nil(value)) return value;
+		if (this._hasCodeTags(value) !== 'true') return value;
+		return value.replaceAll('[code]', '').replaceAll('[/code]', '');
+	},
+
+	_getHyperLink: function(url, label) {
+		return '&lt;a target="_blank" href="' + url + '"&gt;' + label + '&lt;/a&gt;';
+	},
+
+	_getTableRow: function(label, value) {
+		return '&lt;tr&gt;&lt;td style="padding:5px; width:30px; font-weight: bold; vertical-align: top"&gt;&lt;div style="overflow: hidden; max-height: 56px;"&gt;' + label + '&lt;/div&gt;&lt;td style="overflow-wrap: break-word;word-break:break-word;"&gt;' + value + '&lt;/td&gt;&lt;/tr&gt;';
+	},
+	_getTitleRow: function(url, label) {
+		return '&lt;tr&gt;&lt;td style="padding:5px;" colspan="2"&gt;' + this._getHyperLink(url, label) + '&lt;/td&gt;&lt;/tr&gt;';
+	},
+
+	// Get the most recent comment and trim it upto 60 characters (if not [code] tagged)
+	getLastComment: function(tableName, record) {
+		var lastComment = null;
+		var last = new GlideRecordSecure("sys_journal_field");
+		last.addQuery("name", tableName);
+		last.addQuery("element", "comments");
+		last.addQuery("element_id", record);
+		last.orderByDesc('sys_created_on');
+		last.setLimit(1);
+		last.query();
+		if (last.next()) {
+			var comment = last.getDisplayValue('value');
+			if (this._hasCodeTags(comment)) {
+				lastComment = this._removeCodeTags(comment);
+			} else {
+				lastComment = comment.length &lt; 60 ? comment : (comment.substring(0,60) + '...');
+			}
+		}
+
+		return lastComment;
+	},
+
+	type: 'VaRecordCardRenderer'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-03-30 17:22:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;95a2c52f5f011300e6333654de73138d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VaRecordCardRenderer&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server" source="com.glide.cs"&gt;f9f62e472f000110d8a4d5f62799b60c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_95a2c52f5f011300e6333654de73138d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-02 01:08:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3901&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:48</sys_created_on>
+        <sys_id>061d4d7e2f331110d8a4d5f62799b6f3</sys_id>
+        <sys_name>VaRecordCardRenderer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_061d4d7e2f331110d8a4d5f62799b6f3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

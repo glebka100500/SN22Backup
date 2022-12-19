@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5c8247410bf13200647f83eb37673af4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WFCreateTaskActivityUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;WFCreateTaskActivityUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WFCreateTaskActivityUtils = Class.create();
+WFCreateTaskActivityUtils.prototype = Object.extendsObject(WFActivityHandler, {
+    
+    initialize: function() {
+        WFActivityHandler.prototype.initialize.call(this);
+    },
+    
+   execute: function() {
+        // did we pre-generate the task?
+        var taskID;
+        var genObj = this._getGenerateObj(activity.activity.toString());
+        if (genObj &amp;&amp; genObj.taskID) {
+            taskID = genObj.taskID;
+            if (!this._setTaskState(taskID, '1'))
+                return;
+        } else
+            taskID = this._createTask('1');
+        
+       return taskID;
+    },
+    
+    _getExistingTask: function() {
+        var task = new GlideRecord(activity.vars.task_table);
+        task.initialize();
+        task.addQuery('parent', current.sys_id);
+        task.addQuery('wf_activity', activity.activity.sys_id);
+        task.query();
+        if (task.next())
+            return task;
+        
+        return null;
+    },
+    
+    _createTask: function(state, order, startAt, noCreateFlag) {
+        var task = this._getExistingTask();
+        if (task) {
+            task.state = state;
+            if (startAt)
+                task.expected_start.setValue(startAt);
+            else
+                task.expected_start = gs.nowDateTime();
+            
+            this._setDueDate(task, startAt);
+            if (!noCreateFlag)
+                task.update();
+            
+            return task.sys_id.toString();
+        }
+        task = new GlideRecord(activity.vars.task_table);
+        task.initialize();
+        this._setReferences(task);
+        task.state = state;
+        if (order) {
+            task.order = order;
+        }
+        
+        if (startAt) {
+            task.expected_start.setValue(startAt);
+        } else {
+            task.expected_start = gs.nowDateTime();
+        }
+        
+        this._setDueDate(task, startAt);
+        this._setValues(task);
+        if ((activity.vars.task_table == 'sc_task') &amp;&amp; (current.getRecordClassName() == 'sc_req_item'))
+            task.request_item = current.sys_id;
+        
+        if ((activity.vars.task_table == 'change_task') &amp;&amp; (current.getRecordClassName() == 'change_request')){
+            task.change_request = current.sys_id;
+            
+            if(gs.getProperty('glide.workflow.create_task.set_created_from_workflow', 'false') == 'true')
+				task.created_from = 'workflow';
+		}
+        
+        if ((activity.vars.task_table == 'problem_task') &amp;&amp; (current.getRecordClassName() == 'problem'))
+            task.problem = current.sys_id;
+        
+        if ((activity.vars.advanced == true) &amp;&amp; (activity.vars.advanced_script))
+            this._setAdvanced(task);
+
+        if (noCreateFlag)
+            return "";
+        
+        task.wf_activity = activity.activity.sys_id;
+        return task.insertOrUpdate('sys_id');
+    },
+    
+    _setReferences: function(task) {
+        task.parent = current.sys_id;
+    },
+    
+    _setTaskState: function(taskID, state) {
+        var gr = new GlideRecord('task');
+        if (!gr.get(taskID)) {
+            executing.result = 'deleted';
+            return false;
+        }
+        
+        gr.state = state;
+        gr.update();
+        
+        // a business rule might cause the task to be closed when we open it, so check this condition
+        if (!gr.active)
+            executing.result = gr.state;
+        
+        return gr.active;
+    },
+    
+    _setDueDate: function(task, startAt) {
+        var wd = new WorkflowDuration();
+        wd.setActivity(this);
+        wd.setStartDateTime(startAt);
+        wd.setWorkflow(context.schedule, context.timezone);
+        wd.calculate(activity.vars.__var_record__);
+        task.due_date.setValue(wd.getEndDateTime());
+        this.duration = wd.getTotalSeconds() * 1000;
+    },
+    
+    _setValues: function(task) {
+        var type = activity.vars.task_value_type;
+        if (type == 'Fields')
+            this._setValuesFromFields(task);
+        else if (type == 'Template')
+            this._setValuesFromTemplate(task);
+        else if (type == 'Values')
+            this._setValuesFromValues(task);
+
+        if(task.priority.nil())
+          task.priority = activity.vars.task_priority;
+    },
+    
+    _setValuesFromFields: function(task) {
+        task.assignment_group = activity.vars.task_fulfillment_group;
+        task.assigned_to = activity.vars.task_assigned_to;
+        task.short_description = activity.vars.task_short_description;
+        task.description = activity.vars.task_instructions;
+    },
+    
+    _setValuesFromTemplate: function(task) {
+        var t = GlideTemplate.get(activity.vars.task_template.toString());
+        t.apply(task);
+    },
+    
+    _setValuesFromValues: function(task) {
+        task.applyEncodedQuery(activity.vars.task_set_values);
+    },
+    
+    _setAdvanced: function(task) {
+        var oldTask = workflow.getScriptVariable('task');
+        workflow.prepareScriptVariable('task', task);
+        this.runScript(activity.vars.advanced_script);
+        workflow.prepareScriptVariable('task', oldTask);
+    },
+	
+    type: 'WFCreateTaskActivityUtils'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;nisha.ilame&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-03-27 22:36:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5c8247410bf13200647f83eb37673af4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WFCreateTaskActivityUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5c8247410bf13200647f83eb37673af4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;alejandro.moreno&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-07-20 22:25:51&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5147&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:47</sys_created_on>
+        <sys_id>ecac45fa2f331110d8a4d5f62799b62f</sys_id>
+        <sys_name>WFCreateTaskActivityUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ecac45fa2f331110d8a4d5f62799b62f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

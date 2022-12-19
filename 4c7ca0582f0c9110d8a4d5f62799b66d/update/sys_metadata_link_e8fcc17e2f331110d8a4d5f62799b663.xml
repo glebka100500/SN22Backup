@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>86c06c937341101057f131d7caf6a7d3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DataSourceDataStreamAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;When the Data Stream Action input is changed,  get the list of dynamic action input variables&lt;/description&gt;
+        &lt;name&gt;DataSourceDataStreamAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DataSourceDataStreamAjax = Class.create();
+DataSourceDataStreamAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    /*
+     * To check if for the given data source record has a data stream action associated with action inputs 
+     * input : data source record sys_id
+     * output : object with property hasActionInputs true or false
+     */
+    hasDSActionInputs: function() {
+        var currentDataSourceRecord = this.getParameter('sysparam_ds_record_sys_id');
+        if (!gs.nil(currentDataSourceRecord))
+            return this._hasActionInputs(currentDataSourceRecord);
+        return '';
+    },
+
+    /*
+     * To get action inputs for the data stream action associated with data source
+     * input : data source record sys_id
+     * ouput : object with property dsActionInputs array  and dsActionDBValue and dsSnapshotValue
+     */
+    getDSActionInputs: function() {
+        var currentDataSourceRecord = this.getParameter('sysparam_ds_record_sys_id');
+        if (!gs.nil(currentDataSourceRecord))
+            return this._getActionInputs(currentDataSourceRecord);
+        return '';
+    },
+	
+	/*
+	 * To get options to override the connection and credential specified in the action, if any
+	 */
+	getConnectionAliases: function() {
+        var currentDataSourceRecord = this.getParameter('sysparam_ds_record_sys_id');
+		if (!gs.nil(currentDataSourceRecord))
+            return this._getConnectionAliases(currentDataSourceRecord);
+        return '';
+	},
+
+    _hasActionInputs: function(currentDataSourceRecord) {
+        var response = {
+            hasActionInputs: false
+        };
+        var dsActionInputObj = JSON.parse(this._getActionInputs(currentDataSourceRecord));
+        if (dsActionInputObj) {
+            for (var i = 0; i &lt; dsActionInputObj.dsActionInputs.length; i++) {
+                if (!dsActionInputObj.dsActionInputs[i].isHidden)
+                    response.hasActionInputs = true;
+            }
+        }
+       
+        return JSON.stringify(response);
+    },
+
+
+    _getActionInputs: function(currentDataSourceRecord) {
+        var arrayUtil = new ArrayUtil();
+        var response = {
+            dsActionInputs: [],
+            dsActionDBValue: '',
+            dsSnapshotValue: ''
+        };
+        var currentRecord = this._getCurrentDSActionRecord(currentDataSourceRecord);
+        var glideVariableRecord = this._getGlideVariableRecord(currentRecord);
+        var glideVariableNames = this._getVariableNames(currentRecord);
+
+        if (this._isValidCurrentRecord(currentRecord)) {
+
+            response.dsActionDBValue = currentRecord.data_stream_action.toString();
+            response.dsSnapshotValue = currentRecord.data_stream_action.master_snapshot.toString();
+            if (!gs.nil(glideVariableRecord)) {
+                var elementsList = glideVariableRecord.getElements();
+                for (var i = 0; i &lt; elementsList.size(); i++) {
+                    if (!arrayUtil.contains(glideVariableNames, elementsList.get(i).getName()))
+                        continue;
+                    var inputVar = {
+                        name: elementsList.get(i).getName(),
+                        isMandatory: elementsList.get(i).getED().isMandatory(),
+                        isHidden: elementsList.get(i).getAttribute('visible_in_ui') === 'false'
+                    };
+                    response.dsActionInputs.push(inputVar);
+                }
+            }
+        }
+
+        return JSON.stringify(response);
+    },
+
+    _getCurrentDSActionRecord: function(currentDataSourceRecord) {
+        var dsGr = new GlideRecord('sys_data_source');
+        if (dsGr.get(currentDataSourceRecord))
+            return dsGr;
+
+        return null;
+    },
+
+    _getConnectionAliases: function(currentDataSourceRecord) {
+        var currentRecord = this._getCurrentDSActionRecord(currentDataSourceRecord);
+		var connectionAlias = new sn_impex.FlowActionConnectionUtility().forFlowAction(currentRecord.data_stream_action);
+		
+		if (!connectionAlias) {
+			return JSON.stringify({noAlias: currentDataSourceRecord});
+		}
+
+		// Resolve the parent alias to get its name and add to drop-down
+		var parent = new GlideRecord('sys_alias');
+		if (!parent.get(connectionAlias)) {
+			return JSON.stringify({noAlias: true});
+		}
+		
+		var response = {
+			aliases: [ 
+				{
+					name: gs.getMessage("{0} (Default Connection)", parent.name.toString()),
+					sysId: parent.sys_id.toString(),
+					isDefault: true
+				}
+			]
+		};
+
+		var child = new GlideRecord('sys_alias');
+		child.addQuery('parent', connectionAlias);
+		child.query();
+		while(child.next()) {
+			response.aliases.push({
+				name: child.name.toString(),
+				sysId: child.sys_id.toString(),
+				isDefault: false
+			});
+		}
+		response.aliases.sort(function(alias1, alias2) {
+			if (alias1.name &lt; alias2.name) return -1;
+			if (alias2.name &lt; alias1.name) return -1;
+			return 0;
+		});
+		return JSON.stringify(response);
+	},
+	
+    _getGlideVariableRecord: function(currentRecord) {
+        var glideVariableRecord = null;
+        if (this._isValidCurrentRecord(currentRecord)) {
+            glideVariableRecord = currentRecord.data_stream_action_inputs.getVariablesRecord();
+        }
+
+        return glideVariableRecord;
+    },
+
+    _getVariableNames: function(currentRecord) {
+        var glideVariableNames = [];
+        if (this._isValidCurrentRecord(currentRecord)) {
+            var names = currentRecord.data_stream_action_inputs.getVariableNames();
+            for (var i = 0; i &lt; names.length; i++) {
+                glideVariableNames.push(names[i]);
+            }
+        }
+
+        return glideVariableNames;
+    },
+	
+	_getNonSystemVariableNames: function(currentRecord) {
+		var variableNames = this._getVariableNames(currentRecord);
+		var nonSystemVariableNames = [];
+		for (var i = 0; i &lt; variableNames.length; i++) {
+			var name = variableNames[i];
+			if (!name.startsWith("sys_") &amp;&amp; !name.startsWith("dynamic_hidden_input_")) {
+				nonSystemVariableNames.push(name);
+			}
+		}
+		return nonSystemVariableNames;
+	},
+
+    _isValidCurrentRecord: function(currentRecord) {
+        return (!(gs.nil(currentRecord) &amp;&amp; gs.nil(currentRecord.data_stream_action) &amp;&amp; gs.nil(currentRecord.data_stream_action_input)));
+    },
+
+    type: 'DataSourceDataStreamAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-06-02 04:56:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;86c06c937341101057f131d7caf6a7d3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;63&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DataSourceDataStreamAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_86c06c937341101057f131d7caf6a7d3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-11 17:13:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6266&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:09</sys_created_on>
+        <sys_id>e8fcc17e2f331110d8a4d5f62799b663</sys_id>
+        <sys_name>DataSourceDataStreamAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e8fcc17e2f331110d8a4d5f62799b663</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

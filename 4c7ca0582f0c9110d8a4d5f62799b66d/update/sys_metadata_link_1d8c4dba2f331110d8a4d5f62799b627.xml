@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4a7af566530333001829ddeeff7b12a4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WorkspaceFormsTabsList&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Gets tab list for View Rule tab ordering feature&lt;/description&gt;
+        &lt;name&gt;WorkspaceFormsTabsList&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WorkspaceFormsTabsList = Class.create();
+WorkspaceFormsTabsList.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    _getStatic: function() {
+        var label = "Details";
+        return this._getChoiceListFromArray([{
+            label: label,
+            value: label
+        }]);
+    },
+    _getRelatedItem: function(table, view, workspace) {
+        var list = [];
+        var currentAction = '';
+        var prevAction = '';
+        var model = '360935e9534723003eddddeeff7b127d';
+        var position = 'related_item';
+        var gr = new GlideRecord('sys_declarative_action_assignment');
+        var tables = GlideDBObjectManager.getTables(table);
+
+        var qcTable = gr.addQuery('table', table);
+        qcTable.addOrCondition('table', 'IN', tables);
+        qcTable.addOrCondition('table', "global");
+
+        var qcView = gr.addQuery('view', view);
+        qcView.addOrCondition('view', null);
+
+        var qcWorkspace = gr.addQuery('workspace', workspace);
+        qcWorkspace.addOrCondition('workspace', null);
+
+        gr.addQuery("form_position", position);
+        gr.addQuery("model", model);
+        gr.orderBy("action_name");
+        gr.orderByDesc("specificity");
+        gr.orderBy("order");
+        gr.query();
+
+        while (gr.next()) {
+            currentAction = gr.getValue('action_name');
+            if (currentAction !== prevAction &amp;&amp; this._userHasRoles(gr)) {
+                list.push({
+                    label: gr.getDisplayValue("label"),
+                    value: gr.getUniqueValue()
+                });
+            }
+            prevAction = currentAction;
+        }
+        return this._getChoiceListFromArray(list);
+    },
+    _getRelatedList: function(table, view) {
+        return new GlideRelatedList(table, view).getRelatedListBucket(false);
+    },
+    _getChoiceListFromArray: function(arr) {
+        var choiceList = new GlideChoiceList();
+        arr.forEach(function(item) {
+            choiceList.add(new GlideChoice(item.value, item.label));
+        });
+        return choiceList;
+    },
+    _userHasRoles: function(gr) {
+        var rolesRequired = gr.getDisplayValue("required_roles");
+        return GlideSecurityManager.get().hasRole(rolesRequired);
+    },
+
+    _addTab: function(label, value) {
+        var tabItem = this.newItem("item");
+        tabItem.setAttribute("label", label);
+        tabItem.setAttribute("value", value);
+    },
+    getList: function(table, view, workspace) {
+        var choiceList = new GlideChoiceList();
+        choiceList.addAll(this._getStatic());
+        choiceList.addAll(this._getRelatedList(table, view));
+        choiceList.addAll(this._getRelatedItem(table, view, workspace));
+        return choiceList;
+    },
+    getListArray: function(table, view, workspace) {
+        var list = [];
+        var choiceList = this.getList(table, view, workspace);
+        for (var j = 0; j &lt; choiceList.getSize(); j++) {
+            var choice = choiceList.getChoice(j);
+            list.push({
+                label: choice.getLabel(),
+                value: choice.getValue()
+            });
+        }
+        return list;
+    },
+    getListAjax: function() {
+        // E.G. arguments
+        // 'table': "incident"
+        // 'view': "Default view"
+        // 'workspace': "7b24ceae5304130084acddeeff7b12a3"
+
+        var table = this.getParameter('sysparm_table');
+        var view = this.getParameter('sysparm_view');
+        var workspace = this.getParameter('sysparm_workspace');
+        var choiceList = this.getList(table, view, workspace);
+
+        for (var j = 0; j &lt; choiceList.getSize(); j++) {
+            var choice = choiceList.getChoice(j);
+            this._addTab(choice.getLabel(), choice.getValue());
+        }
+    },
+    type: 'WorkspaceFormsTabsList'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-06 21:19:50&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4a7af566530333001829ddeeff7b12a4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WorkspaceFormsTabsList&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agent Workspace - Form" source="com.snc.agent_workspace.form"&gt;48054dc36de620100acb70b35343307f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4a7af566530333001829ddeeff7b12a4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-19 20:38:16&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3775&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:18</sys_created_on>
+        <sys_id>1d8c4dba2f331110d8a4d5f62799b627</sys_id>
+        <sys_name>WorkspaceFormsTabsList</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1d8c4dba2f331110d8a4d5f62799b627</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

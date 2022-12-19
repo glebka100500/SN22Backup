@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5190ebe1873121003706db5eb2e3ec6c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumPPMIntManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Scrum PPM Integration specific implementation to support Project in SDLC.&lt;/description&gt;
+        &lt;name&gt;ScrumPPMIntManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumPPMIntManager = Class.create();
+
+ScrumPPMIntManager.prototype = Object.extendsObject(ScrumSecurityManagerDefault, {
+	
+	initialize: function () {
+		// Nothing to do for now
+	},
+	
+	
+	/*
+ 	* Todo; Ideally 'getStoryDotSprint' should be overridden for handling Project specific
+ 	* cases and delegate callback to parent.
+ 	* Copied complete implementation because of issuess with $super.
+ 	* */
+	getStoryDotSprint: function (recStory) {
+		var recSprint3;
+		var recSprint4;
+
+		// Case1: Return all sprints associated with story's release
+		if (!recStory.release.isNil()) {
+			var recSprint1 = new GlideRecord("rm_sprint");
+			recSprint1.addQuery("release", recStory.release);
+			recSprint1.query();
+			var arrSprintSysIds1 = [];
+			while (recSprint1.next())
+				arrSprintSysIds1.push(recSprint1.sys_id + "");
+			return arrSprintSysIds1;
+		}
+		// Case2: Retrun all sprints associated to release team. Team will have presedence over Product in Scrum PPM Integratiom
+		if (JSUtil.notNil(recStory.team)) {
+			var recSprint2 = new GlideRecord("rm_sprint");
+			recSprint2.addQuery("release_team", recStory.team);
+			recSprint2.query();
+			var arrSprintForTeam = [];
+			while (recSprint2.next())
+				arrSprintForTeam.push(recSprint2.sys_id + "");
+			return arrSprintForTeam;
+		}
+		//Case3: Return all sprints associated to project_phase
+		if (JSUtil.notNil(recStory.project_phase)){
+			var arrSprintsForProjectPhase = [];
+			recSprint3 = new GlideRecord("rm_sprint");
+			recSprint3.addQuery('assignment_group',recStory.assignment_group);
+			recSprint3.addQuery('start_date','&lt;=',recStory.project_phase.end_date);
+			recSprint3.addQuery('end_date','&gt;=',recStory.project_phase.start_date);
+			recSprint3.query();
+			while (recSprint3.next ()) {
+				arrSprintsForProjectPhase.push(recSprint3.sys_id + "");
+			}
+			return arrSprintsForProjectPhase;
+		}
+		//Case4: Return all sprints associated to assignment group
+		if (JSUtil.notNil(recStory.assignment_group)) {
+			recSprint4 = new GlideRecord("rm_sprint");
+			recSprint4.addQuery("assignment_group", recStory.assignment_group);
+			recSprint4.query();
+			var arrSprintForGroup = [];
+			while (recSprint4.next())
+				arrSprintForGroup.push(recSprint4.sys_id + "");
+			return arrSprintForGroup;
+		}
+		// Case5: Return all sprints associated with story's product
+		if (!recStory.product.isNil()) {
+			var arrSprintSysIds2 = [];
+			var recM2MProductRelease = new GlideRecord("m2m_product_release");
+			recM2MProductRelease.addQuery("model", recStory.product);
+			recM2MProductRelease.query();
+			while (recM2MProductRelease.next()) {
+				var recRmReleaseScrum = new GlideRecord("rm_release_scrum");
+				recRmReleaseScrum.addQuery("sys_id", recM2MProductRelease.release);
+				recRmReleaseScrum.query();
+				while (recRmReleaseScrum.next()) {
+					recSprint3 = new GlideRecord("rm_sprint");
+					recSprint3.addQuery("release", recRmReleaseScrum.sys_id);
+					recSprint3.query();
+					while (recSprint3.next()) {
+						arrSprintSysIds2.push(recSprint3.sys_id + "");
+					}
+				}
+			}
+			return arrSprintSysIds2;
+		}
+		
+		//if Project is specified
+		if (JSUtil.notNil(recStory.project)) {
+			var recSprint5 = new GlideRecord("rm_sprint");
+			recSprint5.addQuery("project", recStory.project);
+			recSprint5.query();
+			var arrSprintForProject = [];
+			while (recSprint5.next())
+				arrSprintForProject.push(recSprint5.sys_id + "");
+			return arrSprintForProject;
+		}
+		
+		// Case6: Return all sprints in system
+		recSprint4 = new GlideRecord("rm_sprint");
+		recSprint4.query();
+		var arrSprintSysIds3 = [];
+		while (recSprint4.next())
+			arrSprintSysIds3.push(recSprint4.sys_id + "");
+		return arrSprintSysIds3;
+	},
+	
+	getStoryDotAssignedTo: function (recRmStory) {
+		var arrMemberSysIds = [];
+		
+		// Case 0: if project is assigned and project has team return all team members
+		if (!recRmStory.project.isNil()) {
+			if (!recRmStory.assignment_group.isNil()) {
+				var members = new GlideRecord('sys_user_grmember');
+				members.addQuery('group', recRmStory.getValue('assignment_group'));
+				members.query();
+				while (members.next()) {
+					arrMemberSysIds.push(members.getValue('user'));
+				}
+			}
+			if (arrMemberSysIds.length &gt; 0)
+				return arrMemberSysIds;
+		}
+		
+		// Case 1: Return all users associated with the story's sprint's team members
+		if (!recRmStory.sprint.isNil() &amp;&amp; recRmStory.project.isNil()) {
+			var recScrumPPSprintTeamMember = new GlideRecord("scrum_pp_sprint_team_member");
+			recScrumPPSprintTeamMember.addQuery("sprint", recRmStory.sprint);
+			recScrumPPSprintTeamMember.query();
+			while (recScrumPPSprintTeamMember.next())
+				arrMemberSysIds.push(recScrumPPSprintTeamMember.name + "");
+			if (arrMemberSysIds.length &gt; 0)
+				return arrMemberSysIds;
+		}
+		
+		if (!recRmStory.release.isNil() &amp;&amp; recRmStory.project.isNil()) {
+			
+			var recScrumPPReleaseTeamMember = null;
+			
+			// Case 2.1: Return all users in the story's release's default team
+			if (!recRmStory.release.default_team.isNil()) {
+				recScrumPPReleaseTeamMember = new GlideRecord("scrum_pp_release_team_member");
+				recScrumPPReleaseTeamMember.addQuery("team", recRmStory.release.default_team);
+				recScrumPPReleaseTeamMember.query();
+				while (recScrumPPReleaseTeamMember.next())
+					arrMemberSysIds.push(recScrumPPReleaseTeamMember.name + "");
+				if (arrMemberSysIds.length &gt; 0)
+					return arrMemberSysIds;
+			}
+			
+			// Case 2.2: Return all users from all the members of all the teams in the story's release
+			var recScrumPPTeam = new GlideRecord("scrum_pp_team");
+			recScrumPPTeam.addQuery("release", recRmStory.release);
+			recScrumPPTeam.query();
+			while (recScrumPPTeam.next()) {
+				recScrumPPReleaseTeamMember = new GlideRecord("scrum_pp_release_team_member");
+				recScrumPPReleaseTeamMember.addQuery("team", recScrumPPTeam.sys_id);
+				recScrumPPReleaseTeamMember.query();
+				while (recScrumPPReleaseTeamMember.next())
+					arrMemberSysIds.push(recScrumPPReleaseTeamMember.name + "");
+			}
+			if (arrMemberSysIds.length &gt; 0)
+				return arrMemberSysIds;
+		}
+		
+		// Case 3: Return all the users with the scrum_user role
+		var recSysUserRole = new GlideRecord("sys_user_role");
+		recSysUserRole.addQuery("name", "scrum_user");
+		recSysUserRole.query();
+		if (recSysUserRole.next()) {
+			var recSysUserHasRole = new GlideRecord("sys_user_has_role");
+			recSysUserHasRole.addQuery("role", recSysUserRole.sys_id);
+			recSysUserHasRole.query();
+			while (recSysUserHasRole.next())
+				arrMemberSysIds.push(recSysUserHasRole.user + "");
+		}
+		return arrMemberSysIds;
+	},
+	
+	getSprintDotReleaseTeam: function (recRmSprint) {
+		// gs.log ("[DEBUG] ---&gt; INSIDE SSMD......");
+		var arrScrumPPTeamSysIds = [];
+		var recScrumPPTeam = new GlideRecord("scrum_pp_team");
+		// Release may or may not avaialble
+		recScrumPPTeam.addQuery("release", recRmSprint.release);
+		// gs.log ("[DEBUG] release = " + recRmSprint.release);
+		//if (recRmSprint.release_team) {
+			//   recScrumPPTeam.addQuery ("sys_id", "!=", recRmSprint.release_team);
+			// gs.log ("[DEBUG] release_team = " + recRmSprint.release_team);
+			//}
+			recScrumPPTeam.query();
+			while (recScrumPPTeam.next()) {
+				// gs.log ("[DEBUG] Matched = " + recScrumPPTeam.sys_id);
+				arrScrumPPTeamSysIds.push(recScrumPPTeam.sys_id + "");
+			}
+			
+			return arrScrumPPTeamSysIds;
+		},
+		
+		/* Filter Team Memeber based on role as well as already associated with Team. */
+		getTeamMemberDotName: function (teamMember) {
+			function getScrumUsers() {
+				var arrSysIds = [];
+				var requiredRoles = [];
+				var recSysUserRole = new GlideRecord("sys_user_role");
+				recSysUserRole.addQuery("name", "IN", "scrum_user,scrum_admin");
+				recSysUserRole.query();
+				while (recSysUserRole.next()) {
+					requiredRoles.push(recSysUserRole.getValue('sys_id'));
+				}
+				if (requiredRoles.length &gt; 0) {
+					var recSysUserHasRole = new GlideRecord("sys_user_has_role");
+					recSysUserHasRole.addQuery("role", "IN", requiredRoles.join(','));
+					recSysUserHasRole.query();
+					while (recSysUserHasRole.next()) {
+						arrSysIds.push(recSysUserHasRole.user + "");
+					}
+				}
+				return arrSysIds;
+			}
+			
+			function getTeamMember(teamMember) {
+				var arrSysIds = [];
+				var recScrumReleaseTeamMember = new GlideRecord("scrum_pp_team_member");
+				recScrumReleaseTeamMember.addQuery("team", teamMember.team);
+				recScrumReleaseTeamMember.query();
+				while (recScrumReleaseTeamMember.next()) {
+					arrSysIds.push(recScrumReleaseTeamMember.name + "");
+				}
+				return arrSysIds;
+			}
+			
+			var arrScrumUsers = getScrumUsers();
+			var arrTeamMember = getTeamMember(teamMember);
+			var arrSelectUser = new ArrayUtil().diff(arrScrumUsers, arrTeamMember);
+			return arrSelectUser;
+		},
+		
+		getStoryDotTeam: function (recStory) {
+			var teamSysIds = [];
+			if (recStory.project) {
+				var prjUtil = new ppm_int_ProjectUtil(recStory.project);
+				teamSysIds = prjUtil.getTeams();
+				return teamSysIds;
+			}
+			var scrumTeam = new GlideRecord('sys_user_group');
+			scrumTeam.addActiveQuery();
+			scrumTeam.addEncodedQuery('roles=scrum_admin^ORroles=scrum_user');
+			scrumTeam.query();
+			while (scrumTeam.next()) {
+				teamSysIds.push(scrumTeam.sys_id + "");
+			}
+			return teamSysIds;
+		},
+		getStoryDotPhases: function(recStory){
+			if(JSUtil.notNil(recStory.project)){
+				var agilePhases =[];
+				var phases = new GlideRecord('pm_project_task');
+				phases.addQuery('parent',recStory.project);
+				phases.addQuery('phase_type','agile');
+				phases.query();
+				while(phases.next()){
+					agilePhases.push(phases.getValue('sys_id'));
+				}
+				return agilePhases;
+			}
+		},
+		getPhaseDotGroup: function(phase, column_name){
+			var phaseType = phase.phase_type;
+			var query = null;
+			
+			if(JSUtil.notNil(phaseType) &amp;&amp; phaseType == 'agile'){
+				query = 'type=1bff3b1493030200ea933007f67ffb6d';
+			}else{
+				var dbObject = GlideDBObjectManager.get();
+				var phaseTableName = phase.getTableName();
+				var parentTable = dbObject.getBase(phaseTableName);
+				var parentTableDescriptor = new GlideTableDescriptor(parentTable);
+				var elementDescriptor = parentTableDescriptor.getElementDescriptor(column_name, true);
+				query = elementDescriptor.getReferenceQualifier();
+			}
+			
+			return query;
+		},
+		
+		
+		type: "ScrumPPMIntManager"
+		
+		
+	});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-07-09 09:11:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5190ebe1873121003706db5eb2e3ec6c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;65&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumPPMIntManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="SDLC Scrum PPM Integration" source="com.snc.sdlc.scrum.ppm_int"&gt;0a159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5190ebe1873121003706db5eb2e3ec6c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-25 20:32:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10248&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:29</sys_created_on>
+        <sys_id>149c8dba2f331110d8a4d5f62799b675</sys_id>
+        <sys_name>ScrumPPMIntManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_149c8dba2f331110d8a4d5f62799b675</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

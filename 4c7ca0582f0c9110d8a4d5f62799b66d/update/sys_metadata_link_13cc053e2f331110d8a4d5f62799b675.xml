@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>738f9852c32130102c5b4e483c40dd88</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSSO_OIDC_internal_facebook&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Logic to process OIDC authentication for a multi-tenant single sign-on with response type id_token&lt;/description&gt;
+        &lt;name&gt;MultiSSO_OIDC_internal_facebook&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("OIDC_custom_facebook");
+gs.include("SSO_Helper");
+var MultiSSO_OIDC_internal_facebook = Class.create();
+MultiSSO_OIDC_internal_facebook.prototype = Object.extend(new MultiSSO_OIDC_internal(), {
+    initialize: function() {
+		MultiSSO_OIDC_internal.prototype.initialize.call(this);
+        this.OIDC = new OIDC_custom_facebook();
+		this.OIDC.logDebug("OIDC MultiSSO_OIDC_internal_facebook script loaded...");
+    },
+    process: function() {
+        // Initialize  OauthClient.
+        this.OIDC.initializeOauthClient(this.propertiesGR.oidc_entity_profile);
+        try {
+            // check if request contains id_token
+            if (request.getParameter("id_token") != null) {
+                this.OIDC.logDebug("OIDC Facebook Request - getting login user using the ID token");
+                this.id_token = request.getParameter("id_token");
+				this.OIDC.logDebug("OIDC Facebook Request - ID token received: "+ this.id_token);
+				//Parse user info from id_token and return as user.
+				return this.loginUser(this.id_token);
+            } else if (request.getParameter("error") != null) {
+                this.OIDC.logError("error " + request.getParameter("error") + " error_description  " + request.getParameter("error_description"));
+                return "failed_authentication";
+            } else {
+                // Initial request, Get the Authn URL to get the  Auth Code.
+                this.OIDC.logDebug("OIDC Facebook Request - getting the Authn request url");
+                var authURL = this.OIDC.getAuthorizationURL();
+                this.OIDC.logDebug("AuthorizationURL : " + authURL);
+                return authURL;
+            }
+        } finally {
+            action.setRedirect(this.redirectURL);
+        }
+    },
+	
+	loginUser: function(token) {
+		// Setting txn attribute to set the SSO ID to be set for newly created users.
+		GlideTransaction.get().setAttribute("oidcIdentityProviderSsoId", this.OIDC.ssoRecord.sys_id);
+		
+		//Authenticate user with ID token
+		var user = GlideUser.authenticateOAuthAccessToken(token);
+
+        var eventLogParm1 = "user_name=" + user;
+        var eventLogParm2 = "multisso=true,idpsysid=" + this.propertiesGR.sys_id;
+
+        // if not a valid user, return error as "failed_authentication"
+        if (!user) {
+            SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "failure", "", eventLogParm2);
+            this.OIDC.logDebug("OIDC Request - No user found.");
+            return "failed_authentication";
+        }
+        
+		// SSO Source validation
+		// Due to security issues SSO Source will be validated for Facebook based login during auto redirect flow as well.
+		var ugr = new GlideRecord("sys_user");
+		ugr.addQuery('user_name', user);
+		ugr.query();
+		if (ugr.next()) {
+			var userSsoSource = ugr.getValue('sso_source');
+			if (!GlideStringUtil.nil(userSsoSource)) {
+				var userSso = userSsoSource.split(':');
+				if (!GlideStringUtil.nil(userSso[1]) &amp;&amp; userSso[1] != this.propertiesGR.sys_id) {
+					this.OIDC.logError("Ensure that the user you are trying to login is from the correct source, as mentioned in user's sso source field in servicenow instance.");
+					return "failed_authentication";
+				}
+			} else {
+				this.OIDC.logError("User's sso_source field is empty. Ensure that the user you are trying to login is from the correct source, as mentioned in user's sso source field in servicenow instance.");
+				return "failed_authentication";
+			}
+		}
+
+        if (!this.redirectURL) {
+            this.OIDC.logDebug("Get the RelayStateId from the request.");
+            var stateId = request.getParameter("state");
+
+            // Get the Relay State for the given SysId/StateId, which should be persisted in the DB
+            var relayState = this.OIDC.getRelayStateByIdAndValidateNonce(stateId, token);
+
+            // If relayState is nil, there could be below reasons : 
+            //    1) No record exists for the passed SysId
+            //    2) Relay state is expired
+            //    3) Relay state is already used
+            // In such scenario, failing the User login, as there is no valid Relay Persist.
+            if (GlideStringUtil.nil(relayState)) {
+                eventLogParm2 = eventLogParm2 + ',reason=Relay State is expired or not forund.';
+                SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "failure", eventLogParm1, eventLogParm2);
+                this.OIDC.logDebug("OIDC Request - Relay State is expired or not forund for the given sysId : " + stateId);
+                return "failed_authentication";
+            }
+
+            var customRelayState = GlideTransaction.get().getRequest().getSession().getAttribute("RelayState");
+            if (!GlideStringUtil.nil(customRelayState)) {
+                this.OIDC.logDebug("OIDC Request - Redirecting to custom Relay State : " + customRelayState);
+                this.redirectURL = customRelayState;
+            } else {
+                this.OIDC.logDebug("OIDC Request - Redirecting to Relay State : " + relayState);
+                // If valid, assign the relay state to the redirectURL, to be redirected to post  successful Login.
+                this.redirectURL = relayState;
+            }
+        }
+        // created below method(saveInCookie) in oidc_internal for backword capatibility
+        // once successfully logged in. we need set sso_id cookie
+        this.ssoHelper.saveInCookie(SNC.SSOUtils.SSOID(), this.propertiesGR.sys_id);
+        SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "success", eventLogParm1, eventLogParm2);
+        this.OIDC.logDebug("OIDC Request - setting the login method as OIDC");
+        request.getSession().setAttribute("glide.authenticate.multisso.login.method", "oidc");
+        return user;
+	},
+
+    type: 'MultiSSO_OIDC_internal_facebook'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-07-26 15:10:19&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;738f9852c32130102c5b4e483c40dd88&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSSO_OIDC_internal_facebook&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_738f9852c32130102c5b4e483c40dd88&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-10-07 16:41:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5828&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:31</sys_created_on>
+        <sys_id>13cc053e2f331110d8a4d5f62799b675</sys_id>
+        <sys_name>MultiSSO_OIDC_internal_facebook</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_13cc053e2f331110d8a4d5f62799b675</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

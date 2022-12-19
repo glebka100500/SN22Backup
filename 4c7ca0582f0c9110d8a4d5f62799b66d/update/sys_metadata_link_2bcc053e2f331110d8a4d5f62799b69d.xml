@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>74198aea9f622200598a5bb0657fcf9e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlannedTaskNotification&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;A thin wrapper around PlannedTaskNotification table abstracts away low-level GlideRecord APIs for PlannedTaskNotification table&lt;/description&gt;
+        &lt;name&gt;PlannedTaskNotification&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlannedTaskNotification = Class.create();
+PlannedTaskNotification.prototype = {
+    initialize: function(gr) {
+        this.notificationTable = "planned_task_notification";
+        this.gr = gr;
+    },
+
+    get: function (sysId) {
+        this.gr = new GlideRecord(this.notificationTable);
+        this.gr.get(sysId);
+        return this;
+    },
+    
+    deleteRecord: function(workflow) {
+        this.gr.setWorkflow(workflow);
+        this.gr.deleteRecord();
+    },
+    
+    isValid: function() {
+        return this.gr.isValidRecord();
+    },
+    
+    getValue: function(col) {
+        return this.gr.getValue(col);
+    },
+    
+    createNotification: function(params) {
+        var gr = new GlideRecord('planned_task_notification');
+        gr.source = params['source_id'];
+        gr.task = params['task_id'];
+        gr.shadow_task = params['shadow_task_id'];
+        gr.relation_applied = params['relation_applied'];
+        gr.message = params['msg'];
+        gr.setValue('start_date', params['start_date']);
+        gr.setValue('previous_start_date', params['previous_start_date']);
+        var id = gr.insert();
+        return new PlannedTaskNotification(gr);
+    },
+    
+    isNewNotificationPending: function(params) {
+        gs.info("Into PlannedTaskNotification.isNewNotificationPending -&gt; " + (new JSON()).encode(params));
+        var notification = this.getNewNotifications(params);
+        if ( notification.next() ) {
+            return { status: true, record: notification };
+        }
+        return { status: false };
+    },
+    
+    getNewNotificationsForProject: function(projectId) {
+        var gr = new GlideRecord('planned_task_notification');
+        gr.addQuery('task.top_task', projectId);
+        gr.addQuery('state', 'new');
+        gr.orderByDesc('sys_created_on');
+        gr.query();
+        return gr;
+    },
+    
+    getProcessedNotificationsForProject: function(projectId) {
+        var gr = new GlideRecord('planned_task_notification');
+        gr.addQuery('task.top_task', projectId);
+        gr.addQuery('state', 'processed');
+        gr.orderByDesc('sys_created_on');
+        gr.query();
+        return gr;
+    },
+    
+    markAllHardNotificationsAsProcessed: function(projectId) {
+        var gr = new GlideRecord('planned_task_notification');
+        gr.addNotNullQuery('status');
+        gr.addQuery('task.top_task', projectId);
+        gr.addQuery('state', 'new');
+        gr.query();
+        gr.setValue('state', 'processed');
+        gr.updateMultiple();
+    },
+    
+    getNewNotifications: function(params) {
+        gs.info("Into PlannedTaskNotification.getNewNotifications -&gt; " + (new JSON()).encode(params));
+        var gr = new GlideRecord('planned_task_notification');
+        gr.addQuery('source', params['source_id']);
+        gr.addQuery('task', params['task_id']);
+        gr.addQuery('shadow_task', params['shadow_task_id']);
+        gr.addQuery('relation_applied', params['relation_applied']);
+        gr.addQuery('state', 'new');
+        gr.query();
+        gs.info('Notifications pending '+gr.getRowCount());
+        return gr;
+    },
+    
+    markAsProcessed: function(notification) {
+        notification.setValue('state', 'processed');
+        notification.update();
+    },
+    
+    acceptNotification: function() {
+        this.gr.setValue('status', 'accept');
+        //notification.setValue('state', 'processed');
+        this.gr.update();
+    },
+    
+    clearNotifications: function(taskIds) {
+        gs.info("Into PlannedTaskNotification.clearNotifications -&gt; " + (new JSON()).encode(taskIds));
+        if(JSUtil.notNil(taskIds) &amp;&amp; taskIds.length &gt; 0) {
+            var gr = new GlideRecord('planned_task_notification');
+            gr.addQuery('shadow_task', "IN", taskIds.join(","));
+            gr.query();
+            gs.info("clearNotifications -&gt; " + gr.getRowCount() + " | " + gr.getEncodedQuery());
+            gr.deleteMultiple();
+        }
+    },
+  
+  getProject: function() {
+    return this.gr.task.top_task.getRefRecord();
+  },
+
+    type: 'PlannedTaskNotification'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-21 20:53:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;74198aea9f622200598a5bb0657fcf9e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;70&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlannedTaskNotification&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_74198aea9f622200598a5bb0657fcf9e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4059&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:32</sys_created_on>
+        <sys_id>2bcc053e2f331110d8a4d5f62799b69d</sys_id>
+        <sys_name>PlannedTaskNotification</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2bcc053e2f331110d8a4d5f62799b69d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>73a645e7b73313008ef6eac7ee11a9f4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeConflictSchedule&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This script include extends ChangeConflictScheduleSNC. Implementations should refer to this script-include. To change functionality in ChangeConflictScheduleSNC simply override the function here.&lt;/description&gt;
+        &lt;name&gt;ChangeConflictSchedule&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeConflictSchedule = Class.create();
+ChangeConflictSchedule.prototype = Object.extendsObject(ChangeConflictScheduleSNC, {
+
+	initialize: function() {
+		ChangeConflictScheduleSNC.prototype.initialize.apply(this, arguments);
+	},
+
+    type: 'ChangeConflictSchedule'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-14 10:28:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;73a645e7b73313008ef6eac7ee11a9f4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeConflictSchedule&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Collision Detector" source="com.snc.change.collision"&gt;479385476da620100acb70b3534330f0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_73a645e7b73313008ef6eac7ee11a9f4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-13 10:21:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;273&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:31</sys_created_on>
+        <sys_id>17cc053e2f331110d8a4d5f62799b677</sys_id>
+        <sys_name>ChangeConflictSchedule</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_17cc053e2f331110d8a4d5f62799b677</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

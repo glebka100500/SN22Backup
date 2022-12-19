@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>30087220eb1201007128a5fc5206fe2c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PhoneNumberDependent&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX call to get the PhoneTerritory from a dependent value change&lt;/description&gt;
+        &lt;name&gt;PhoneNumberDependent&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PhoneNumberDependent = Class.create();
+PhoneNumberDependent.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	process: function() {
+		var dependent = this.getParameter('sysparm_sys_id');
+		var gePN = new GlideElementPhoneNumber();
+		var userPhoneFormat = gePN.getPhoneFormatForUser(dependent);
+		if (userPhoneFormat == null)
+			userPhoneFormat = gePN.getPhoneFormatForLocation(dependent);
+		if (userPhoneFormat != null) {
+			var optionValue = userPhoneFormat.getGlobalDialingCode() + ","
+				+ userPhoneFormat.getLocalDialingCode() + ","
+				+ userPhoneFormat.isLocalFollowsGlobal();
+		
+			return escape(userPhoneFormat.getTerritory()) + "," + escape(optionValue);
+		}
+		return "";
+	},
+
+	type: 'PhoneNumberDependent'
+});
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-06-28 07:46:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;30087220eb1201007128a5fc5206fe2c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PhoneNumberDependent&lt;/sys_name&gt;
+        &lt;sys_package display_value="E164 Compliant Phone Number" source="com.glide.phone_number"&gt;e021890f6d2620100acb70b3534330bd&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_30087220eb1201007128a5fc5206fe2c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-08 15:55:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;735&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:42</sys_created_on>
+        <sys_id>ec6c41ba2f331110d8a4d5f62799b628</sys_id>
+        <sys_name>PhoneNumberDependent</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ec6c41ba2f331110d8a4d5f62799b628</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

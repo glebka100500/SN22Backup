@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5a9fb236f5140010fa9b870a4b7c3182</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProductFieldCheck&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ProductFieldCheck&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProductFieldCheck = Class.create();
+ProductFieldCheck.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	isAnAssetForm: function(current_view, current_target){
+		var isReferenceList = (current_view == 'sys_ref_list');
+		var isHardwareForm = (current_target == 'alm_hardware.model');
+		var isConsumableForm = (current_target == 'alm_consumable.model');
+		var isFacilityForm = (current_target == 'alm_facility.model');
+		return isReferenceList &amp;&amp; (isHardwareForm || isConsumableForm || isFacilityForm);
+	},
+
+    type: 'ProductFieldCheck'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-10-09 00:19:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5a9fb236f5140010fa9b870a4b7c3182&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProductFieldCheck&lt;/sys_name&gt;
+        &lt;sys_package display_value="Model Management" source="com.snc.model"&gt;680e780f6d2220100acb70b3534330e5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5a9fb236f5140010fa9b870a4b7c3182&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-10-09 00:19:52&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;553&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:44</sys_created_on>
+        <sys_id>339cc1fa2f331110d8a4d5f62799b6e1</sys_id>
+        <sys_name>ProductFieldCheck</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_339cc1fa2f331110d8a4d5f62799b6e1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

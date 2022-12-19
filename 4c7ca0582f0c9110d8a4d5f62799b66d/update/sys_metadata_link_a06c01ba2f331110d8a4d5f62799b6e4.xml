@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2fcf7512c0a80a6828f12b8e4c9fd197</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;false&lt;/active&gt;
+        &lt;api_name&gt;global.PasswordResetAJAX&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX Script to process a password reset from a UI Page as guest.&lt;/description&gt;
+        &lt;name&gt;PasswordResetAJAX&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PasswordResetAJAX = Class.create();
+
+PasswordResetAJAX.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+   
+   isPublic: function() {
+        return true;
+   },
+      
+   process : function() {
+      var userid = this.getParameter('sysparm_userid');
+      var email = this.getParameter('sysparm_email') ;
+      var response = this._resetPassword(userid, email);
+      var item = this.newItem();
+      item.setAttribute("result", response.split(':')[0]);
+      item.setAttribute("message", response.split(':')[1]);
+   },
+   
+   _resetPassword : function(userid, email) {
+      var msg = "";
+      var usr = new GlideRecord('sys_user');
+      usr.addQuery('active', 'true');
+      usr.addQuery('user_name', userid);
+      usr.queryNoDomain();
+      if(usr.next()) {
+         //alert and exit if ldap account
+         if (usr.source.toString().startsWith('ldap')) {
+            msg = gs.getMessage("Use your network password to log into Service-now. If your network password does not work, contact your service desk.");
+            return "Error:" + msg;
+         }
+         if(usr.email.toLowerCase() != email.toLowerCase()) {
+            msg = gs.getMessage("Either the username or email address does not match an active user in our system");
+            return "Error:" + msg;
+         }
+         else {
+            newpw = "";
+            var availablechars = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            for(var x = 0; x &lt; 8; x++) {
+               randomNumber = GlideSecureRandomUtil.getSecureRandomIntBound(availablechars.length);
+               newpw += availablechars[randomNumber];
+            }
+            usr.user_password.setDisplayValue(newpw);
+            usr.password_needs_reset = true;
+            usr.update();
+            gs.eventQueue("password.reset", usr, email, newpw);
+            msg = gs.getMessage("Your password has been reset and will be emailed to the address in our system");
+            return "Success:" + msg;
+         }
+      } else {
+         msg = gs.getMessage("Either the username or email address does not match an active user in our system");
+         return "Error:" + msg;
+      }
+   },
+   
+   type : "PasswordResetAJAX"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;john.roberts&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-10-07 16:25:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2fcf7512c0a80a6828f12b8e4c9fd197&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PasswordResetAJAX&lt;/sys_name&gt;
+        &lt;sys_package display_value="Self Service Password Reset" source="com.snc.password_reset"&gt;214385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2fcf7512c0a80a6828f12b8e4c9fd197&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-12 12:01:12&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2212&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:41</sys_created_on>
+        <sys_id>a06c01ba2f331110d8a4d5f62799b6e4</sys_id>
+        <sys_name>PasswordResetAJAX</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a06c01ba2f331110d8a4d5f62799b6e4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

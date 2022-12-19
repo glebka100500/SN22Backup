@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>024310382f131110d8a4d5f62799b697</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.JiraIntegrationRESTUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;JiraIntegrationRESTUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var JiraIntegrationRESTUtils = Class.create();
+JiraIntegrationRESTUtils.prototype = {
+    initialize: function() {
+		var client_id = 'IiwDK7YV9X3cy73caoasttj9a5wTc8WK';
+		var client_secret ='ATOAtc_8GBMQRGJ2GF6oK76YevmxG4BOWaICUPrWtvt2k4fdffAxtjGEf__EeI7pv7th65B57C3F';
+		var oauthProfile = new GlideQuery('oauth_entity_profile')
+		.where('name', 'Google OAuth 2.0 Demo V2 default_profile')
+		.selectOne()
+		.get();
+		var oauthRequest = new GlideQuery('oauth_requestor_profile')
+		.where('oauth_entity_profile', oauthProfile.sys_id)
+		.where('requestor_context', 'sys_rest_message'); // get  request id of request for sys_rest_message
+		this.credentials =  new  sn_auth.GlideOAuthClient().getToken(oauthRequest.request_id, oauthProfile.sys_id);
+    },
+	
+	
+
+    type: 'JiraIntegrationRESTUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-11-18 14:38:32&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;024310382f131110d8a4d5f62799b697&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;JiraIntegrationRESTUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_024310382f131110d8a4d5f62799b697&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-11-18 15:35:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;814&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:47</sys_created_on>
+        <sys_id>4f2c017a2f331110d8a4d5f62799b6b9</sys_id>
+        <sys_name>JiraIntegrationRESTUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4f2c017a2f331110d8a4d5f62799b6b9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

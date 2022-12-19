@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4ca86631ff001000dadaebcfebffad45</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXCurrencyValues&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Get currency values from a GlideRecord&lt;/description&gt;
+        &lt;name&gt;AJAXCurrencyValues&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/*
+ * given a GlideRecord table, sys_id and currency field get the various currency
+ * field values for the client
+ */
+var AJAXCurrencyValues = Class.create();
+
+AJAXCurrencyValues.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	process : function() {
+		if (gs.getProperty("glide.i18n.single_currency") == "true")
+				this.singleCurrencyEnabled = true;
+		this.singleCurrencyCode = gs.getProperty("glide.i18n.single_currency.code");
+		
+		if (this.getName() == 'getCurrencyValues') {
+			var table = this.getParameter("sysparm_table");
+			var sysid = this.getParameter("sysparm_id");
+			var field = this.getParameter("sysparm_field");
+			return this.getCurrencyValues(table, sysid, field);
+		}
+	},
+
+	getCurrencyValues : function(table, sysid, element) {
+		var record = new GlideRecordSecure(table);
+		record.get(sysid);
+		if (!record.isValid()) {
+			this.setError("Invalid GlideRecord " + table + ":" + sysid);
+			return;
+		}
+
+		if (record.isValidField(element) == false) {
+			this.setError("Invalid field: " + element + " on table " + table);
+			return;
+		}
+
+		var field = record.getElement(element);
+
+		if (field == null || typeof field.getCurrencyString != "function") {
+			this.setError("Field " + element
+					+ " doesn't appear to be a currency/price field");
+			return;
+		}
+
+		var values = this.newItem("values");
+		//system
+		values.setAttribute("reference_value", field.getReferenceValue()); // 12500 decimal stored value in system currency
+		values.setAttribute("reference_display", field.getReferenceDisplayValue()); //$ 12.500,00 stored value and currency
+		values.setAttribute("reference_currency", field.getReferenceCurrencyCode()); // USD stored currency
+		values.setAttribute("currency_string", field.getCurrencyString()); //USD;12500 stored value
+		
+		//session formats
+		values.setAttribute("display_value", field.getDisplayValue());  // € 8.789,20 converted to user currency/format
+		values.setAttribute("session_value", field.getSessionValue()); // 8789.20 decimal converted to user currency
+		values.setAttribute("session_display", field.getSessionDisplayValue()); // € 8.789,20
+		values.setAttribute("session_currency", field.getSessionCurrencyCode());  // EUR
+		
+		var config = this.newItem("config");
+		config.setAttribute("single_currency_enabled", this.isSingleCurrency());
+		config.setAttribute("single_currency_code", this.getSingleCurrencyCode());
+		
+	},
+
+	isSingleCurrency: function() {
+		return this.singleCurrencyEnabled;
+	},
+	
+	getSingleCurrencyCode: function() {
+		return this.singleCurrencyCode;
+	},
+	
+	isPublic: function() {
+		return false;
+	}
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;john.roberts&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-07-24 18:55:55&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4ca86631ff001000dadaebcfebffad45&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXCurrencyValues&lt;/sys_name&gt;
+        &lt;sys_package display_value="Currency support (costs and pricing)" source="com.glide.currency"&gt;421dfcc36d2220100acb70b3534330d2&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4ca86631ff001000dadaebcfebffad45&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-18 20:12:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2595&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:22</sys_created_on>
+        <sys_id>da8c4dba2f331110d8a4d5f62799b69b</sys_id>
+        <sys_name>AJAXCurrencyValues</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_da8c4dba2f331110d8a4d5f62799b69b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>53e2ef5073ee10109cc5aa114df6a7ab</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GetChoiceFields&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Returns list of fields which are of type choice.&lt;/description&gt;
+        &lt;name&gt;GetChoiceFields&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var GetChoiceFields = Class.create();
+GetChoiceFields.prototype = {
+    initialize: function() {
+    },
+
+	process: function(tableName) {
+		var fieldNames = [];
+	
+		if (!tableName)
+			return fieldNames;
+	
+		var gr = new GlideRecord(tableName);
+		if (!gr.isValid())
+			return fieldNames;
+	
+		var elements = gr.getElements();
+
+		// Scoped vs Global calls to getElements returns different objects
+		var elementsLength = elements.size();
+		for (var i = 0; i &lt; elementsLength; i++) {
+			var element = elements.get(i).getED();
+			if (!element.isChoiceTable())
+				continue;
+	
+			fieldNames.push(element.getName());
+		}
+	
+		return fieldNames;
+	},
+	
+    type: 'GetChoiceFields'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-08-07 00:57:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;53e2ef5073ee10109cc5aa114df6a7ab&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GetChoiceFields&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_53e2ef5073ee10109cc5aa114df6a7ab&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-08-10 20:29:36&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;671&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:32</sys_created_on>
+        <sys_id>c19ccdba2f331110d8a4d5f62799b664</sys_id>
+        <sys_name>GetChoiceFields</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c19ccdba2f331110d8a4d5f62799b664</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

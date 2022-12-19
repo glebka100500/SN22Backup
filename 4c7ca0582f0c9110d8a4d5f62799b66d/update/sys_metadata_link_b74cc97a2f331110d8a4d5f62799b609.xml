@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>200b28bf3b03230028fa456993efc416</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.IBMWatsonNLUAdapter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Adapts models, intents, an entities to/from the IBM Watson NLU Server.&lt;/description&gt;
+        &lt;name&gt;IBMWatsonNLUAdapter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var IBMWatsonNLUAdapter = Class.create();
+IBMWatsonNLUAdapter.prototype = Object.extendsObject(global.HttpNLUAdapter, {
+	initialize: function() {
+	},
+
+	type: 'IBMWatsonNLUAdapter',
+
+	toModels: function(ibmWorkspaces) {
+		if (gs.nil(ibmWorkspaces) ||
+			gs.nil(ibmWorkspaces.workspaces) ||
+			gs.nil(ibmWorkspaces.workspaces.length)) return;
+
+		var models = [];
+		for (var i = 0; i &lt; ibmWorkspaces.workspaces.length; i++) {
+			var workspace = ibmWorkspaces.workspaces[i];
+			if (workspace.name === 'Base')
+				continue;
+			models.push(this._toModel(workspace));
+		}
+
+		return {'models': models};
+	},
+
+	toModelIntents: function(ibmWorkspaceId, ibmIntents) {
+		var intents = [];
+		if (!gs.nil(ibmIntents) &amp;&amp; !gs.nil(ibmIntents.intents.length)) {
+			for (var i = 0; i &lt; ibmIntents.intents.length; i++) {
+				intents.push(this._toIntent(ibmIntents.intents[i]));
+			}
+		}
+		return {'model_id': ibmWorkspaceId, 'intents': intents};
+	},
+
+	toModelEntities: function(ibmWorkspaceId, ibmEntities) {
+		var entities = [];
+		if (!gs.nil(ibmEntities) &amp;&amp; !gs.nil(ibmEntities.entities.length)) {
+			for (var i = 0; i &lt; ibmEntities.entities.length; i++) {
+				entities.push(this._toEntity(ibmEntities.entities[i]));
+			}
+		}
+		return {'model_id': ibmWorkspaceId, 'entities': entities};
+	},
+
+	toError: function(errorCode, errorMessage) {
+		var errorType = 'SERVER_ERROR';
+		if (errorCode === 400) {
+			errorType = 'BAD_REQUEST';
+		} else if (errorCode === 404) {
+			errorType = 'NOT_FOUND';
+		} else if (errorCode === 401 || errorCode === 403) {
+			errorType = 'UNAUTHORIZED';
+		}
+		return {'type': errorType, 'message': errorMessage, 'provider_error': errorCode};
+	},
+
+	toPredictionResult: function(ibmPredictionResult, modelId) {
+		var i = 0;
+
+		var scoredIntents = [];
+		for (i = 0; i &lt; ibmPredictionResult.intents.length; i++) {
+			var ibmIntent = ibmPredictionResult.intents[i];
+			scoredIntents.push({
+				"name": ibmIntent.intent,
+				"id": ibmIntent.intent,
+				"confidence": ibmIntent.confidence
+			});
+		}
+
+		var scoredEntities = [];
+		for (i = 0; i &lt; ibmPredictionResult.entities.length; i++) {
+			var ibmEntity = ibmPredictionResult.entities[i];
+			scoredEntities.push({
+				"name": ibmEntity.entity,
+				"id": ibmEntity.entity,
+				"value": ibmEntity.value,
+				"confidence": ibmEntity.confidence
+			});
+		}
+
+		return {
+			"model_id": modelId,
+			"scored_intents": scoredIntents,
+			"scored_entities": scoredEntities,
+			"raw_provider_result": JSON.stringify(ibmPredictionResult)
+		};
+	},
+
+	_toModel: function(ibmWorkspace) {
+		if (gs.nil(ibmWorkspace)) return;
+		return {
+			'name': ibmWorkspace.name,
+			'id': ibmWorkspace.workspace_id,
+			'language': ibmWorkspace.language
+		};
+	},
+
+	_toIntent: function(ibmIntent) {
+		if (gs.nil(ibmIntent)) return;
+		return {'name': ibmIntent.intent, 'id': ibmIntent.intent};
+	},
+
+	_toEntity: function(ibmEntity) {
+		if (gs.nil(ibmEntity)) return;
+		return {'name': ibmEntity.entity, 'id': ibmEntity.entity};
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-01-23 16:30:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;200b28bf3b03230028fa456993efc416&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;47&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;IBMWatsonNLUAdapter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Proxy Agent to the IBM Watson Natural Language Understanding server" source="com.glide.nlu.ibmwatson.intent.discovery"&gt;b3377e0f2f400110d8a4d5f62799b6d2&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_200b28bf3b03230028fa456993efc416&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-02-04 11:56:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2947&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:22</sys_created_on>
+        <sys_id>b74cc97a2f331110d8a4d5f62799b609</sys_id>
+        <sys_name>IBMWatsonNLUAdapter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b74cc97a2f331110d8a4d5f62799b609</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

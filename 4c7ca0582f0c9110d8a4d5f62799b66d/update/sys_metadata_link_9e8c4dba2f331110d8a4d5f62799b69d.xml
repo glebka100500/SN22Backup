@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4cac09d10b10220050192f15d6673ab1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ATFStepDescriptionGenerator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Common methods to help create the generated descriptions for Automated Testing Framework steps.&lt;/description&gt;
+        &lt;name&gt;ATFStepDescriptionGenerator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ATFStepDescriptionGenerator = Class.create();
+
+ATFStepDescriptionGenerator.prototype = {
+	initialize: function() {
+	},
+
+	getOpenFormDescription: function(table, view, record_id, form_ui) {
+		var td, label;
+		var isStandardFormUI = !form_ui || form_ui.toString() === "standard_ui";
+		var formUIName = "";
+		if (!isStandardFormUI)
+			formUIName = form_ui.getDisplayValue();
+		// Find table label
+		td = GlideTableDescriptor.get(table);
+		if (td)
+			label = td.getLabel();
+
+		var messageMap = {
+			"new_standard_ui_view":  gs.getMessage("Open the '{0}' view of a new '{1}' form", [view, label]),
+			"existing_standard_ui_view": gs.getMessage("Open the '{0}' view of the '{1}' form with id '{2}'", [view, label, record_id]),
+			"new_standard_ui_default": gs.getMessage("Open a new '{0}' form", [label]),
+			"new_workspace_default": gs.getMessage("Open a new '{0}' form in '{1}'", [label, formUIName]),
+			"existing_standard_ui_default": gs.getMessage("Open the '{0}' form with id '{1}'", [label, record_id]),
+			"existing_workspace_default": gs.getMessage("Open the '{0}' form with id '{1}' in '{2}'", [label, record_id, formUIName])
+		};
+
+		// build a key based on the provided input variables
+		var recordKey = gs.nil(record_id) ? "new_" : "existing_";
+		var workspaceKey = isStandardFormUI ? "standard_ui_" : "workspace_";
+		var viewKey = "default";
+		// only use view if in standard ui
+		if (workspaceKey === "standard_ui_" &amp;&amp; view)
+			viewKey = "view";
+
+		return messageMap[recordKey + workspaceKey + viewKey];
+	},
+
+	getTimeoutDescription: function(timeout) {
+		if (GlideStringUtil.nil(timeout))
+			return "";
+
+		var seconds = timeout.dateNumericValue();
+		var description = "";
+		if (seconds &gt; 0)
+			description = "\n" + gs.getMessage("With a failure timeout of {0}", timeout.getDisplayValue());
+
+		return description;
+	},
+
+	/**
+	 * Translates an encoded query, such as one from a conditions field, into a human readable format
+	 */
+	getConditionDescription: function(tableName, encodedQuery){
+		return SNC.ATFVariableElementMapper.getConditionDescription(tableName, encodedQuery);
+	},
+
+	/**
+	 * Processes first/last name logic and translates an encoded query, such as one from a conditions field, into a human readable format
+	 */
+	getUserConditionDescription: function(encodedQuery, firstName, lastName) {
+		return SNC.ATFVariableElementMapper.getUserConditionDescription(encodedQuery, firstName, lastName);
+	},
+
+	/**
+	 * Returns a comma-separated string of field labels, given a comma-separated string of field names
+	 */
+	getFields: function(fields, table) {
+		var fieldElements = fields.split(",");
+		var fieldNames = [];
+		for (var i = 0; i &lt; fieldElements.length; i++) {
+			var fieldName = new sn_atf.UserTestProcessor().getFieldName(table, fieldElements[i]);
+			fieldNames.push(fieldName);
+		}
+
+		return fieldNames.join(", ");
+	},
+
+	getOperatorDescription: function(inputOperator){
+		var retValue = "UNDEFINED";
+		switch (inputOperator.toString())
+		{
+			case 'contains':
+				retValue = "contains";
+				break;
+			case 'does_not_contain':
+				retValue = "does not contain";
+				break;
+			case 'exists':
+				retValue = "is not empty";
+				break;
+			case 'equals':
+				retValue = "is";
+				break;
+			case 'not_equals':
+				retValue = "is not";
+				break;
+			case 'less_than':
+				retValue = "less than";
+				break;
+			case 'less_than_equals':
+				retValue = "less than or is";
+				break;
+			case 'greater_than':
+				retValue = "greater than";
+				break;
+			case 'greater_than_equals':
+				retValue = "greater than or is";
+				break;
+		}
+		return retValue;
+	},
+
+	limitTextToSpecifiedLength: function(inputText, limit){
+		if (inputText == undefined || limit &lt; 1)
+			return inputText;
+		inputText = inputText.toString();
+		if (inputText.length &gt; limit)
+			inputText = inputText.substring(0, limit) + '...';
+		return inputText;
+	},
+
+	/**
+	 * Returns a list of the filenames for the attachments on the record with the specified sys_id (one per line, including prepending a new line for the first one)
+	 */
+	getAttachmentsForRecord: function(recordID) {
+		var result = "";
+		var attachmentGR = new GlideRecord("sys_attachment");
+		attachmentGR.addQuery("table_sys_id", recordID);
+		attachmentGR.query();
+		// These filenames cannot be translated so send them as-is
+		while (attachmentGR.next())
+			result += "\n" + attachmentGR.getValue("file_name");
+		return result;
+	},
+
+	type: 'ATFStepDescriptionGenerator'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-06-27 22:59:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4cac09d10b10220050192f15d6673ab1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ATFStepDescriptionGenerator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Automated Test Framework" source="com.glide.automated_testing_framework"&gt;0dd2c54f6d6620100acb70b353433008&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4cac09d10b10220050192f15d6673ab1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-05-05 23:26:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4417&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:22</sys_created_on>
+        <sys_id>9e8c4dba2f331110d8a4d5f62799b69d</sys_id>
+        <sys_name>ATFStepDescriptionGenerator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9e8c4dba2f331110d8a4d5f62799b69d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

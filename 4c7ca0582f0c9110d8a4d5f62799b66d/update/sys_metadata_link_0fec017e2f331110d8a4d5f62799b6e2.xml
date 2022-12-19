@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>84104f500b722200a6acc93563673a02</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Agile2SecurityManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Agile Development 2.0 specific implementation to support unified Agile in SDLC.&lt;/description&gt;
+        &lt;name&gt;Agile2SecurityManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var Agile2SecurityManager = Class.create();
+Agile2SecurityManager.prototype = Object.extendsObject(ScrumSecurityManagerDefault,{
+	initialize: function() {
+	},
+	
+	/*
+ 	* Todo; Ideally 'getStoryDotSprint' should be overridden for handling Project specific
+ 	* cases and delegate callback to parent.
+ 	* Copied complete implementation because of issuess with $super.
+ 	* */
+	getStoryDotSprint: function (recStory) {
+		var table = recStory.getTableName();
+		if (table !== 'rm_story' &amp;&amp; recStory.isValidField('story')) {
+			if (!recStory.story.nil())
+				recStory = recStory.story.getRefRecord();
+			else {
+				gs.warn('Unsupported reference qualifier for type : ' + table);
+				return;
+			}
+		}
+		//Case1: Return all active sprints associated to assignment group
+		if (JSUtil.notNil(recStory.assignment_group)) {
+			return 'sys_class_name=rm_sprint^assignment_group='+recStory.assignment_group+'^active=true';
+		}
+		// Case2: Return all active sprints in system
+		return 'sys_class_name=rm_sprint^active=true';
+	},
+	
+	getStoryDotAssignedTo: function (recRmStory) {
+		var arrMemberSysIds = [];
+		
+		// Case 0: if assignment group is populated, return all members of it
+		if (!recRmStory.assignment_group.isNil()) {
+			var members = new GlideRecord('sys_user_grmember');
+			members.addQuery('group', recRmStory.getValue('assignment_group'));
+			members.query();
+			while (members.next()) {
+				arrMemberSysIds.push(members.getValue('user'));
+			}
+			if (arrMemberSysIds.length &gt; 0)
+				return arrMemberSysIds;
+		}
+		
+		// Case 1: Return all the users with the scrum_user role
+		var recSysUserRole = new GlideRecord("sys_user_role");
+		recSysUserRole.addQuery("name", "scrum_user");
+		recSysUserRole.query();
+		if (recSysUserRole.next()) {
+			var recSysUserHasRole = new GlideRecord("sys_user_has_role");
+			recSysUserHasRole.addQuery("role", recSysUserRole.sys_id);
+			recSysUserHasRole.query();
+			while (recSysUserHasRole.next())
+				arrMemberSysIds.push(recSysUserHasRole.user + "");
+		}
+		return arrMemberSysIds;
+	},
+	
+	getSprintDotReleaseTeam: function (recRmSprint) {
+		// gs.log ("[DEBUG] ---&gt; INSIDE SSMD......");
+		var arrScrumPPTeamSysIds = [];
+		var recScrumPPTeam = new GlideRecord("scrum_pp_team");
+		// Release may or may not avaialble
+		recScrumPPTeam.addQuery("release", recRmSprint.release);
+		// gs.log ("[DEBUG] release = " + recRmSprint.release);
+		//if (recRmSprint.release_team) {
+			//   recScrumPPTeam.addQuery ("sys_id", "!=", recRmSprint.release_team);
+			// gs.log ("[DEBUG] release_team = " + recRmSprint.release_team);
+			//}
+			recScrumPPTeam.query();
+			while (recScrumPPTeam.next()) {
+				// gs.log ("[DEBUG] Matched = " + recScrumPPTeam.sys_id);
+				arrScrumPPTeamSysIds.push(recScrumPPTeam.sys_id + "");
+			}
+			
+			return arrScrumPPTeamSysIds;
+		},
+		
+		/* Filter Team Memeber based on role as well as already associated with Team. */
+		getTeamMemberDotName: function (teamMember) {
+			function getScrumUsers() {
+				var arrSysIds = [];
+				var requiredRoles = [];
+				var recSysUserRole = new GlideRecord("sys_user_role");
+				recSysUserRole.addQuery("name", "IN", "scrum_user,scrum_admin");
+				recSysUserRole.query();
+				while (recSysUserRole.next()) {
+					requiredRoles.push(recSysUserRole.getValue('sys_id'));
+				}
+				if (requiredRoles.length &gt; 0) {
+					var recSysUserHasRole = new GlideRecord("sys_user_has_role");
+					recSysUserHasRole.addQuery("role", "IN", requiredRoles.join(','));
+					recSysUserHasRole.query();
+					while (recSysUserHasRole.next()) {
+						arrSysIds.push(recSysUserHasRole.user + "");
+					}
+				}
+				return arrSysIds;
+			}
+			
+			function getTeamMember(teamMember) {
+				var arrSysIds = [];
+				var recScrumReleaseTeamMember = new GlideRecord("scrum_pp_team_member");
+				recScrumReleaseTeamMember.addQuery("team", teamMember.team);
+				recScrumReleaseTeamMember.query();
+				while (recScrumReleaseTeamMember.next()) {
+					arrSysIds.push(recScrumReleaseTeamMember.name + "");
+				}
+				return arrSysIds;
+			}
+			
+			var arrScrumUsers = getScrumUsers();
+			var arrTeamMember = getTeamMember(teamMember);
+			var arrSelectUser = new ArrayUtil().diff(arrScrumUsers, arrTeamMember);
+			return arrSelectUser;
+		},
+		getStoryDotTeam: function (recStory) {
+			var teamSysIds = [];
+			if (recStory.project) {
+				var prjUtil = new ppm_int_ProjectUtil(recStory.project);
+				teamSysIds = prjUtil.getTeams();
+				return teamSysIds;
+			}
+			var scrumTeam = new GlideRecord('sys_user_group');
+			scrumTeam.addActiveQuery();
+			scrumTeam.addEncodedQuery('roles=scrum_admin^ORroles=scrum_user');
+			scrumTeam.query();
+			while (scrumTeam.next()) {
+				teamSysIds.push(scrumTeam.sys_id + "");
+			}
+			return teamSysIds;
+		},
+		getStoryDotGroup: function (recStory) {
+			var groupSysIds = [];
+			if (recStory.product){
+				var productGroup = new GlideRecord('m2m_product_group');
+				productGroup.addQuery('product',recStory.product);
+				productGroup.query();
+				while(productGroup.next())
+					groupSysIds.push(productGroup.getValue('group'));
+			}
+			if (gs.tableExists("pm_project_task") &amp;&amp; recStory.project_phase){
+				var projectTask = new GlideRecord('pm_project_task');
+				if(projectTask.get(recStory.project_phase)&amp;&amp;projectTask.assignment_group)
+					groupSysIds.push(projectTask.assignment_group);
+			}
+			if (groupSysIds.length &gt; 0)
+				return groupSysIds;
+			
+			var agileTeam = new GlideRecord('sys_user_group');
+			agileTeam.addActiveQuery();
+			agileTeam.addQuery('type', 'CONTAINS', '1bff3b1493030200ea933007f67ffb6d');
+			agileTeam.query();
+			while (agileTeam.next()) {
+				groupSysIds.push(agileTeam.sys_id + "");
+			}
+			return groupSysIds;
+		},
+		getStoryDotPhases: function(recStory){
+			if(JSUtil.notNil(recStory.project)){
+				var agilePhases =[];
+				var phases = new GlideRecord('pm_project_task');
+				phases.addQuery('parent',recStory.project);
+				phases.addQuery('phase_type','agile');
+				phases.query();
+				while(phases.next()){
+					agilePhases.push(phases.getValue('sys_id'));
+				}
+				return agilePhases;
+			}
+		},
+		getPhaseDotGroup: function(phase,column_name){
+			var phaseType = phase.getValue('phase_type');
+			var query;
+			
+			if(JSUtil.notNil(phaseType) &amp;&amp; phaseType === 'agile'){
+				query = 'type=1bff3b1493030200ea933007f67ffb6d';
+			}else{
+				var dbObject = GlideDBObjectManager.get();
+				var phaseTableName = phase.getTableName();
+				var parentTable = dbObject.getBase(phaseTableName);
+				var parentTableDescriptor = new GlideTableDescriptor(parentTable);
+				var elementDescriptor = parentTableDescriptor.getElementDescriptor(column_name, true);
+				query = elementDescriptor.getReferenceQualifier();
+			}
+			return query;
+		},
+		
+		getStoryDotRelease: function (recStory) {
+			var arrReleaseSysIds = [];
+			if(JSUtil.notNil(recStory.product)){
+				var recProductRelease = new GlideRecord("m2m_product_release");
+				recProductRelease.addQuery('model',recStory.product);
+				recProductRelease.addQuery('release.active',true);
+				recProductRelease.query();
+				while (recProductRelease.next ()) {
+					arrReleaseSysIds.push(recProductRelease.release + "");
+				}
+				return 'sys_idIN' + arrReleaseSysIds.join(',');
+			}else{
+				return 'active=true';
+			}
+		},
+		
+		validateSprintFields: function(sprintRecord){
+			var abortSave = false;
+			/* Validate alterntive mandatory fields */
+			if(JSUtil.nil(sprintRecord.assignment_group)) {
+				gs.addErrorMessage(gs.getMessage("Please provide Group with which this sprint should associate"));
+				abortSave = true;
+			}else {// Validate Sprints for Team
+				var sprintStart = JSUtil.notNil(sprintRecord.start_date) ? sprintRecord.start_date.getGlideObject().getNumericValue() : -1;
+				var sprintEnd = JSUtil.notNil(sprintRecord.end_date) ? sprintRecord.end_date.getGlideObject().getNumericValue() : -1;
+				
+				if(sprintStart === -1 || sprintEnd === -1) {
+					if (sprintStart === -1)
+						sprintRecord.start_date.setError(gs.getMessage("Please provide a date from which this sprint should start"));
+					if (sprintEnd === -1)
+						sprintRecord.end_date.setError(gs.getMessage("Please provide a date for when this sprint should end"));
+					abortSave = true;
+				} else if(sprintStart &gt; sprintEnd) {
+					sprintRecord.start_date.setError(gs.getMessage("Please ensure sprint start is not after sprint end"));
+					abortSave = true;
+				}
+			}
+			return abortSave;
+		},
+		
+		getStoryDotEpic: function (recStory) {
+			var encodedQuery = 'sys_class_name=rm_epic^state!=4';
+			
+			if (!recStory.product.nil())
+				encodedQuery += '^product=' + recStory.getValue('product') + '^ORproductISEMPTY';
+
+			return encodedQuery;
+		},
+		
+		getStoryDotTheme: function (recStory) {
+			var arrSysIdsOfThemes = [];
+			var recScrumThemes = new GlideRecord("scrum_theme");
+			if(recStory.product)
+				recScrumThemes.addQuery("product", recStory.product).addOrCondition("product", "NULL");
+			recScrumThemes.query();
+			while(recScrumThemes.next()) {
+				arrSysIdsOfThemes.push(recScrumThemes.sys_id + "");
+			}
+			return arrSysIdsOfThemes;
+		},
+		
+		getReleaseGroupAssignmentDotSprints: function(releaseGroupAssignment){
+			var release = releaseGroupAssignment.release.getRefRecord();
+			var group = releaseGroupAssignment.group;
+			var releaseStartDate = release.getValue('start_date');
+			var releaseEndDate = release.getValue('end_date');
+			var requiredSprints = [];
+			var sprints = new GlideRecord('rm_sprint');
+			sprints.addQuery('assignment_group',group);
+			sprints.addQuery('start_date', '&lt;=',releaseEndDate);
+			sprints.addQuery('end_date', '&gt;=',releaseStartDate);
+			sprints.query();
+			while(sprints.next()) {
+				requiredSprints.push(sprints.sys_id + "");
+			}
+			return requiredSprints;
+		},
+		
+		getStoryDotProject: function(story){
+			var projectId;
+			var qualifier = 'sys_class_nameIN'+PPMRoleClassMapper.getClasses('project', gs.getUser());
+			if(JSUtil.notNil(story.demand)){
+				projectId = story.demand.project + '';
+				qualifier = 'sys_idIN'+projectId;
+			}
+			qualifier += '^execution_typeNOT INwaterfall';
+			return qualifier;
+		},
+		
+		isAgileGroup: function(recGroup){
+			return ((typeof recGroup !== 'undefined' &amp;&amp; recGroup.type.indexOf(ScrumSecurityManager.AGILE_TEAM) &gt;= 0));
+		},
+		
+		getEpicDotTheme: function (recEpic) {
+			var arrSysIdsOfThemes = [];
+			var recScrumThemes = new GlideRecord("scrum_theme");
+			recScrumThemes.addQuery("product", recEpic.product).addOrCondition("product", "NULL");
+			recScrumThemes.query();
+			while(recScrumThemes.next()) {
+				arrSysIdsOfThemes.push(recScrumThemes.sys_id + "");
+			}
+			return arrSysIdsOfThemes;
+		},
+		
+		type: 'Agile2SecurityManager'
+	});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-27 11:31:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;84104f500b722200a6acc93563673a02&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;53&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Agile2SecurityManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_84104f500b722200a6acc93563673a02&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-14 06:38:21&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10566&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:03</sys_created_on>
+        <sys_id>0fec017e2f331110d8a4d5f62799b6e2</sys_id>
+        <sys_name>Agile2SecurityManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0fec017e2f331110d8a4d5f62799b6e2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

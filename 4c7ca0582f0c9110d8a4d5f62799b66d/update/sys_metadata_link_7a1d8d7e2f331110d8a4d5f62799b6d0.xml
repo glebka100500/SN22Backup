@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>96fc13df679622006e1e82f45685efe6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UICustomizationDebugAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;UICustomizationDebugAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UICustomizationDebugAjax = Class.create();
+UICustomizationDebugAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getUIDebugInfo: function() {
+		this._setUIElementByName(this.getParameter('ui_page_name'), "page");
+		var ui_macro_sys_id_list = new JSON().decode(this.getParameter('ui_macro_sys_id_list'));
+		for (var i = 0; i &lt; ui_macro_sys_id_list.length; i++) {
+			this._setUIElementByID(ui_macro_sys_id_list[i], "macro");
+		}
+	},
+
+	_getSysID: function(name, type) {
+		var gr1 = new GlideRecord('sys_ui_' + type);
+		gr1.addQuery('name', name);
+		gr1.query();
+		gr1.next();
+		return gr1.getValue('sys_id');
+	},
+
+	_getName: function(sys_id, type) {
+		var gr1 = new GlideRecord('sys_ui_' + type);
+		gr1.addQuery('sys_id', sys_id);
+		gr1.query();
+		gr1.next();
+		return gr1.getValue('name');
+	},
+
+	_getBorderColor: function(sys_id, type) {
+		var firstRecordVisited = false;
+		var lastUpdateTime;
+		var gr2 = new GlideRecord('sys_update_version');
+		gr2.addQuery('name', 'sys_ui_' + type + '_' + sys_id);
+		gr2.orderByDesc('sys_updated_on');
+		gr2.query();
+		if (!gr2.hasNext())
+			return "Unchanged";
+
+		while (gr2.hasNext()) {
+			gr2.next();
+			if (!firstRecordVisited) {
+				if (gr2.getValue('source_table') == "sys_upgrade_history" &amp;&amp; gr2.getValue('state') == "current")
+					return "Unchanged";
+
+				lastUpdateTime = gr2.getValue('sys_updated_on');
+				firstRecordVisited = true;
+			}
+			if (gr2.getValue('source_table') == "sys_upgrade_history") {
+				if (gr2.getValue('state') == "previous")
+					return "Customized";
+
+				if (!this._isReplaced(sys_id, type, gr2.getValue('sys_updated_on')))
+					return "Skipped";
+
+				if (gr2.getValue('sys_updated_on') == lastUpdateTime)
+					return "Unchanged";
+			}
+		}
+		return "New";
+	},
+
+	_isReplaced: function(sys_id, type, sys_updated_on) {
+		var gr3 = new GlideRecord('sys_update_version');
+		gr3.addQuery('name', 'sys_ui_' + type + '_' + sys_id);
+		gr3.addQuery('source_table', 'sys_update_set');
+		gr3.addQuery('sys_updated_on', sys_updated_on);
+		gr3.query();
+		return gr3.hasNext();
+	},
+
+	_setUIElementByID: function(sys_id, type) {
+		var name = this._getName(sys_id, type);
+		this._setUIElement(sys_id, name, type);
+	},
+
+	_setUIElementByName: function(name, type) {
+		var sys_id = this._getSysID(name, type);
+		this._setUIElement(sys_id, name, type);
+	},
+
+	_setUIElement: function(sys_id, name, type) {
+		var item = this.newItem("ui_" + type);
+		var state = this._getBorderColor(sys_id, type);
+		item.setAttribute("sys_id", sys_id);
+		item.setAttribute("name", name);
+		item.setAttribute("state", state);
+	},
+
+	type: "UICustomizationDebugAjax"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-12 00:40:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;96fc13df679622006e1e82f45685efe6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UICustomizationDebugAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_96fc13df679622006e1e82f45685efe6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-10-12 00:40:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2616&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:50</sys_created_on>
+        <sys_id>7a1d8d7e2f331110d8a4d5f62799b6d0</sys_id>
+        <sys_name>UICustomizationDebugAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7a1d8d7e2f331110d8a4d5f62799b6d0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

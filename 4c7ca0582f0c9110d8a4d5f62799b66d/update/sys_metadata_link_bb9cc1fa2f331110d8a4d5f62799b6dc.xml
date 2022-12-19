@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5a68df635bb2230070e4492c11f91a45</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SPMDomainUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utility functions to compare two different record's sys_domain fields to verify they are the same.&lt;/description&gt;
+        &lt;name&gt;SPMDomainUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SPMDomainUtils = Class.create();
+SPMDomainUtils.prototype = {
+    initialize: function() {
+    },
+	
+	isInSameDomain: function(gr1, gr2) {
+		//If sys_domain is not a valid field, return true since domain separation is not supported
+		if (!gr1.isValidField('sys_domain')) {
+			return true;
+		}
+		if (!gr2.isValidField('sys_domain')) {
+			return true;
+		}
+		
+		var gr1_domain = gr1.getValue('sys_domain');
+		var gr2_domain = gr2.getValue('sys_domain');
+		
+		//If sys_domain is empty or global, return true 
+		if (gr1_domain == '' || gr1_domain == 'global') {
+			return true;
+		}
+		if (gr2_domain == '' || gr2_domain == 'global') {
+			return true;
+		}
+		
+		//If the domains are the same, return true
+		if (gr1_domain == gr2_domain) {
+			return true;
+		}
+
+		return false;
+	},
+	
+	areServiceCommitmentGrsInSameDomain: function(current) {
+		var serviceOffering = current.service_offering;
+		var cmdbCi = current.cmdb_ci;
+		var commitment = current.service_commitment;
+		if (serviceOffering)
+			serviceOffering = serviceOffering.getRefRecord();
+		if (cmdbCi)
+			cmdbCi = cmdbCi.getRefRecord();
+		if (commitment)
+			commitment = commitment.getRefRecord();
+		var gr = serviceOffering || cmdbCi;
+		return this.isInSameDomain(gr, commitment);
+	},
+
+    type: 'SPMDomainUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;nathan.holm&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-01-11 00:30:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5a68df635bb2230070e4492c11f91a45&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SPMDomainUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Portfolio Management Foundation" source="com.snc.service_portfolio"&gt;5692894b6d6620100acb70b3534330f5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5a68df635bb2230070e4492c11f91a45&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-04 00:23:16&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1268&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:44</sys_created_on>
+        <sys_id>bb9cc1fa2f331110d8a4d5f62799b6dc</sys_id>
+        <sys_name>SPMDomainUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bb9cc1fa2f331110d8a4d5f62799b6dc</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

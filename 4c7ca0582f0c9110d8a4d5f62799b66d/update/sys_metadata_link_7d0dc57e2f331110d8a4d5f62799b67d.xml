@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8ee203bcc3130010ce53bb62ef40dd45</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ActionablePushPayloadBuilder&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Script for generating payload for actionable push notifications given a glide record (currentGR) and push notification id (pushId)&lt;/description&gt;
+        &lt;name&gt;ActionablePushPayloadBuilder&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ActionablePushPayloadBuilder = Class.create();
+ActionablePushPayloadBuilder.prototype = {
+	initialize: function(currentGR, pushId, layoutFields, client) {
+        this.currentGR = currentGR;
+        this.pushId = pushId;
+        this.layoutFields = layoutFields;
+        this.client = (client == undefined) ? "Agent" : client;
+    },
+
+    initializeWithClient: function(currentGR, pushId, layoutFields, client) {
+		gs.warn("initializeWithClient is deprecated. Use constructor instead.");
+        this.currentGR = currentGR;
+        this.pushId = pushId;
+        this.layoutFields = layoutFields;
+		this.client = client;
+    },
+
+    /**
+     * buildJSON - build push notification payload for given currentGR and push notification id (pushId)
+     *
+     *  e.g. layoutFields = {"Identifier" : "number", "Description" : "short_description", "Status" : "state" }
+     **/
+    buildJSON: function() {
+        var json = {
+            "aps": {
+                "sound": "default"
+            },
+        };
+
+        var pushNotificationGR = this._getRecordById('sys_sg_push_notification', this.pushId);
+        if (pushNotificationGR != null) {
+            var actionable = this._toBoolean(pushNotificationGR.getDisplayValue('actionable'));
+            var categoryGR = pushNotificationGR.category.getRefRecord();
+            var screen = pushNotificationGR.getValue("screen");
+            var actions = [];
+            var categoryName;
+            if (actionable &amp;&amp; categoryGR.isValidRecord()) {
+                categoryName = categoryGR.getValue("name");
+                var pushActionIds = categoryGR.getValue('actions');
+                actions = this._buildPushActions(pushActionIds);
+            }
+
+            json["Layout"] = this._buildLayout();
+            json["PushId"] = this.pushId;
+            json["actionable"] = actionable;
+
+            if (screen) {
+                json["ScreenId"] = screen;
+                json["Link"] = this._buildDeepLink(screen, this.client);
+            }
+
+            if (categoryName)
+                json["aps"]["category"] = categoryName;
+
+            if (actions.length &gt; 0)
+                json["Actions"] = actions;
+        }
+
+        return json;
+    },
+
+    _buildPushActions: function(pushActionIds) {
+        var pushActionGR = this._getRecordsByIdArray('sys_sg_push_action', pushActionIds);
+        var actions = [];
+        while (pushActionGR.next()) {
+            var actionInstanceGR = this._getActionInstanceGR(this.pushId, pushActionGR.getUniqueValue());
+            if (actionInstanceGR == null || actionInstanceGR.getValue("button") == null)
+                continue;
+
+            var buttonGR = this._getRecordById("sys_sg_button", actionInstanceGR.getValue("button"));
+            if (buttonGR == null)
+                continue;
+
+            var actionItem = {};
+            var pushActionId = pushActionGR.getUniqueValue();
+            actionItem['PushActionId'] = pushActionGR.getUniqueValue();
+            actionItem['Name'] = pushActionGR.getValue("name");
+            actionItem['Label'] = pushActionGR.getValue("label");
+            var responseType = pushActionGR.getValue("response_type");
+            actionItem['ResponseType'] = responseType;
+            actionItem['Foreground'] = this._toBoolean(pushActionGR.getValue("foreground"));
+            if (responseType &amp;&amp; responseType == 'text_response')
+                actionItem['PlaceHolderText'] = pushActionGR.getValue("placeholder_text");
+
+            var buttonType = buttonGR.getValue("type");
+            var buttonContext = buttonGR.getValue("context");
+
+            actionItem['ActionType'] = buttonType;
+            if (buttonType == null)
+                continue;
+            else if (buttonType == "write_back" &amp;&amp; buttonContext == "record" &amp;&amp; actionItem['Foreground'] == "true")
+                actionItem['Destination'] = buttonGR.getValue("destination_screen");
+            else if (buttonType == "write_back")
+                actionItem['Context'] = this._getButtonContext(buttonContext);
+            else {
+                var buttonAction = this._getButtonAction(actionInstanceGR);
+                actionItem['ButtonAction'] = buttonAction;
+            }
+
+            if (buttonType == "write_back" || buttonAction != null )
+                actions.push(actionItem);
+        }
+
+        return actions;
+    },
+
+    _getButtonAction: function(actionInstanceGR) {
+		var glideRecord = this._getRecordById(this.currentGR.getTableName(), this.currentGR.getUniqueValue());
+        return JSON.parse(new SNC.SGButtonAction(actionInstanceGR, glideRecord).getJSONString());
+    },
+
+    _getButtonContext: function(buttonContext) {
+		var contextGR = this._getRecordById(this.currentGR.getTableName(), this.currentGR.getUniqueValue());
+		if (buttonContext == "record")
+			return JSON.parse(new SNC.SGContext(contextGR).getJSONString());
+		else
+			return JSON.parse(new SNC.SGContext().getJSONString());
+    },
+
+    _buildDeepLink: function(screen, client) {
+        var deepLinkGenerator = new global.MobileDeepLinkGenerator(client);
+        var recordTable = this.currentGR.getTableName();
+        var recordId = this.currentGR.getUniqueValue();
+        var deepLink = deepLinkGenerator.getFormScreenLink(screen, recordTable, recordId);
+        return deepLink;
+    },
+
+    _buildLayout: function() {
+        var layoutFieldGenerator = new global.NotificationLayoutFieldGenerator();
+        var recordTable = this.currentGR.getTableName();
+        var recordId = this.currentGR.getUniqueValue();
+        var layout = {};
+        // use layoutFields or if not provided use empty map
+        var fieldMap = this.layoutFields || {};
+        var idField = fieldMap["Identifier"];
+        if (idField &amp;&amp; this.currentGR.isValidField(idField))
+            layout["Identifier"] = layoutFieldGenerator.layoutField(recordTable, recordId, idField);
+        else
+            layout["Identifier"] = layoutFieldGenerator.layoutField(recordTable, recordId, "sys_id");
+
+        var shortDescField = fieldMap["Description"];
+        if (shortDescField &amp;&amp; this.currentGR.isValidField(shortDescField))
+            layout["Description"] = layoutFieldGenerator.layoutField(recordTable, recordId, shortDescField);
+
+        var statusField = fieldMap["Status"];
+        if (statusField &amp;&amp; this.currentGR.isValidField(statusField))
+            layout["Status"] = layoutFieldGenerator.layoutField(recordTable, recordId, statusField);
+
+        return layout;
+    },
+
+    _getActionInstanceGR: function(pushId, pushActionId) {
+        var actionInstanceGR = new GlideRecord("sys_sg_push_action_instance");
+        actionInstanceGR.addQuery("push_notification", pushId);
+        actionInstanceGR.addQuery("push_action", pushActionId);
+        actionInstanceGR.query();
+        if (actionInstanceGR.next())
+            return actionInstanceGR;
+
+        return null;
+    },
+
+    _getRecordById: function(table_name, id) {
+        var glideRecordById = new GlideRecord(table_name);
+        glideRecordById.get(id);
+
+        return glideRecordById;
+    },
+
+    _getRecordsByIdArray: function(table_name, id_array) {
+        var glideRecordByArray = new GlideRecord(table_name);
+        glideRecordByArray.addQuery('sys_id', 'IN', id_array);
+        glideRecordByArray.orderBy('order');
+        glideRecordByArray.query();
+        return glideRecordByArray;
+    },
+
+	_toBoolean: function(fieldVal) {
+		if(gs.nil(fieldVal))
+			return false;
+		return fieldVal == "1" || fieldVal.toLowerCase() == "true" ? true : false;
+	},
+
+    type: 'ActionablePushPayloadBuilder'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-02-28 22:34:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8ee203bcc3130010ce53bb62ef40dd45&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ActionablePushPayloadBuilder&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile Push Notifications" source="com.glide.sg.notification"&gt;95ed38cb6d2220100acb70b35343309d&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8ee203bcc3130010ce53bb62ef40dd45&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-23 17:33:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7561&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:31</sys_created_on>
+        <sys_id>7d0dc57e2f331110d8a4d5f62799b67d</sys_id>
+        <sys_name>ActionablePushPayloadBuilder</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7d0dc57e2f331110d8a4d5f62799b67d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

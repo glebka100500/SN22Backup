@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5f0b46368f0221001a83cfd827bdeeab</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumSprintStateWatcher&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Update percent_complete in Sprint when  its state changes&lt;/description&gt;
+        &lt;name&gt;ScrumSprintStateWatcher&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumSprintStateWatcher = Class.create();
+
+ScrumSprintStateWatcher.SPRINT_CANCELLED = 4;
+ScrumSprintStateWatcher.SPRINT_COMPLETED = 3;
+
+
+ScrumSprintStateWatcher.prototype = {
+    initialize: function(sprint) {
+		this.sprint = sprint;
+    },
+	
+	sprintStateChanged: function() {
+		if ( this.sprint.state != ScrumSprintStateWatcher.SPRINT_CANCELLED &amp;&amp; this.sprint.state != ScrumSprintStateWatcher.SPRINT_COMPLETED ) {
+			this.sprintReopened();
+		}
+		else if ( this.sprint.state == ScrumSprintStateWatcher.SPRINT_COMPLETED ) {
+			this.sprintCompleted();
+		}
+	},
+	
+	sprintStateSet: function() {
+		if ( this.sprint.state == ScrumSprintStateWatcher.SPRINT_COMPLETED ) {
+			this.sprintCompleted();
+		}
+		else if ( this.sprint.state == ScrumSprintStateWatcher.SPRINT_CANCELLED ) {
+			this.sprintCancelled();			
+		}
+		else {
+			this.sprintOpened();	
+		}
+	},
+	
+	sprintOpened: function() {
+		this.sprint.percent_complete = 0;
+	},
+		
+	sprintReopened: function() {
+		this.sprint.percent_complete = 0;		
+	},
+	
+	sprintCancelled: function() {
+		this.sprint.percent_complete = 0;	
+		this.setSprintDurationToZero();
+	},
+	
+	sprintCancelRevoked: function() {
+		this.setSprintDurationToOne();
+	},
+
+	sprintCompleted: function() {
+		this.sprint.percent_complete = 100;		
+	},
+	
+	setSprintDurationToZero: function() {
+		var now = gs.nowDateTime();
+		this.sprint.duration = gs.dateDiff(now, now, false);
+	},
+		
+	setSprintDurationToOne: function() {
+		this.sprint.duration = new GlideDateTime("1970-01-02 00:00:00");
+	},
+
+    type: 'ScrumSprintStateWatcher'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-07-25 10:23:19&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5f0b46368f0221001a83cfd827bdeeab&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumSprintStateWatcher&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5f0b46368f0221001a83cfd827bdeeab&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-07-25 12:37:39&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1535&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:52</sys_created_on>
+        <sys_id>f9ac85fa2f331110d8a4d5f62799b6ef</sys_id>
+        <sys_name>ScrumSprintStateWatcher</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f9ac85fa2f331110d8a4d5f62799b6ef</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

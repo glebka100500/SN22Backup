@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4aca34ba0b1013000e83c71437673a34</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PopulateAdapterConfig&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Script to generate afapter configuration&lt;/description&gt;
+        &lt;name&gt;PopulateAdapterConfig&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PopulateAdapterConfig = Class.create();
+PopulateAdapterConfig.prototype = {
+    initialize: function() {
+    },
+	insertOrUpdateConfig: function(/*GlideRecord*/ current, client_type) {
+		var vendorConfig = new GlideRecord("sys_cs_vendor_client_adapter_configuration");
+		vendorConfig.addQuery("external_id", current.external_id);
+		vendorConfig.query();
+		if (vendorConfig.next()) {
+			vendorConfig.setValue("client_type", client_type);
+			vendorConfig.setValue("provider_auth", current.provider_auth);
+			vendorConfig.setValue("vendor", "c2f0b8f187033200246ddd4c97cb0bb9");
+			vendorConfig.setValue("sys_domain", current.sys_domain);
+			vendorConfig.setValue("config", this._getJsonConfig(current, client_type));
+			vendorConfig.update();
+			current.setWorkflow(false);
+			current.update();
+			return;
+		}
+		vendorConfig.setValue("vendor", "c2f0b8f187033200246ddd4c97cb0bb9");
+		vendorConfig.setValue("external_id", current.external_id);
+		vendorConfig.setValue("client_type", client_type);
+		vendorConfig.setValue("provider_auth", current.provider_auth);
+		vendorConfig.setValue("sys_domain", current.sys_domain);
+		vendorConfig.setValue("config", this._getJsonConfig(current, client_type));
+		vendorConfig.insert();
+		current.setWorkflow(false);
+		current.update();
+	},
+	
+	_getJsonConfig: function(current, client_type) {
+		var configStr = new sn_cs_adapter.AdapterConfigGenerator().getDefaultConfigWithDescCategory(client_type);
+		var config = JSON.parse(configStr);
+		var newConfig = {};
+
+		var attribute = new GlideRecord("sys_cs_adapter_configuration");
+		attribute.addQuery("sys_cs_adapter_configuration_page", current.sys_id);
+		attribute.query();
+		if (attribute.hasNext()) {
+			// update config from attributes and fields
+			while (attribute.next()) {
+			if(config[attribute.attribute_name.toString()])
+				config[attribute.attribute_name.toString()].value = attribute.attribute_value.toString();
+			}
+			var fields = current.getFields();
+			for (var i = 0; i &lt; fields.size(); i++) {
+				var fieldName = fields.get(i).getName().toString();
+				if (config.hasOwnProperty(fieldName)) {
+					this._updateConfingFromFields(current, config, fieldName);
+				}
+			}
+		} else {
+			// update config from fields and insert attributes
+			var newAttributes = new GlideRecord("sys_cs_adapter_configuration");
+			for (var name in config) {
+				if (current.isValidField(name)) {
+					this._updateConfingFromFields(current, config, name);
+				} else {
+					newAttributes.initialize();
+					newAttributes.setValue('sys_cs_adapter_configuration_page', current.sys_id);
+					newAttributes.setValue('attribute_name', name);
+					newAttributes.setValue('attribute_value', config[name].value);
+					newAttributes.setValue('default_attribute_value', config[name].value);
+					newAttributes.setValue('description',config[name].description);
+					newAttributes.setValue('message_type',config[name].type);
+					newAttributes.insert();
+				}
+			}
+		}
+		
+		for (var name in config) {
+			newConfig[name] = config[name].value;
+		}
+		
+		return JSON.stringify(newConfig);
+	},
+	
+	_updateConfingFromFields: function(current, config, fieldName) {
+		if (current.getValue(fieldName)) {
+			config[fieldName] = current.getValue(fieldName).toString();
+		} else {
+			/*update fields if empty*/
+			var v = config[fieldName];
+			if (v instanceof Array) {
+				current.setValue(fieldName, v.join());
+			} else {
+				current.setValue(fieldName, v);
+		    }
+		 }
+	},
+
+    type: 'PopulateAdapterConfig'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-02-19 02:14:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4aca34ba0b1013000e83c71437673a34&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;27&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PopulateAdapterConfig&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server Adapters" source="com.glide.cs.adapter"&gt;46077ecb2f400110d8a4d5f62799b62c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4aca34ba0b1013000e83c71437673a34&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-20 12:41:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3471&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:18</sys_created_on>
+        <sys_id>258c4dba2f331110d8a4d5f62799b62c</sys_id>
+        <sys_name>PopulateAdapterConfig</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_258c4dba2f331110d8a4d5f62799b62c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

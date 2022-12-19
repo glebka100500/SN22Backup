@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0811ab1753703010c440ddeeff7b1296</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DefaultClickMetricsProcessorBase&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base class for VA Event Metric Handler&lt;/description&gt;
+        &lt;name&gt;DefaultClickMetricsProcessorBase&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DefaultClickMetricsProcessorBase = Class.create();
+DefaultClickMetricsProcessorBase.prototype = {
+	
+	payload:null,
+	scratchPad:null,
+	
+	initialize: function() {
+	},
+	
+	getHostName: function() {
+		var url = gs.getProperty("glide.servlet.uri");
+		var result = this._parseURL(url);
+		return result.hostname;
+	},
+	
+	parseOriginalURL: function(record) {
+		
+		var url = record.orignal_url;
+		
+		var result = this._parseURL(url);
+		var hostName = result.hostname;
+		
+		var sncHostName = this.getHostName();
+		var isExternal = gs.nil(hostName)? true: hostname.indexof(sncHostName) != -1;
+		
+		result.is_external_host = isExternal;
+		return result;
+	},
+	
+	/**
+	* Main method. This method has to be implemented by the sub class.
+	*/
+	process: function(obj) {
+		throw 'Method needs to be implmented';
+	},
+	
+	getLogger: function(conversationId, taskId) {
+		return VAClickMetrics.getLogger(conversationId, taskId);
+	},
+	
+	_parseURL: function(url) {
+		var m = url.match(/^(([^:\/?#]+:)?(?:\/\/((?:([^\/?#:]*):([^\/?#:]*)@)?([^\/?#:]*)(?::([^\/?#:]*))?)))?([^?#]*)(\?[^#]*)?(#.*)?$/),
+			r = {
+				hash: m[10] || "",                   // #asd
+				host: m[3] || "",                    // localhost:257
+				hostname: m[6] || "",                // localhost
+				href: m[0] || "",                    // http://username:password@localhost:257/deploy/?asd=asd#asd
+				origin: m[1] || "",                  // http://username:password@localhost:257
+				pathname: m[8] || (m[1] ? "/" : ""), // /deploy/
+				port: m[7] || "",                    // 257
+				protocol: m[2] || "",                // http:
+				search: m[9] || "",                  // ?asd=asd
+				username: m[4] || "",                // username
+				password: m[5] || ""                 // password
+			};
+		if (r.protocol.length == 2) {
+			r.protocol = "file:///" + r.protocol.toUpperCase();
+			r.origin = r.protocol + "//" + r.host;
+		}
+		r.href = r.origin + r.pathname + r.search + r.hash;
+		r.params = this._getURLParams(r.search);
+		return r;
+	},
+	
+	_getURLParams:function(searchStr) {
+		var vars = {};
+		var parts = searchStr.replace(/[?&amp;]+([^=&amp;]+)=([^&amp;]*)/gi,    
+		function(m, key, value) {
+			vars[decodeURIComponent(key)] = decodeURIComponent(value);
+		});
+		return vars;
+	},
+	
+	setPayload:function(payload) {
+		this.payload = payload;
+	},
+	
+	setScratchPad:function(scratchPad) {
+		this.scratchPad = scratchPad;
+	},
+	
+	getPayload:function() {
+		return this.payload;
+	},
+	
+	getScratchPad:function() {
+		return this.scratchPad;
+	},
+	
+	logProcess: function(conversationId, taskId, eventType, eventName, timestamp) {
+		
+		var timeDiff = VAClickMetrics.getTimeDifferenceInMilliseconds(timestamp)+'';
+		var logger = this.getLogger(conversationId, taskId);
+		logger.debug('Started Processing click-metrics data for {0}:{1}. time-taken:{2} ms after the event was fired', eventType, eventName, timeDiff);
+	},
+	
+	type: 'DefaultClickMetricsProcessorBase'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-06-23 01:07:37&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;0811ab1753703010c440ddeeff7b1296&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;44&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DefaultClickMetricsProcessorBase&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Virtual Agent" source="com.glide.cs.chatbot"&gt;0a077ecb2f400110d8a4d5f62799b62b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_0811ab1753703010c440ddeeff7b1296&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-10-14 19:01:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2896&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:52</sys_created_on>
+        <sys_id>a03c417a2f331110d8a4d5f62799b693</sys_id>
+        <sys_name>DefaultClickMetricsProcessorBase</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a03c417a2f331110d8a4d5f62799b693</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

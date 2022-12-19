@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>80b4341a379221001a8326877e41f178</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumStoryPointDurationSync&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Update percent_complete in Story when its state changes&lt;/description&gt;
+        &lt;name&gt;ScrumStoryPointDurationSync&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumStoryPointDurationSync = Class.create();
+
+ScrumStoryPointDurationSync.prototype = {
+    initialize: function(story) {
+		this.story = story;
+    },
+	
+	syncDurationWithPoints: function() {
+		var duration = '0 00:00:00';
+		var points = this.story.story_points;
+		if ( JSUtil.nil(points) ) {
+			points = 1;
+		}
+		var isCancelledState = new ScrumStatesUtil(this.story.getRecordClassName()).isCancelledState(this.story.getValue('state'));
+		if (!isCancelledState) {
+			duration = points + ' 00:00:00';
+		}
+		this.story.duration.setDisplayValue(duration);
+	},
+
+    type: 'ScrumStoryPointDurationSync'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-08-05 01:04:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;80b4341a379221001a8326877e41f178&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumStoryPointDurationSync&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_80b4341a379221001a8326877e41f178&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-23 05:37:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;604&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:56</sys_created_on>
+        <sys_id>15ec8d3e2f331110d8a4d5f62799b66e</sys_id>
+        <sys_name>ScrumStoryPointDurationSync</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_15ec8d3e2f331110d8a4d5f62799b66e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

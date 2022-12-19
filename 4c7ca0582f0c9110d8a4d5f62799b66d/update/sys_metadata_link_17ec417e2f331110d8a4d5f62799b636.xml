@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8449d91007101010a0d1f5167cd3009b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RemoveOrphanedSysStorageAliases&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Deletes records in sys_storage_alias that do not exist either in sys_dictionary or TableDescriptor.&lt;/description&gt;
+        &lt;name&gt;RemoveOrphanedSysStorageAliases&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[
+var RemoveOrphanedSysStorageAliases = Class.create();
+RemoveOrphanedSysStorageAliases.prototype = {
+
+    type: 'RemoveOrphanedSysStorageAliases',
+
+    compareStorageAliasesToSysDictionary: function() {
+        var grSysStorageAlias = new GlideRecord('sys_storage_alias');
+        grSysStorageAlias.addEncodedQuery("offrow_storage=false^ORoffrow_storageISEMPTY");
+        grSysStorageAlias.orderBy('table_name');
+        grSysStorageAlias.query();
+
+        while(grSysStorageAlias.next()) {
+
+            var tableName = String(grSysStorageAlias.table_name);
+            var element = String(grSysStorageAlias.element_name);
+            var exists = GlideTableDescriptor.fieldExists(tableName, element);
+            if (this._tableIsIgnored(tableName) || this._elementIsIgnored(element) || exists)
+                continue;
+
+            var parentTableNames = GlideDBObjectManager.getTables(tableName);
+            this._removeStorageAliasIfOrphaned(parentTableNames, element, grSysStorageAlias);
+        }
+    },
+    _removeStorageAliasIfOrphaned: function(parentTableNames, element, grSysStorageAlias) {
+        var grSysDictionary = new GlideRecord('sys_dictionary');
+        grSysDictionary.addQuery('name', parentTableNames);
+        grSysDictionary.addQuery('element', element);
+        grSysDictionary.query();
+
+        if (!grSysDictionary.next()) {
+            gs.info("Removing orphaned sys_storage_alias: "
+                + " table_name: " + grSysStorageAlias.table_name + " | element_name: " + grSysStorageAlias.element_name
+                + " | storage_table_name " + grSysStorageAlias.storage_table_name + " | storage_alias: " + grSysStorageAlias.storage_alias
+                + " | sys_id: " + grSysStorageAlias.sys_id);
+            grSysStorageAlias.deleteRecord();
+        }
+    },
+    _tableIsIgnored: function(tableName) {
+        return this._startsWith(tableName, 'b_', 2) ||
+            this._startsWith(tableName, 'z_', 2) ||
+            this._isOffrow(tableName) ||
+            this._startsWith(tableName, 'sys_', 4) ||
+            tableName.contains('$par');
+    },
+    _elementIsIgnored: function(element) {
+        var sysFieldsToIgnore = ['sys_created_by', 'sys_created_on', 'sys_mod_count', 'sys_updated_by', 'sys_updated_on'];
+        return this._contains(sysFieldsToIgnore, element);
+    },
+    _startsWith: function(str, prefix, prefixLength) {
+        return str.substring(0, prefixLength) === prefix;
+    },
+    _isOffrow: function(str) {
+        if (str.length &gt; 9)
+            return str.substr(str.length-7, 7) === '_offrow';
+        else
+            return false;
+    },
+    _contains: function(arr, str) {
+        if (arr &amp;&amp; str) {
+            for (var i=0; i&lt;arr.length; i++) {
+                if (arr[i] === str)
+                    return true;
+            }
+        }
+        return false;
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-16 18:41:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8449d91007101010a0d1f5167cd3009b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RemoveOrphanedSysStorageAliases&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8449d91007101010a0d1f5167cd3009b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-16 19:04:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2843&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:04</sys_created_on>
+        <sys_id>17ec417e2f331110d8a4d5f62799b636</sys_id>
+        <sys_name>RemoveOrphanedSysStorageAliases</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_17ec417e2f331110d8a4d5f62799b636</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

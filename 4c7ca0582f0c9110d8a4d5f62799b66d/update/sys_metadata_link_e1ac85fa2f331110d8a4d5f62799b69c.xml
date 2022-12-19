@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5ed435e2ef202000a7450fa3f822562d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumAjaxAddSprintTeamMembersProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;ScrumAjaxAddSprintTeamMembersProcessor&lt;/description&gt;
+        &lt;name&gt;ScrumAjaxAddSprintTeamMembersProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumAjaxAddSprintTeamMembersProcessor = Class.create();
+
+ScrumAjaxAddSprintTeamMembersProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	/**
+     * Clones all members in release.default_team as sprint team members.
+     * But only if sprint.release_team is not specified.
+     */
+    addDefaultSprintTeamMembers: function  (record) {
+        if (!record.release.isNil()) {
+            if (!record.release.default_team.isNil()) {
+                if (record.release_team.isNil()) {
+                    
+                    // Find the release team members that you want to clone as sprint team members
+                    var recScrumPPReleaseTeamMember = new GlideRecord ("scrum_pp_release_team_member");
+                    recScrumPPReleaseTeamMember.addQuery ("team", record.release.default_team);
+                    recScrumPPReleaseTeamMember.query ();
+                    
+                    // Create the sprint team members based on the release team members
+                    var recScrumPPSprintTeamMember = new GlideRecord ("scrum_pp_sprint_team_member");
+                    while (recScrumPPReleaseTeamMember.next()) {
+                        recScrumPPSprintTeamMember.initialize();
+                        recScrumPPSprintTeamMember.sprint = record.sys_id;
+                        recScrumPPSprintTeamMember.generated_by = recScrumPPReleaseTeamMember.generated_by;
+                        recScrumPPSprintTeamMember.name = recScrumPPReleaseTeamMember.name;
+                        recScrumPPSprintTeamMember.scrum_role = recScrumPPReleaseTeamMember.scrum_role;
+                        recScrumPPSprintTeamMember.planned_points = recScrumPPReleaseTeamMember.default_sprint_points;
+                        recScrumPPSprintTeamMember.insert ();
+                    }
+                    
+                    // Update the release team associated with this sprint
+                    record.release_team = record.release.default_team;
+                    record.update ();
+                }
+            }
+        }
+    },
+    
+    insertTeamMembers: function  (arrUserSysIds, strSprintSysId) {
+        var recScrumSprintTeamMember = new GlideRecord ("scrum_pp_sprint_team_member");
+        for (var nSlot = 0; nSlot &lt; arrUserSysIds.length; ++nSlot) {
+            recScrumSprintTeamMember.initialize ();
+            recScrumSprintTeamMember.name = arrUserSysIds[nSlot];
+            recScrumSprintTeamMember.planned_points = 0;
+            recScrumSprintTeamMember.sprint = strSprintSysId;
+            recScrumSprintTeamMember.generated_by = "System";
+            recScrumSprintTeamMember.sys_domain = this.getSprintsDomain(strSprintSysId);
+            recScrumSprintTeamMember.insert ();
+        }
+    },
+
+   getSprintsDomain: function (strSprintSysId) {
+      var recSprint = new GlideRecord('rm_sprint');
+      recSprint.get(strSprintSysId);
+      return recSprint.getValue('sys_domain');
+   },
+    
+    getUserSysIdsFromGroup: function  (strGroupSysId) {
+        var arrUserSysIds = [];
+        var recSysUserGrMember = new GlideRecord("sys_user_grmember");
+        recSysUserGrMember.addQuery("group", strGroupSysId);
+        recSysUserGrMember.query();
+        while (recSysUserGrMember.next()) {
+            arrUserSysIds.push (recSysUserGrMember.user + "");
+        }
+        return arrUserSysIds;
+    },
+    
+    getUserSysIdsFromTeam: function  (strSprintSysId) {
+        var arrUserSysIds = [];
+        var recScrumSprintTeamMember = new GlideRecord ("scrum_pp_sprint_team_member");
+        recScrumSprintTeamMember.addQuery ("sprint", strSprintSysId);
+        recScrumSprintTeamMember.query ();
+        while (recScrumSprintTeamMember.next ()) {
+            arrUserSysIds.push (recScrumSprintTeamMember.name + "");
+        }
+        return arrUserSysIds;
+    },
+    
+    createSprintTeamMembers: function () {
+        var strSprintSysId = this.getParameter ("sysparm_sys_id");
+        var arrGroupSysIds = this.getParameter ("sysparm_groups").split (",");
+        var arrUserSysIdsFromTeam = this.getUserSysIdsFromTeam (strSprintSysId);
+        
+        for (var nSlot = 0; nSlot &lt; arrGroupSysIds.length; ++nSlot) {
+            var strGroupSysId = arrGroupSysIds[nSlot];
+            var arrUserSysIdsFromGroup = this.getUserSysIdsFromGroup (strGroupSysId);
+            var arrUserSysIds = new ArrayUtil().diff (arrUserSysIdsFromGroup, arrUserSysIdsFromTeam);
+            this.insertTeamMembers (arrUserSysIds, strSprintSysId);
+        }
+    },
+	
+	/**
+	 * Prevent public access to this script
+	 */
+	isPublic: function() {
+		return false;
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-03-06 15:45:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5ed435e2ef202000a7450fa3f822562d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;8&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumAjaxAddSprintTeamMembersProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5ed435e2ef202000a7450fa3f822562d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-05-11 11:56:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4589&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:51</sys_created_on>
+        <sys_id>e1ac85fa2f331110d8a4d5f62799b69c</sys_id>
+        <sys_name>ScrumAjaxAddSprintTeamMembersProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e1ac85fa2f331110d8a4d5f62799b69c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

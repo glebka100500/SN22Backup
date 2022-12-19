@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8e2266bc9313330083171d1e867ffb76</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CalculateNextStartAndEnd&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CalculateNextStartAndEnd&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CalculateNextStartAndEnd = Class.create();
+CalculateNextStartAndEnd.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getNextAction: function() {
+		var calendarID = this.getParameter('sysparm_calendar_id');
+		var spanType = this.getParameter('sysparm_run_type') == "business_calendar_start" ? 12 : 13;
+		var when = this.getParameter('sysparm_run_type') == "business_calendar_start" ? "start" : "end";
+		var calName = this.getParameter('sysparm_calendar_name');
+				
+		var newTrigger = new GlideRecord('sys_trigger');
+		newTrigger.setValue('business_calendar', calendarID);
+		newTrigger.setValue('trigger_type', spanType);
+		newTrigger.setValue('offset_type', this.getParameter('sysparm_offset_type'));
+		newTrigger.setValue('offset', this.getParameter('sysparm_offset'));
+		var recurrenceStart = GlideARecurrence.get(newTrigger);		
+		var nextTime = recurrenceStart.next();
+		
+		var stringList = [when, calName, new GlideDateTime(nextTime).getDisplayValue()];
+		
+		return gs.getMessage('Job is set to run at the {0} of {1} entries, next action is: {2}', stringList);
+	},
+	
+    type: 'CalculateNextStartAndEnd'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-14 16:30:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8e2266bc9313330083171d1e867ffb76&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;70&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CalculateNextStartAndEnd&lt;/sys_name&gt;
+        &lt;sys_package display_value="Business Calendar Scheduled Jobs" source="com.glide.business_calendars.scheduled_jobs"&gt;b494058f6da620100acb70b353433020&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8e2266bc9313330083171d1e867ffb76&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-18 04:00:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1125&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:29</sys_created_on>
+        <sys_id>e90dc57e2f331110d8a4d5f62799b667</sys_id>
+        <sys_name>CalculateNextStartAndEnd</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e90dc57e2f331110d8a4d5f62799b667</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

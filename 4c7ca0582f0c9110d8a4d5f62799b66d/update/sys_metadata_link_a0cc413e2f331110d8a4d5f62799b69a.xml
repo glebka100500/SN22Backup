@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6d98282ad773220034d145bcce610353</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.cxs_RPFltrConfig&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;The business logic for the cxs_rp_fltr_config table&lt;/description&gt;
+        &lt;name&gt;cxs_RPFltrConfig&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var cxs_RPFltrConfig = Class.create();
+cxs_RPFltrConfig.prototype = Object.extendsObject(cxs_FltrConfig, {
+	
+	/**
+	 * Returns a list of possible Search Resource Ids for the configuration
+	 */
+	getSearchResourceFilter: function() {
+		return this._getSearchResourceFilter(this._gr.cxs_rp_config);
+	},
+
+    type: 'cxs_RPFltrConfig'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-12-22 17:09:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6d98282ad773220034d145bcce610353&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;cxs_RPFltrConfig&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Search" source="com.snc.contextual_search"&gt;947281c76d6620100acb70b35343306d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6d98282ad773220034d145bcce610353&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-01-08 12:02:52&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;332&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:20</sys_created_on>
+        <sys_id>a0cc413e2f331110d8a4d5f62799b69a</sys_id>
+        <sys_name>cxs_RPFltrConfig</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a0cc413e2f331110d8a4d5f62799b69a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

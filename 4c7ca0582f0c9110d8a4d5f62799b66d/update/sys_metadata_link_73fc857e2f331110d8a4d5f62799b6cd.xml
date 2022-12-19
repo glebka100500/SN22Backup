@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8b6fb0c09f8103005581decf857fcff2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MIDServerUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utility for the MID server&lt;/description&gt;
+        &lt;name&gt;MIDServerUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MIDServerUtil;
+
+(function() {
+
+MIDServerUtil = {
+	createOrUpdateIssue: createOrUpdateIssue,
+	createOrUpdateUniqueIssue:createOrUpdateUniqueIssue,
+	resolveExistingIssues: resolveExistingIssues,
+	getUnresolvedIssueCount: getUnresolvedIssueCount
+};
+
+/**
+ * Insert or update an issue based on MID, source and message.  Existing resolved issues are ignored.
+ *
+ */
+function createOrUpdateIssue(midSysId, issueSource, issueMessage) {
+	var issueSysId;
+
+	var issue = new GlideRecord('ecc_agent_issue');
+	issue.addQuery('mid_server', midSysId);
+	issue.addQuery('source', issueSource);
+	issue.addQuery('message', issueMessage);
+	issue.addQuery('state', '!=', 'resolved');
+	issue.query();
+
+	if (issue.next()) {
+		issueSysId = issue.getValue('sys_id');
+		// issue exists, just update last_detected and count
+		issue.setValue('last_detected', new GlideDateTime());
+		issue.setValue('count', (+ issue.getValue('count')) + 1);
+		issue.update();
+	} else {
+		issue.initialize();
+		issue.setValue('mid_server', midSysId);
+		issue.setValue('source', issueSource);
+		issue.setValue('message', issueMessage);
+		issue.setValue('last_detected', new GlideDateTime());
+		issueSysId = issue.insert();
+	}
+
+	return issueSysId;
+}
+
+/**
+ * Resolve all open (acknowledged, new) issues for a given MID Server, source and (optionally) message.
+ * If a message is given, only issues that match the message will be resolved.
+ *
+ */
+function resolveExistingIssues(midSysId, issueSource, issueMessage) {
+	var openIssues = new GlideRecord('ecc_agent_issue');
+	openIssues.addQuery('mid_server', midSysId);
+	openIssues.addQuery('source', issueSource);
+	openIssues.addQuery('state', '!=', 'resolved');
+	if (JSUtil.notNil(issueMessage))
+		openIssues.addQuery('message', issueMessage);
+	openIssues.query();
+	
+	// DEF0182644: Previous call to GlideRecord.updateMultiple was not resulting
+	// in the update of audit fields (e.g. sys_updated_on)
+	while (openIssues.next()) {
+		openIssues.setValue('state', 'resolved');
+		openIssues.update();
+	}
+}
+
+/**
+ * Get unresolved issue count for a given MID Server.
+ */
+function getUnresolvedIssueCount(midSysId) {
+	var gr = new GlideRecord('ecc_agent_issue');
+	gr.addQuery('mid_server', midSysId);
+	gr.addQuery('state','!=','resolved');
+	gr.query();
+	return gr.getRowCount();
+}
+
+/**
+ * Insert or update an issue record with the input message and resolve all issues with the
+ * same source and different message.
+ **/
+function createOrUpdateUniqueIssue(midSysId, issueSource, message) {
+	
+	// Resolve all existing issues with the same source and different message
+	var openIssues = new GlideRecord('ecc_agent_issue');
+	openIssues.addQuery('mid_server', midSysId);
+	openIssues.addQuery('source', issueSource);
+	openIssues.addQuery('state', '!=', 'resolved');
+	openIssues.addQuery('message', '!=' , message);
+	openIssues.query();
+
+	while (openIssues.next()) {
+		openIssues.setValue('state', 'resolved');
+		openIssues.update();
+	}
+	
+	createOrUpdateIssue(midSysId, issueSource, message);
+}
+})();
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;thanh.phan&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-09-02 00:11:08&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8b6fb0c09f8103005581decf857fcff2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MIDServerUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="MID Server" source="com.glideapp.agent"&gt;881201476d6620100acb70b3534330fa&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8b6fb0c09f8103005581decf857fcff2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;marjan.marzban&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-08 18:58:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2989&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:23</sys_created_on>
+        <sys_id>73fc857e2f331110d8a4d5f62799b6cd</sys_id>
+        <sys_name>MIDServerUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_73fc857e2f331110d8a4d5f62799b6cd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

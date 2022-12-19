@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5ff20fd70ab30154197817405b01e0ff</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FNTransformChooserUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides support for the fn_transform_chooser UI page.&lt;/description&gt;
+        &lt;name&gt;FNTransformChooserUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// field normalization
+
+var FNTransformChooserUtil = Class.create();
+
+FNTransformChooserUtil.prototype = {
+    initialize: function(jelly) {
+        this.jelly = jelly;
+        this.sys_id = this.jelly.sysparm_collectionID;
+    },
+    
+    init: function() {
+        // get the table and field from our transform...
+        var gr = new GlideRecord('fn_transform_config');
+        if (!gr.get(this.sys_id))
+            return false;
+        
+        this.table = '' + gr.table;
+        this.field = '' + gr.field;
+        
+        // figure out what the field type is...
+        var hierarchy = GlideDBObjectManager.getTables(this.table);
+        gr = new GlideRecord('sys_dictionary');
+        gr.addQuery('name', hierarchy);
+        gr.addQuery('element', this.field);
+        gr.query();
+        if (!gr.next())
+            return false;
+        
+        this.type = '' + gr.internal_type;
+        
+        // now get our categories
+        gr = new GlideRecord('fn_transform_category_type');
+        gr.addQuery('type.type', this.type);
+        gr.query();
+        var ids = [];
+        while (gr.next())
+            ids.push('' + gr.category);
+        gr = new GlideRecord('fn_transform_category');
+        gr.addQuery('sys_id', ids);
+        gr.orderBy('order');
+        gr.query();
+        this.categories = gr;
+        return true;
+    },
+    
+    nextCategory: function() {
+        var result = (!!this.categories) ? this.categories.next() : false;
+        if (!result)
+            return false;
+        
+        // initialize our transform definitions...
+        var gr = new GlideRecord('fn_transform_def_category');
+        gr.addQuery('category', '' + this.categories.getUniqueValue());
+        gr.query();
+        var ids = [];
+        while (gr.next())
+            ids.push('' + gr.def);
+        gr = new GlideRecord('fn_transform_def');
+        gr.addQuery('sys_id', ids);
+        gr.orderBy('name');
+        gr.query();
+        this.defs = gr;
+        return result;
+    },
+    
+    // returns the URI to create the current transform
+    getURI: function() {
+        var uri = [];
+        uri.push('fn_transform.do?sys_id=-1');
+        uri.push('sys_is_list=true');
+        uri.push('sys_is_related_list=true');
+        uri.push('sys_target=fn_transform');
+        uri.push('sysparm_checked_items=');
+        uri.push('sysparm_collection=fn_transform_config');
+        uri.push('sysparm_collectionID=' + this.jelly.sysparm_collectionID);
+        uri.push('sysparm_collection_key=config');
+        uri.push('sysparm_collection_label=' + this.jelly.sysparm_collection_label);
+        uri.push('sysparm_collection_related_field=');
+        uri.push('sysparm_collection_related_file=');
+        uri.push('sysparm_collection_relationship=');
+        uri.push('sysparm_fixed_query=');
+        uri.push('sysparm_list_css=');
+        uri.push('sysparm_query=def%3d' + this.getDefSysID());
+        uri.push('sysparm_referring_url=fn_transform_config.do%3fsys_id%3d' + this.jelly.sysparm_collectionID);
+        uri.push('sysparm_target=');
+        uri.push('sysparm_view=');
+        return uri.join('&amp;');
+    },
+    
+    nextDef: function() {
+        return (!!this.defs) ? this.defs.next() : false;
+    },
+    
+    getCategoryName: function() {
+        return '' + this.categories.name;
+    },
+    
+    getCategoryDescription: function() {
+        return '' + this.categories.description;
+    },
+    
+    getDefName: function() {
+        return '' + this.defs.name;
+    },
+    
+    getDefDescription: function() {
+        return '' + this.defs.description;
+    },
+    
+    getDefSysID: function() {
+        return '' + this.defs.sys_id;
+    },
+
+    type: 'FNTransformChooserUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-01-07 10:34:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5ff20fd70ab30154197817405b01e0ff&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FNTransformChooserUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Field Normalization" source="com.snc.field_normalization"&gt;74d312912f730110d8a4d5f62799b6a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5ff20fd70ab30154197817405b01e0ff&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;tom.dilatush&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-01-16 16:57:38&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3804&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:54</sys_created_on>
+        <sys_id>02acc5fa2f331110d8a4d5f62799b6ac</sys_id>
+        <sys_name>FNTransformChooserUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_02acc5fa2f331110d8a4d5f62799b6ac</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

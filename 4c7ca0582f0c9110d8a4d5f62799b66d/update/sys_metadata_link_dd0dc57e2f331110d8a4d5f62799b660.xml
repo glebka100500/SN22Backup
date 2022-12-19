@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8def3fcf94a01010fa9bc815ae232095</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SAMLicensingUtility&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SAMLicensingUtility&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/* global sn_clin_aws, sn_clin_azure */
+var SAMLicensingUtility = Class.create();
+SAMLicensingUtility.prototype = {
+	initialize: function() {
+		this.fIsDomainDataSeparationEnabled = new global.ITAMLicensingUtils().isDomainSeparationEnabled();
+		this.CATEGORIES = 			{
+			servers: {
+				ratio: '1:1',
+				resource_count: {},
+				su_count: function(value, factor) {
+					return Math.round(value * factor);
+				},
+			},
+			end_user_computers: {
+				ratio: '4:1',
+				resource_count: {},
+				su_count: function(value, factor) {
+					return Math.round(value * factor);
+				},
+			},
+			subscription_users: {
+				ratio: '15:1',
+				resource_count: {},
+				su_count: function(value, factor) {
+					return Math.round(value * factor);
+				},
+			},
+		};
+	},
+
+	_cleanResourceCountsTable: function() {
+		new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.SAM_APP)
+			.deleteMultiple();
+
+		new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.CI_APP)
+			.where('is_aggregated', true)
+			.deleteMultiple();
+
+		new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.CI_APP)
+			.where('is_aggregated', false)
+			.where('sys_created_on', '&lt;', gs.daysAgo(3 * 30))
+			.deleteMultiple();
+
+		new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.SAM_ENT_APP)
+			.where('is_aggregated', true)
+			.deleteMultiple();
+
+		new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.SAM_ENT_APP)
+			.where('is_aggregated', false)
+			.where('sys_created_on', '&lt;', gs.daysAgo(3 * 30))
+			.deleteMultiple();
+	},
+
+	_cleanCITable: function() {
+		var gr = new GlideRecord(SAMLicensingUtility.ITAM_CI_USAGE_TABLE);
+		gr.setWorkflow(false);
+		gr.deleteMultiple();
+	},
+
+	/* Calculate Subscription calculation based on ratio provided */
+	_getCatFactor: function(r) {
+		var ratio = r.split(':');
+		return parseFloat(parseInt(ratio[1], 10) / parseInt(ratio[0], 10));
+	},
+	_updateCategoryCount: function(categoryKey, domain) {
+		if (this.CATEGORIES[categoryKey]) {
+			var categoryCountObject = this.CATEGORIES[categoryKey].resource_count;
+			if (categoryCountObject[domain]) {
+				categoryCountObject[domain] += 1;
+			} else {
+				categoryCountObject[domain] = 1;
+			}
+		}
+	},
+	_setCategoryCount: function(categoryKey, domain, count) {
+		if (this.CATEGORIES[categoryKey]) {
+			var categoryCountObject = this.CATEGORIES[categoryKey].resource_count;
+			if (categoryCountObject[domain]) {
+				categoryCountObject[domain] += count;
+			} else {
+				categoryCountObject[domain] = count;
+			}
+		}
+	},
+
+	/* Populate itam_ci_usage table with CI's from SAM application and Cloud Insights application
+	* Note:Cloud Insights CI's are from cmdb_ci_vm_instance
+	* For Quebec we are not honoring de-duplication of CI's that overlap across SAM and CI application
+	*/
+	populateSAMCloudInsightsCIUsageData: function() {
+		// Clean both summary and breakdown table before inserting new data
+		this._cleanCITable();
+		this._cleanResourceCountsTable();
+		// Populate SAM CI &amp; Subscription users Usage data
+		this.populateSAMUsageData();
+		// Populate Cloud Insights CI Usage data
+		this.populateCloudInsightsCIUsageData();
+		// Populate SAM Enterprise Usage data
+		this.populateSAMEnterpriseUsageData();
+	},
+
+	/* Query for all CI's with Software installs that are discovered in last 90 days
+	* Also exclude the CI's that are having the 'fieldname' from the
+	* property(com.snc.samp.exclude_device_flag) set to false
+	*/
+	populateSAMUsageData: function() {
+		// check if samp plugin is enabled to populate
+		if (!GlidePluginManager.isActive('com.snc.samp')) { return; }
+
+		var domain;
+
+		var ciGr = new GlideRecord('cmdb_ci_hardware');
+		ciGr.addJoinQuery('cmdb_sam_sw_install');
+		ciGr.addQuery('last_discovered', '&gt;', gs.daysAgo(3 * 30)).addOrCondition('last_discovered', '');
+		ciGr.setCategory('usage');
+		var excludedDeviceProperty = gs.getProperty('com.snc.samp.exclude_device_flag');
+		if (!gs.nil(excludedDeviceProperty)) {
+			var fieldName = excludedDeviceProperty.trim();
+			ciGr.addQuery(fieldName, false);
+		}
+		ciGr.query();
+		while (ciGr.next()) {
+			domain = ciGr.getValue('sys_domain');
+			if (!this.fIsDomainDataSeparationEnabled) {
+				domain = 'global';
+			}
+			var gr = new GlideRecord(SAMLicensingUtility.ITAM_CI_USAGE_TABLE);
+			gr.initialize();
+			gr.setValue('resource', ciGr.getValue('sys_id'));
+
+			if (ciGr.getValue('sys_class_name') === 'cmdb_ci_computer'
+				|| ciGr.instanceOf('cmdb_ci_pc_hardware')
+				|| ciGr.getValue('sys_class_name') === 'cmdb_ci_handheld_computing') {
+				this._updateCategoryCount('end_user_computers', domain);
+				gr.resource_category = SAMLicensingUtility.COMPUTER_CATEGORY;
+			} else {
+				this._updateCategoryCount('servers', domain);
+				gr.resource_category = SAMLicensingUtility.SERVERS_CATEGORY;
+			}
+			gr.setValue('sam', true);
+			gr.setValue('sys_domain', domain);
+			gr.insert();
+		}
+
+		/* Populate SaaS Users subscription usage data
+		 * Note: For Quebec we dont support drill down details for subscription users
+		 */
+		this.populateSubscriptionUsersUsageData();
+
+		// Update the summary table counts for SAM application
+		this.updateSummaryLicenseCounts(SAMLicensingUtility.SAM_APP);
+	},
+
+	/* Query for all unique user's who are using saas applications
+	*/
+	populateSubscriptionUsersUsageData: function() {
+		// check if Saas plugin is enabled to populate
+		if (!(GlidePluginManager.isActive('com.sn_sam_saas'))) { return; }
+		// Update resourcecategory map with counts for associated users
+		this.getSubscriptionsCount(true);
+		// Update resourcecategory map with counts for not associated users
+		this.getSubscriptionsCount(false);
+	},
+
+	getSubscriptionsCount: function(associatedUsers) {
+		var userCount;
+		var queryString = associatedUsers ? 'user' : 'user_principal_name';
+		var domains = new GlideAggregate('samp_sw_subscription');
+		if (associatedUsers) {
+			domains.addNotNullQuery('user');
+		} else {
+			domains.addNullQuery('user');
+			domains.addNotNullQuery('user_principal_name');
+		}
+		if (this._isValidTableField()) { domains.addQuery('subscription_identifier', 'NOT IN', this._getNotChargeableIdentifiers()); }
+		domains.setGroup(true);
+		domains.groupBy('sys_domain');
+		domains.addAggregate('COUNT(DISTINCT', queryString);
+		domains.query();
+		while (domains.next()) {
+			var domainSysId = domains.getValue('sys_domain');
+			userCount = parseInt(domains.getAggregate('COUNT(DISTINCT', queryString), 10);
+			this._setCategoryCount(SAMLicensingUtility.SUBSCRIPTION_CATEGORY, domainSysId, userCount);
+		}
+	},
+
+	_isValidTableField: function() {
+		var tableUtils = new TableUtils('samp_sw_subscription_product_definition');
+		if (tableUtils.tableExists()) {	return tableUtils.isValidField('is_chargeable'); }
+		return false;
+	},
+
+	_getNotChargeableIdentifiers: function() {
+		var notChargeableIdentifierArr = [];
+		var identifierGr = new GlideRecord('samp_sw_subscription_product_definition');
+		identifierGr.addQuery('is_chargeable', false);
+		identifierGr.query();
+		while (identifierGr.next()) {
+			notChargeableIdentifierArr.push(identifierGr.getValue('external_id'));
+		}
+		return notChargeableIdentifierArr;
+	},
+
+	populateCloudInsightsCIUsageData: function() {
+		// check if Cloud insights plugins is enabled to populate
+		if (!(GlidePluginManager.isActive('com.sn_cld_intg_aws')
+		&amp;&amp; GlidePluginManager.isActive('com.sn_cld_intg_azure'))) { return; }
+
+		// clear category counts to populate Cloud insights obj
+		this._clearCategoryCount();
+
+		if (!gs.nil(sn_clin_aws.AWSLicenseHelper)
+			&amp;&amp; !gs.nil(sn_clin_azure.AzureLicenseHelper)) {
+			// check if typeof object is string they stamp domain as global
+			// or else read the JSON object to stamp the domain field
+			var domain = 'global';
+			var sysId;
+
+			var awsCIArray = new sn_clin_aws.AWSLicenseHelper().getAWSVMForLicensing();
+			var azureCIArray = new sn_clin_azure.AzureLicenseHelper().getAzureVMForLicensing();
+			var ciArray = [];
+			if (!gs.nil(awsCIArray)) { ciArray = ciArray.concat(awsCIArray); }
+			if (!gs.nil(azureCIArray)) { ciArray = ciArray.concat(azureCIArray); }
+
+			for (var i = 0; i &lt; ciArray.length; i++) {
+				var ciObj = ciArray[i];
+				if (typeof ciObj === 'object') {
+					if ('domain' in ciObj) { domain = ciObj.domain; }
+					sysId = ciObj.sysId;
+				} else {
+					sysId = ciObj;
+				}
+
+				var arr = new global.GlideQuery(SAMLicensingUtility.CMDB_REL_CI)
+					.where('parent', sysId)
+					.where('type', SAMLicensingUtility.VIRTUALIZE_BY)
+					.select('child')
+					.toArray(1);
+				if (arr.length) {
+					var resource = arr[0].child;
+					arr = new global.GlideQuery(SAMLicensingUtility.ITAM_CI_USAGE_TABLE)
+						.where('resource', resource)
+						.select('resource')
+						.toArray(1);
+					if (arr.length) {
+						var recId = arr[0].sys_id;
+						new global.GlideQuery(SAMLicensingUtility.ITAM_CI_USAGE_TABLE)
+							.where('sys_id', recId)
+							.update({ cloud_insights: true });
+						this._updateCategoryCount(SAMLicensingUtility.SERVERS_CATEGORY, domain);
+						continue;
+					}
+				}
+
+				var gr = new GlideRecord(SAMLicensingUtility.ITAM_CI_USAGE_TABLE);
+				gr.initialize();
+				gr.setValue('resource', sysId);
+				this._updateCategoryCount(SAMLicensingUtility.SERVERS_CATEGORY, domain);
+				gr.resource_category = SAMLicensingUtility.SERVERS_CATEGORY;
+				gr.setValue('cloud_insights', true);
+				gr.setValue('sys_domain', domain);
+				gr.insert();
+			}
+			// Update the summary table counts for SAM application
+			this.updateSummaryLicenseCounts(SAMLicensingUtility.CI_APP);
+
+			// update aggregate count
+			this.updateCloudInsightsCIUsageAggregate();
+		}
+	},
+
+	updateCloudInsightsCIUsageAggregate: function () {
+		var resourceCat = this.CATEGORIES[SAMLicensingUtility.SERVERS_CATEGORY];
+		var factor = this._getCatFactor(resourceCat.ratio);
+		var stream = new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.CI_APP)
+			.where('is_aggregated', false)
+			.aggregate('avg', 'resource_count')
+			.groupBy('sys_domain')
+			.select();
+		stream.forEach(function (rec) {
+			var domain = rec.group.sys_domain;
+			var count = Math.floor(rec.avg.resource_count);
+			new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+				.insert({
+					application: SAMLicensingUtility.CI_APP,
+					resource_category: SAMLicensingUtility.SERVERS_CATEGORY,
+					su_ratio: resourceCat.ratio,
+					resource_count: count,
+					su_count: resourceCat.su_count(count, factor),
+					sys_domain: domain,
+					is_aggregated: true,
+				}).get();
+		});
+	},
+
+	populateSAMEnterpriseUsageData: function() {
+		// check if samp plugin is enabled to populate
+		if (!GlidePluginManager.isActive('com.snc.samp')) { return; }
+
+		// check if Cloud insights plugins is enabled to populate
+		if (!(GlidePluginManager.isActive('com.sn_cld_intg_aws')
+		&amp;&amp; GlidePluginManager.isActive('com.sn_cld_intg_azure'))) { return; }
+
+		var stream = new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.SAM_APP)
+			.where('resource_category', 'IN',
+				[SAMLicensingUtility.COMPUTER_CATEGORY, SAMLicensingUtility.SUBSCRIPTION_CATEGORY])
+			.select('resource_category', 'su_ratio', 'resource_count', 'su_count', 'sys_domain');
+		stream.forEach(function(rec) {
+			new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+				.insert({
+					application: SAMLicensingUtility.SAM_ENT_APP,
+					resource_category: rec.resource_category,
+					su_ratio: rec.su_ratio,
+					resource_count: rec.resource_count,
+					su_count: rec.su_count,
+					sys_domain: rec.sys_domain,
+					is_aggregated: true,
+				}).get();
+		});
+
+		stream = new global.GlideQuery(SAMLicensingUtility.ITAM_CI_USAGE_TABLE)
+			.where('sam', true)
+			.where('resource_category', SAMLicensingUtility.SERVERS_CATEGORY)
+			.aggregate('count')
+			.groupBy('sys_domain')
+			.select();
+		var totals = {};
+		stream.forEach(function(rec) {
+			var domain = rec.group.sys_domain;
+			var count = rec.count;
+			totals[domain] = parseInt(count, 10);
+		});
+
+		stream = new global.GlideQuery(SAMLicensingUtility.ITAM_CI_USAGE_TABLE)
+			.where('cloud_insights', true)
+			.where('sam', true)
+			.where('resource_category', SAMLicensingUtility.SERVERS_CATEGORY)
+			.aggregate('count')
+			.groupBy('sys_domain')
+			.select();
+		var dups = {};
+		stream.forEach(function(rec) {
+			var domain = rec.group.sys_domain;
+			var count = rec.count;
+			dups[domain] = parseInt(count, 10);
+		});
+
+		var resourceCat = this.CATEGORIES[SAMLicensingUtility.SERVERS_CATEGORY];
+		var factor = this._getCatFactor(resourceCat.ratio);
+		for (var domain in totals) {
+			var count = totals[domain];
+			count -= (dups[domain] || 0);
+			var arr = new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+				.where('application', SAMLicensingUtility.CI_APP)
+				.where('resource_category', SAMLicensingUtility.SERVERS_CATEGORY)
+				.where('is_aggregated', true)
+				.where('sys_domain', domain)
+				.select('resource_count')
+				.toArray(1);
+			if (arr.length) {
+				count += parseInt(arr[0].resource_count, 10);
+			}
+			new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+				.insert({
+					application: SAMLicensingUtility.SAM_ENT_APP,
+					resource_category: SAMLicensingUtility.SERVERS_CATEGORY,
+					su_ratio: resourceCat.ratio,
+					resource_count: count,
+					su_count: resourceCat.su_count(count, factor),
+					sys_domain: domain,
+					is_aggregated: false,
+				}).get();
+		}
+
+		stream = new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+			.where('application', SAMLicensingUtility.SAM_ENT_APP)
+			.where('is_aggregated', false)
+			.aggregate('avg', 'resource_count')
+			.groupBy('sys_domain')
+			.select();
+		stream.forEach(function (rec) {
+			var domain1 = rec.group.sys_domain;
+			var count1 = Math.floor(rec.avg.resource_count);
+			new global.GlideQuery(SAMLicensingUtility.ITAM_LICENSING_TABLE)
+				.insert({
+					application: SAMLicensingUtility.SAM_ENT_APP,
+					resource_category: SAMLicensingUtility.SERVERS_CATEGORY,
+					su_ratio: resourceCat.ratio,
+					resource_count: count1,
+					su_count: resourceCat.su_count(count1, factor),
+					sys_domain: domain1,
+					is_aggregated: true,
+				}).get();
+		});
+	},
+
+	updateSummaryLicenseCounts: function(application) {
+		for (var category in this.CATEGORIES) {
+			var resourceCat = this.CATEGORIES[category];
+			var factor = this._getCatFactor(resourceCat.ratio);
+			var summaryGr = new GlideRecord(SAMLicensingUtility.ITAM_LICENSING_TABLE);
+			var resourceCountObj = resourceCat.resource_count;
+			for (var recordDomain in resourceCountObj) {
+				summaryGr.initialize();
+				summaryGr.setValue('application', application);
+				summaryGr.resource_category = category;
+				summaryGr.setValue('su_ratio', resourceCat.ratio);
+				summaryGr.setValue('resource_count', resourceCountObj[recordDomain]);
+				summaryGr.setValue('su_count',
+					resourceCat.su_count(resourceCountObj[recordDomain], factor));
+				summaryGr.setValue('sys_domain', recordDomain);
+				if (application === SAMLicensingUtility.SAM_APP) {
+					summaryGr.setValue('is_aggregated', true);
+				}
+				summaryGr.insert();
+			}
+		}
+	},
+
+	_clearCategoryCount: function() {
+		for (var category in this.CATEGORIES) {
+			var resourceCat = this.CATEGORIES[category];
+			resourceCat.resource_count = {};
+		}
+	},
+
+	type: 'SAMLicensingUtility',
+};
+
+SAMLicensingUtility.ITAM_CI_USAGE_TABLE = 'itam_ci_usage';
+SAMLicensingUtility.ITAM_LICENSING_TABLE = 'itam_licensing_resource_counts';
+SAMLicensingUtility.COMPUTER_CATEGORY = 'end_user_computers';
+SAMLicensingUtility.SERVERS_CATEGORY = 'servers';
+SAMLicensingUtility.SUBSCRIPTION_CATEGORY = 'subscription_users';
+SAMLicensingUtility.SAM_ENT_APP = 'SAM Enterprise';
+SAMLicensingUtility.SAM_APP = 'Software Asset Management';
+SAMLicensingUtility.CI_APP = 'Cloud Insights';
+SAMLicensingUtility.CMDB_REL_CI = 'cmdb_rel_ci';
+SAMLicensingUtility.VIRTUALIZE_BY = 'd93304fb0a0a0b78006081a72ef08444';]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-05-08 06:02:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8def3fcf94a01010fa9bc815ae232095&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;69&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SAMLicensingUtility&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8def3fcf94a01010fa9bc815ae232095&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-20 18:20:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;16073&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:28</sys_created_on>
+        <sys_id>dd0dc57e2f331110d8a4d5f62799b660</sys_id>
+        <sys_name>SAMLicensingUtility</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dd0dc57e2f331110d8a4d5f62799b660</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

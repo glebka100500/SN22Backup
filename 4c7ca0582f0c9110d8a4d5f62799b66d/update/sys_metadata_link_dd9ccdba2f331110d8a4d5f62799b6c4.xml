@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>546d2345b78323000999e4f6ee11a96f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeCIAssociationSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base Change Association API. Use the "ChangeCIAssociation" script include to override functionality in this script if required&lt;/description&gt;
+        &lt;name&gt;ChangeCIAssociationSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeCIAssociationSNC = Class.create();
+// Table names
+ChangeCIAssociationSNC.TASK_CI = "task_ci";
+ChangeCIAssociationSNC.TASK_CMDB_CI_SERVICE = "task_cmdb_ci_service";
+ChangeCIAssociationSNC.TASK_SERVICE_OFFERING = "task_service_offering";
+
+// Field names
+ChangeCIAssociationSNC.CI_ITEM = "ci_item";
+ChangeCIAssociationSNC.CMDB_CI_SERVICE = "cmdb_ci_service";
+ChangeCIAssociationSNC.SERVICE_OFFERING = "service_offering";
+
+// type
+ChangeCIAssociationSNC.AFFECTED = "affected";
+ChangeCIAssociationSNC.IMPACTED = "impacted";
+ChangeCIAssociationSNC.OFFERING = "offering";
+
+// response param
+ChangeCIAssociationSNC.IGNORED_CMDB_CI_SYS_IDS = "ignored_cmdb_ci_sys_ids";
+
+ChangeCIAssociationSNC.prototype = {
+
+	initialize: function(taskAssociationGr) {
+		this._log = new GSLog(ChangeCommon.LOG_PROPERTY, this.type);
+		if (taskAssociationGr)
+			this._gr = taskAssociationGr;
+	},
+
+	insert: function() {
+		var associationType = this.getAssociationType();
+		if (!associationType) {
+			this.addErrorMsg(gs.getMessage("Association of type: {0} is invalid", [associationType]));
+			return null;
+		}
+
+		var changeSysId = this._gr ? this._gr.task + "" : "";
+		if (!changeSysId) {
+			this.addErrorMsg(gs.getMessage("changeSysId: {0} is not a valid change_request sys_id", [changeSysId]));
+			return null;
+		}
+
+		var cmdbCiSysId = this.getCI() + "";
+		if (!this.hasValidCI()) {
+			this.addErrorMsg(gs.getMessage("cmdbCiSysId: {0} is not a valid cmdb_ci sys_id", [cmdbCiSysId]));
+			return null;
+		}
+
+		var sysId = null;
+		var isNewRecord = !this._gr.isValidRecord();
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[insert] isNewRecord: " + isNewRecord);
+
+		if (isNewRecord) {
+			var isAssociated = this.isAssociated();
+			if (isAssociated) {
+				this.addInfoMsg(gs.getMessage("Association of type: {0} between CI: {1} and Change Request: {2} already exists", [associationType, cmdbCiSysId, changeSysId]));
+				var gr = this._getAssociatedGr();
+				if (gr &amp;&amp; gr.next()) {
+					this._gr = gr;
+					sysId = this._gr.getUniqueValue();
+				}
+			} else {
+				var canCreate = this._gr.canCreate();
+
+				if (this._log.atLevel(GSLog.DEBUG))
+					this._log.debug("[insert] canCreate: " + canCreate);
+
+				if (canCreate)
+					sysId = this._gr.insert();
+				else
+					this.addInfoMsg(gs.getMessage("Association of type: {0} between CI: {1} and Change Request: {2} is not permitted", [associationType, cmdbCiSysId, changeSysId]));
+
+				if (this._log.atLevel(GSLog.DEBUG))
+					this._log.debug("[insert] isActionAborted: " + this._gr.isActionAborted());
+			}
+		} else
+
+		if (!sysId || this._gr.isActionAborted())
+			this.addErrorMsg(gs.getMessage("Failed to create association of type: {0} between CI: {1} and Change Request: {2}", [associationType, cmdbCiSysId, changeSysId]));
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[insert] sysId: " + sysId);
+
+		return sysId;
+	},
+
+	getAssociationType: function() {
+		if (!this._gr)
+			return null;
+
+		var tableName = this._gr.getTableName();
+		if (!tableName)
+			return null;
+
+		if (tableName === ChangeCIAssociation.TASK_CI)
+			return ChangeCIAssociation.AFFECTED;
+
+		if (tableName === ChangeCIAssociation.TASK_CMDB_CI_SERVICE)
+			return ChangeCIAssociation.IMPACTED;
+
+		if (tableName === ChangeCIAssociation.TASK_SERVICE_OFFERING)
+			return ChangeCIAssociation.OFFERING;
+
+		return null;
+	},
+
+	hasValidCI: function() {
+		var cmdbCiSysId = this.getCI() + "";
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[hasValidCI] cmdbCiSysId: " + cmdbCiSysId);
+
+		if (!cmdbCiSysId)
+			return false;
+
+		var hasValidCI;
+
+		// Invalid record means they are not in the DB, i.e. new
+		if (!(this._gr.isValidRecord() &amp;&amp; this.getCI() !== null &amp;&amp; this.getCI().changed &amp;&amp; this.getCI().changed())) {
+			var ga = new GlideAggregate("cmdb_ci");
+			ga.addAggregate("COUNT");
+			ga.addQuery("sys_id", cmdbCiSysId);
+			ga.query();
+			hasValidCI = ga.next() &amp;&amp; ga.getAggregate("COUNT") &gt; 0;
+		} else
+			hasValidCI = true;
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[hasValidCI] hasValidCI: " + hasValidCI);
+
+		return hasValidCI;
+	},
+
+	getCI: function() {
+		if (!this._gr)
+			return null;
+
+		if (this._gr.isValidField(ChangeCIAssociation.CI_ITEM))
+			return this._gr.getElement(ChangeCIAssociation.CI_ITEM);
+		if (this._gr.isValidField(ChangeCIAssociation.CMDB_CI_SERVICE))
+			return this._gr.getElement(ChangeCIAssociation.CMDB_CI_SERVICE);
+		if (this._gr.isValidField(ChangeCIAssociation.SERVICE_OFFERING))
+			return this._gr.getElement(ChangeCIAssociation.SERVICE_OFFERING);
+
+		return null;
+	},
+
+	isAssociated: function() {
+		var gr = this._getAssociatedGr();
+		var associated = gr &amp;&amp; gr.next() ? true : false;
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[isAssociated] associated: " + associated);
+
+		return associated;
+	},
+
+	_getAssociatedGr: function() {
+		if (!this._gr)
+			return null;
+
+		var tableName = this._gr.getTableName();
+		var taskSysId = this._gr.task + "";
+		var ge = this.getCI();
+		var fieldName = ge !== null ? ge.getName() : "";
+		var fieldValue = ge !== null ? ge + "" : "";
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_getAssociatedGr] tableName: " + tableName + " fieldName: " + fieldName + " fieldValue: " + fieldValue + " taskSysId: " + taskSysId);
+
+		if (!taskSysId || !tableName || !fieldName || !fieldValue)
+			return null;
+
+		var gr = new GlideRecord(tableName);
+		gr.addQuery("task", taskSysId);
+		gr.addQuery(fieldName, fieldValue);
+		gr.query();
+		return gr;
+	},
+
+	addErrorMsg: function(msg) {
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[addErrorMsg] msg: " + msg);
+
+		if (!this._errorMsgs)
+			this._errorMsgs = [];
+
+		if (msg)
+			this._errorMsgs.push(msg);
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[addErrorMsg] this._errorMsgs: " + this._errorMsgs);
+	},
+
+	addInfoMsg: function(msg) {
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[addInfoMsg] msg: " + msg);
+
+		if (!this._infoMsgs)
+			this._infoMsgs = [];
+
+		if (msg)
+			this._infoMsgs.push(msg);
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[addInfoMsg] this._infoMsgs: " + this._infoMsgs);
+	},
+
+	hasErrors: function() {
+		var hasErrors = this.getErrorMsgs().length &gt; 0;
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[hasErrors] hasErrors: " + hasErrors);
+
+		return hasErrors;
+	},
+
+	hasInfo: function() {
+		var hasInfo = this.getInfoMsgs().length &gt; 0;
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[hasInfo] hasInfo: " + hasInfo);
+
+		return hasInfo;
+	},
+
+	getInfoMsgs: function() {
+		return this._infoMsgs ? this._infoMsgs : [];
+	},
+
+	getErrorMsgs: function() {
+		return this._errorMsgs ? this._errorMsgs : [];
+	},
+
+	setCI: function(cmdbCiSysId) {
+		cmdbCiSysId = cmdbCiSysId + "";
+
+		if (!cmdbCiSysId)
+			return this;
+
+		var ge = this.getCI();
+		if (ge !== null)
+			ge.setValue(cmdbCiSysId);
+
+		return this;
+	},
+	
+	setChange: function(changeSysId) {
+		changeSysId = changeSysId + "";
+		if (changeSysId)
+			this._gr.task = changeSysId;
+		return this;
+	},
+
+	toString: function() {
+		return JSON.stringify(this.toJS());
+	},
+
+	toJS: function() {
+		return ChangeCommon.toJS(this._gr);
+	},
+
+	deleteRecord: ChangeCommon.methods.deleteRecord,
+
+	refreshGlideRecord: ChangeCommon.methods.refreshGlideRecord,
+
+	getGlideRecord: ChangeCommon.methods.getGlideRecord,
+
+	setValue: ChangeCommon.methods.setValue,
+
+	setValues: ChangeCommon.methods.setValues,
+
+	canWriteTo: ChangeCommon.methods.canWriteTo,
+
+	type: "ChangeCIAssociationSNC"
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-01-15 17:35:34&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;546d2345b78323000999e4f6ee11a96f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeCIAssociationSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_546d2345b78323000999e4f6ee11a96f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-29 14:54:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7472&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:34</sys_created_on>
+        <sys_id>dd9ccdba2f331110d8a4d5f62799b6c4</sys_id>
+        <sys_name>ChangeCIAssociationSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dd9ccdba2f331110d8a4d5f62799b6c4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

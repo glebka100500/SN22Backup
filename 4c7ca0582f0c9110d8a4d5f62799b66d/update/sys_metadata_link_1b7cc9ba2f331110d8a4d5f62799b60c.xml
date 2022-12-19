@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>442d66c193c5330064f572edb67ffbab</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumSprintAbstract&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ScrumSprintAbstract&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumSprintAbstract = Class.create();
+ScrumSprintAbstract.prototype = {
+	// Can be an array of sysIds too
+    initialize: function(sysId) {
+		this.sysId = sysId;
+    },
+	
+	_getCompletedStates: function() {
+		var completedStates = new ScrumStatesUtil('rm_story').getCompletedStates();
+		return completedStates;
+	},
+	
+	_getCancelledStates: function() {
+		var cancelledStates = new ScrumStatesUtil('rm_story').getCancelledStates();
+		return cancelledStates;
+	},
+	
+	completedCount: function() {
+		var completedCount = 0;
+		var completedStates = this._getCompletedStates();
+		
+		var completedStories = new GlideAggregate('rm_story');
+		completedStories.addQuery('state', 'IN', completedStates);
+		completedStories.addQuery('sprint','IN' , this.sysId);
+		completedStories.addAggregate('COUNT');
+		completedStories.query();
+
+		if (completedStories.next())
+			completedCount = completedStories.getAggregate('COUNT');
+		
+		return completedCount;
+	},
+	
+	cancelledCount: function() {
+		var cancelledCount = 0;
+		var cancelledStates = this._getCancelledStates();
+
+		var cancelledStories = new GlideAggregate('rm_story');
+		cancelledStories.addQuery('state', 'IN', cancelledStates);
+		cancelledStories.addQuery('sprint','IN' , this.sysId);
+		cancelledStories.addAggregate('COUNT');
+		cancelledStories.query();
+
+		if (cancelledStories.next())
+			cancelledCount = cancelledStories.getAggregate('COUNT');
+		
+		return cancelledCount;
+	},
+	
+	incompleteCount: function() {
+		var incompleteCount = 0;
+		var completedStates = this._getCompletedStates();
+		var cancelledStates = this._getCancelledStates();
+		
+		var incompleteStories = new GlideAggregate('rm_story');
+		incompleteStories.addQuery('state', 'NOT IN', completedStates.concat(cancelledStates)).addOrCondition('state', 'NULL');
+		incompleteStories.addQuery('sprint', 'IN', this.sysId);
+		incompleteStories.addAggregate('COUNT');
+		incompleteStories.query();
+
+		if (incompleteStories.next())
+			incompleteCount = incompleteStories.getAggregate('COUNT');
+		
+		return incompleteCount;
+	},
+	
+	moveIncompleteRecordsToSprint: function(newSprint) {
+		var success = true;
+		var completedStates = this._getCompletedStates();
+		var cancelledStates = this._getCancelledStates();
+		
+		var stories = new GlideRecordSecure('rm_story');
+		stories.addQuery('state', 'NOT IN', completedStates.concat(cancelledStates)).addOrCondition('state', 'NULL');		
+		stories.addActiveQuery();
+		stories.addQuery('sprint', 'IN', this.sysId);
+		stories.query();
+		while(stories.next()){
+			stories.setValue('sprint', newSprint);
+			if(!stories.update())
+				success = false;
+		}
+		
+		return success;
+	},
+
+    type: 'ScrumSprintAbstract'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-04-24 23:00:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;442d66c193c5330064f572edb67ffbab&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumSprintAbstract&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_442d66c193c5330064f572edb67ffbab&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-07-27 10:13:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2652&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:09</sys_created_on>
+        <sys_id>1b7cc9ba2f331110d8a4d5f62799b60c</sys_id>
+        <sys_name>ScrumSprintAbstract</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1b7cc9ba2f331110d8a4d5f62799b60c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

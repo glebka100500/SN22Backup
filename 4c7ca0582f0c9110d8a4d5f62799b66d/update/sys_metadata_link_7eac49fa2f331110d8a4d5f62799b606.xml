@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6186035fb3573300dbbf6030c6a8dcb3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VAGlobalContextualSearchUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Util for Global VA Contextual Search Actions&lt;/description&gt;
+        &lt;name&gt;VAGlobalContextualSearchUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VAGlobalContextualSearchUtil = Class.create();
+VAGlobalContextualSearchUtil.prototype = {
+    searchTerm: '',
+    searchTime: '',
+    apiResponseTime: '',
+    searchResultsLength: '',
+    searchId: '',
+
+    initialize: function() {},
+
+    search: function(context, searchTerm, kbKnowledgeBase) {
+        this.searchTerm = searchTerm;
+
+        //time when search term was sent
+        this.searchTime = VAClickMetrics.getCurrentTime();
+
+        //unique ID for every contextual search
+        this.searchId = VAClickMetrics.createGUID();
+
+        var payload = {
+            meta: {
+                includePinnedArticles: true,
+                applyFilter: true,
+                window: {
+                    start: 0,
+                    end: 20
+                },
+            },
+            query: !gs.nil(kbKnowledgeBase) ? {
+                freetext: "" + searchTerm,
+                kb_knowledge_base: ["" + kbKnowledgeBase]
+            } : {
+                freetext: "" + searchTerm
+            },
+            context: !gs.nil(context) ? context : undefined,
+            searchSource: 'virtual_agent'
+        };
+
+        var request = new global.cxs_SearchAPI();
+        var startSearch = new Date().getTime();
+        var response = request.search(payload);
+        var endSearch = new Date().getTime();
+        this.apiResponseTime = endSearch - startSearch;
+        response.searchId = this.searchId;
+
+        return response;
+    },
+
+    // true for success, false for failure
+    processSearchResponse: function(response) {
+        return response.status &amp;&amp; response.status.code == 200;
+    },
+
+    // These error handling is for the contextual search engine only.
+    processSearchErrors: function(response) {
+        if (response.status.code != 200)
+            return gs.getMessage('Error while performing search');
+    },
+
+    processGeneralResults: function(response, maxResults, confidenceThreshold) {
+        var results = response.results;
+        var relevantResults = [];
+        //results coming from different searchs could be the same, only need one
+        var ids = [];
+
+        if (results.length &gt; 0) {
+            for (var i = 0; results[i] &amp;&amp; relevantResults.length &lt; maxResults; i++) {
+                // Result is unique and score &gt; confidenceThreshold
+                if (ids.indexOf(results[i].id) == -1 &amp;&amp; results[i].meta.score &gt;= confidenceThreshold) {
+                    relevantResults.push(results[i]);
+                    ids.push(results[i].id);
+                }
+            }
+        }
+        this.searchResultsLength = relevantResults.length;
+
+        if (VAClickMetrics.isContextualSearchClickMetricsAllowed())
+            this._sendPayloadForSearchTriggered();
+
+        return relevantResults;
+    },
+
+    getContextualSearchVariableAndContext: function(catologItemId) {
+        var searchConfig = {};
+        var rpConfigGr = new GlideRecord('cxs_rp_config');
+        rpConfigGr.addQuery('sc_cat_item', catologItemId);
+        rpConfigGr.addActiveQuery();
+        rpConfigGr.query();
+        if (rpConfigGr.next()) {
+            searchConfig.context = rpConfigGr.getValue('cxs_context_config');
+            searchConfig.searchVariable = rpConfigGr.getValue('search_variable');
+        }
+        return searchConfig;
+    },
+
+    getLinks: function(header, variables) {
+        var groupedLinksOutMsg = new sn_cs.GroupedPartsOutMsg();
+        groupedLinksOutMsg.setHeader(header);
+        var limit = parseInt(variables.limit);
+        var searchJsonObj = JSON.parse(variables.search_result_json_string);
+        var index = parseInt(variables.index);
+
+        var linkBuilder = new global.cxs_SearchResultLinkBuilder();
+        for (var i = index; i &lt; index + limit &amp;&amp; i &lt; searchJsonObj.length; i++) {
+            var link = linkBuilder.build(searchJsonObj[i], variables.portal, true, variables.dynamicChoiceNodeName, vaSystem);
+
+            if (link &amp;&amp; link.link) {
+                var resultLink = this._createPayloadForClickMetrics(link, variables, i);
+                groupedLinksOutMsg.addLinkPart(link.label, resultLink, link.description, link.context_label);
+            } else
+                index++;
+        }
+        return groupedLinksOutMsg;
+    },
+
+    processTopResultData: function(searchResponse) {
+        var topResult = JSON.parse(searchResponse)[0];
+        return JSON.stringify(topResult);
+    },
+
+    generateTopResultCard: function(variables, vaSystem, vaInputs, vaVars) {
+        var cardDetails = JSON.parse(variables.top_result);
+        var topResultData = {};
+        var id = cardDetails['id'].split(':');
+        var tableName = id[0].toString();
+        var sysID = id[1].toString();
+
+        var cardLabel = cardDetails['meta']['card_label'].toString();
+        if (tableName == "sc_cat_item") {
+
+            vaVars.catalogId = '';
+            try {
+                var isCatalogSupported = new sn_sc.CatalogConversationHelper().hasVASupport(sysID);
+                if (isCatalogSupported) {
+                    vaVars.catalogId = sysID;
+                } else {
+                    topResultData["linkLabel"] = gs.getMessage("Request this item");
+                    var linkBuilder = new global.cxs_SearchResultLinkBuilder();
+                    var link = linkBuilder.build(cardDetails, variables.portal, false, variables.dynamicChoiceNodeName, vaSystem);
+                    if (link &amp;&amp; link.link) {
+                        var resultLink = this._createPayloadForClickMetrics(link, variables, 0);
+                        topResultData["linkHref"] = resultLink;
+                    }
+                }
+            } catch (e) {
+                gs.info("No Catalog Id found for this search result.");
+            }
+
+            topResultData["identifier"] = cardLabel;
+            topResultData["image"] = gs.nil(cardDetails['image']['link'].toString()) ? 'default-cart-icon.svg' : cardDetails['image']['link'].toString();
+            topResultData["header"] = cardDetails['title'].toString();
+
+            var description = gs.nil(cardDetails["meta"]["description"].toString()) ? cardDetails["snippet"] : cardDetails["meta"]["description"];
+            if (variables.deviceType == "mweb") {
+                topResultData["description"] = description;
+            } else {
+                description = new GlideSPScriptable().stripHTML(description);
+                topResultData["description"] = description.toString().substring(0, 400);
+            }
+
+            topResultData["alt"] = gs.getMessage("Image of {0}", [cardDetails['title'].toString()]);
+
+            var fields = [];
+            try {
+                var cat_gr = new GlideRecord('sc_cat_item');
+                cat_gr.get(sysID);
+                var catalogItemJS = new sn_sc.CatItem(sysID);
+                var itemPrice = catalogItemJS.getCompleteItemPrice();
+                if (cat_gr.getValue('display_price_property') != 'never' &amp;&amp; !gs.nil(itemPrice)) {
+                    fields.unshift({
+                        "fieldLabel": "Price",
+                        "fieldValue": itemPrice,
+                        "showSeparator": "show"
+                    });
+                }
+            } catch (e) {
+                gs.info("Problem in finding the Catalog item price");
+            }
+            topResultData["fields"] = fields;
+        }
+
+        return vaSystem.renderCard("CatalogCard", JSON.stringify(topResultData));
+    },
+
+    isTopResultCardSupported: function(cardData) {
+        try {
+            if (gs.nil(cardData))
+                return false;
+
+            var cardDetails = JSON.parse(cardData);
+            var id = cardDetails.id.split(':');
+            var resourceType = id[0];
+            var resourceId = id[1];
+            var description = gs.nil(cardDetails["meta"]["description"].toString()) ? cardDetails["snippet"] : cardDetails["meta"]["description"];
+            var cardLabel = cardDetails['meta']['card_label'].toString();
+            if (!((!gs.nil(resourceType) &amp;&amp; !gs.nil(resourceId)) || !gs.nil(cardLabel) || !gs.nil(description))) {
+                return false;
+            }
+
+            var isCardSupported = (resourceType == 'sc_cat_item') ? true : false;
+            if (!isCardSupported) {
+                return isCardSupported;
+            } else {
+                var isContentItem = new GlideRecord('sc_cat_item_content');
+                if (isContentItem.get(resourceId) &amp;&amp; isContentItem.content_type == "external")
+                    return false;
+                else
+                    return true;
+            }
+        } catch (ex) {
+            gs.info("Error calculating whether to show Contextual Search top result");
+            return false;
+        }
+    },
+
+    _createPayloadForClickMetrics: function(link, variables, order) {
+
+        var scratchPad = {};
+
+        if (!VAClickMetrics.isContextualSearchClickMetricsAllowed()) {
+            // When the feature is disabled, There's a special marker that needs to be appended to the original URL so that overriding URL can be to be prevented on the backend.
+            // Without the marker, this URL can be converted to click metrics URL if the bot_output event type is set to true.
+            // Since it is not possible to tell the URL is composed by contextual search or the bot_reponse on the backend at runtime. 
+            // So, the URL with the marker indicates "don't convert to click metrics URL" on the backend. The marker will be removed automatically when detected on the backend.
+            return VAClickMetrics.createClickMetricsURL(vaSystem, link.link, scratchPad, VAClickMetricsConstants.EVENT_TYPE_CONTEXTUAL_SEARCH);
+        }
+
+        this.searchTime = VAClickMetrics.getCurrentTime();
+        var portal = variables.portal + '';
+        var searchTerm = variables.search_term + '';
+        var searchId = variables.search_Id + '';
+        //contextText is the data_source
+        var contextText = link.context_label;
+        var description = SNC.GlideHTMLSanitizer.sanitize(link.description) + '';
+
+        scratchPad = {
+            'Title': link.label,
+            'Description': description,
+            'Search Term': searchTerm,
+            'Portal': portal,
+            'Data Source Title': contextText,
+            'Search Id': searchId,
+            'Order': order + '',
+            'Document Id': link.document_id,
+            'Document Table': link.document_table
+        };
+        var newLink = VAClickMetrics.createClickMetricsURL(vaSystem, link.link, scratchPad, VAClickMetricsConstants.EVENT_TYPE_CONTEXTUAL_SEARCH);
+        this._sendPayloadForSearchDisplayed(scratchPad);
+        return newLink;
+    },
+
+    _sendPayloadForSearchTriggered: function() {
+        var payload = {};
+        payload[VAClickMetricsConstants.KEY_SEARCH_TERM] = this.searchTerm + '';
+        payload[VAClickMetricsConstants.KEY_TIME] = this.searchTime + '';
+        payload[VAClickMetricsConstants.KEY_RESPONSE_TIME] = this.apiResponseTime + '';
+        payload[VAClickMetricsConstants.KEY_RESULTS_COUNT] = this.searchResultsLength + '';
+        payload[VAClickMetricsConstants.KEY_LANGUAGE] = gs.getSession().getLanguage();
+        payload[VAClickMetricsConstants.KEY_NAME] = VAClickMetricsConstants.VALUE_SEARCH_TRIGGERED;
+        payload[VAClickMetricsConstants.KEY_SEARCH_ID] = this.searchId + '';
+
+        var conversationId = vaSystem.getConversationId();
+        payload[VAClickMetricsConstants.CONVERSATION_ID] = conversationId;
+
+        var taskId = vaSystem.getConversationTaskId();
+        payload[VAClickMetricsConstants.CONVERSATION_TASK_ID] = taskId;
+        payload[VAClickMetricsConstants.KEY_SEARCH_TYPE] = VAClickMetricsConstants.VALUE_CONTEXTUAL;
+
+        VAClickMetrics.queueContextualSearchEvent(conversationId, taskId, payload);
+    },
+
+    _sendPayloadForSearchDisplayed: function(scratchPad) {
+        var payload = {};
+
+        payload[VAClickMetricsConstants.KEY_SEARCH_TERM] = scratchPad['Search Term'];
+        payload[VAClickMetricsConstants.KEY_TIME] = this.searchTime + '';
+        payload[VAClickMetricsConstants.KEY_TITLE] = scratchPad['Title'];
+        payload[VAClickMetricsConstants.KEY_DESCRIPTION] = scratchPad['Description'];
+        payload[VAClickMetricsConstants.KEY_ORDER] = scratchPad['Order'];
+        payload[VAClickMetricsConstants.KEY_DOCUMENT_ID] = scratchPad['Document Id'];
+        payload[VAClickMetricsConstants.KEY_DOCUMENT_TABLE] = scratchPad['Document Table'];
+        payload[VAClickMetricsConstants.KEY_SEARCH_ID] = scratchPad['Search Id'];
+        payload[VAClickMetricsConstants.KEY_DATA_SOURCE_TITLE] = scratchPad['Data Source Title'];
+        payload[VAClickMetricsConstants.KEY_NAME] = VAClickMetricsConstants.VALUE_SEARCH_RESULT_DISPLAYED;
+
+        var conversationId = vaSystem.getConversationId();
+        payload[VAClickMetricsConstants.CONVERSATION_ID] = conversationId;
+
+        var taskId = vaSystem.getConversationTaskId();
+        payload[VAClickMetricsConstants.CONVERSATION_TASK_ID] = taskId;
+
+        payload[VAClickMetricsConstants.KEY_SEARCH_TYPE] = VAClickMetricsConstants.VALUE_CONTEXTUAL;
+
+        VAClickMetrics.queueContextualSearchEvent(conversationId, taskId, payload);
+    },
+
+    type: 'VAGlobalContextualSearchUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-21 21:00:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6186035fb3573300dbbf6030c6a8dcb3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;132&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VAGlobalContextualSearchUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Management Virtual Agent Core" source="com.glideapp.sm_va_core"&gt;67377e0f2f400110d8a4d5f62799b673&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6186035fb3573300dbbf6030c6a8dcb3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-08-09 06:47:43&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;13207&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:56</sys_created_on>
+        <sys_id>7eac49fa2f331110d8a4d5f62799b606</sys_id>
+        <sys_name>VAGlobalContextualSearchUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7eac49fa2f331110d8a4d5f62799b606</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

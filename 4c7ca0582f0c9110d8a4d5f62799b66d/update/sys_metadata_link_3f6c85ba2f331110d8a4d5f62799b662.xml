@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>398a0b5953362010c440ddeeff7b12a5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.BaseAISearchEventResultMetricCollector&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;The base class for all non-genius AI Search Result metric collectors. &lt;/description&gt;
+        &lt;name&gt;BaseAISearchEventResultMetricCollector&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var BaseAISearchEventResultMetricCollector = Class.create();
+
+BaseAISearchEventResultMetricCollector.prototype = Object.extendsObject(global.BaseAISearchResultMetricCollector, {
+	
+	RESULT_SYS_ID :'resultSysId',
+	LABEL_DESCRIPTION:'labelDescription',
+	SOURCE_TABLE:'sourceTable',
+	AIS_DOC_ID:'aisDocId',
+	DATA_SOURCE_TABLE : 'ais_datasource',
+	
+	initialize: function(searchMetadata, vaSystem, vaInputs, vaVars) {
+		BaseAISearchResultMetricCollector.prototype.initialize.call(this, searchMetadata, vaSystem, vaInputs, vaVars);
+	},
+	
+	_getSourceTable: function(model) {
+		return !gs.nil(model['columns.table']) ? model['columns.table'] : model.table;
+	},
+	
+	_getAISDocId: function(srcTable, resultSysId) {
+		return srcTable +'_'+resultSysId;
+	},
+	
+	_getDescriptionForClickMetrics: function(propValues) {
+		
+		var val = '';
+		
+		if (!gs.nil(propValues.description)) 
+			val = propValues.description;
+		else if (!gs.nil(propValues.primaryDescription)) // for sys_user specific
+			val = propValues.primaryDescription;
+		else if (!gs.nil(propValues.secondaryDescription)) // for sys_user specific
+			val = propValues.secondaryDescription; 
+		else if (!gs.nil(propValues.context1)) // for sys_user specific
+			val = propValues.context1;
+		else if (!gs.nil(propValues.model['description']))
+			val = propValues.model['description'];
+		
+		return VAAISearchHelper.stripHighlightTags(val);
+	},
+	
+	_getDocumentIdForClickMetrics: function(propValues) {
+		var val;
+		
+		if (!gs.nil(propValues.model['columns.kb_article_sys_id'])) { // kb article specific
+			val =  propValues.model['columns.kb_article_sys_id'];
+		}
+		else if (!gs.nil(propValues.model['columns.sys_id'])) {
+			val = propValues.model['columns.sys_id'];
+		}
+		else if (!gs.nil(propValues.model['sys_id'])) {
+			val = propValues.model['sys_id'];
+		}
+		return gs.ni(val) ? '' : val;
+	},
+	
+	_getDocumentTitleForClickMetrics: function(propValues) {
+		
+		var val = '';
+		
+		if (!gs.nil(propValues.header))
+			val = propValues.header;
+		else if (!gs.nil(propValues.title))
+			val = propValues.title;
+		else if (!gs.nil(propValues.model['name']))
+			val = propValues.model['ai_search_teaser_title'];
+		else if (!gs.nil(propValues.model['name']))
+			val = propValues.model['ai_search_teaser_title'];
+		
+		return VAAISearchHelper.stripHighlightTags(val);
+	},
+	
+	_getDocumentTableForClickMetrics: function(propValues) {
+		var val = '';
+		
+		if (!gs.nil(propValues.model['columns.kb_article_sys_id'])) {
+			val= 'kb_knowledge'; // kb table.
+		}
+		else {
+			val = this._getSourceTable(propValues.model);
+		}
+		
+		return val;
+	},
+	
+	_getDataSourceTitle: function(srcTable) {
+		
+		if(gs.nil(srcTable))
+			return '';
+
+		var gr = new GlideRecord(this.DATA_SOURCE_TABLE);
+		gr.addQuery('source', srcTable);
+		gr.query();
+		
+		return gr.next() ? gr.getValue('name') : '';
+	},
+	
+	type: 'BaseAISearchEventResultMetricCollector'
+});														   ]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-03-09 08:10:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;398a0b5953362010c440ddeeff7b12a5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;46&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;BaseAISearchEventResultMetricCollector&lt;/sys_name&gt;
+        &lt;sys_package display_value="Virtual Agent Platform Topic Blocks" source="com.glide.cs.topic_blocks"&gt;ef377e0f2f400110d8a4d5f62799b672&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_398a0b5953362010c440ddeeff7b12a5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-30 09:20:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2878&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:55</sys_created_on>
+        <sys_id>3f6c85ba2f331110d8a4d5f62799b662</sys_id>
+        <sys_name>BaseAISearchEventResultMetricCollector</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3f6c85ba2f331110d8a4d5f62799b662</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

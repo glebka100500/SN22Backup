@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>364e571b0f8b0010e6d4fd820b767e5f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ActivityFacetServiceSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Gets installed as part of "com.snc.activity_subscriptions" plugin Activity Subscriptions Framework.&amp;#13;
+Contains all the methods to perform Activity Facet related operations.&lt;/description&gt;
+        &lt;name&gt;ActivityFacetServiceSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ActivityFacetServiceSNC = Class.create();
+ActivityFacetServiceSNC.prototype = {
+	initialize: function(activitySubContext) {
+		this.activityFacetDAO = new ActivityFacetDAO(activitySubContext);
+	},
+
+	getFacetsInfo: function(actContext, sysId, additionalParams) {
+		if (!additionalParams)
+			additionalParams = {};
+		if ((additionalParams.startDate &amp;&amp; !additionalParams.endDate) || (additionalParams.endDate &amp;&amp; !additionalParams.startDate))
+			return {
+				"status": 400,
+				"message": gs.getMessage("Please provide start_date and end_date")
+			};
+			
+		if (additionalParams.startDate &amp;&amp; additionalParams.endDate &amp;&amp; additionalParams.startDate &gt; additionalParams.endDate)
+			return {
+				"status": 400,
+				"message": gs.getMessage("start date can not be ahead of end date")
+			};
+		var actContextInfo, errorObj = {
+			"status": 400,
+			"message": gs.getMessage("Make sure a valid activity context details are passed")
+		};
+		if (!actContext || !sysId)
+			return errorObj;
+		actContextInfo = this.activityFacetDAO.getActivityContextInfo(actContext, sysId);
+		if (!actContextInfo)
+			return errorObj;
+		try {
+			additionalParams['module'] = actContextInfo.module;
+			var result = this.activityFacetDAO.getFacetsInfo(actContext, sysId, additionalParams);
+			result.status = '200';
+			return result;
+		} catch (error) {
+			return {
+				"status": "400",
+				"error": error.message
+			};
+		}
+	},
+
+	type: 'ActivityFacetServiceSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-02-24 08:38:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;364e571b0f8b0010e6d4fd820b767e5f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ActivityFacetServiceSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Subscriptions and Activity Feed Framework" source="com.snc.activity_subscriptions"&gt;7427f20f2f400110d8a4d5f62799b6eb&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_364e571b0f8b0010e6d4fd820b767e5f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-28 10:02:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1428&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:51</sys_created_on>
+        <sys_id>3a6c05ba2f331110d8a4d5f62799b689</sys_id>
+        <sys_name>ActivityFacetServiceSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3a6c05ba2f331110d8a4d5f62799b689</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>37e43d7ec3933000c111113e5bba8f43</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VersionControlUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Support routine for version control of table records&lt;/description&gt;
+        &lt;name&gt;VersionControlUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VersionControlUtil = Class.create();
+
+VersionControlUtil.prototype = {
+	
+	// Redirect the updated or saved form to the new record
+	redirect : function(tableName, newRecordId) {
+		if (GlideTransaction.get())
+			try {
+				var newRecord = new GlideRecord(tableName);
+				if (newRecord.get(newRecordId))
+					action.setRedirectURL(newRecord);
+			}
+			catch (e) {
+				gs.addInfoMessage(gs.getMessage('Refresh the list by clicking on the breadcrumb link to display the updated record.'));
+			}
+	}
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-02-05 23:33:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;37e43d7ec3933000c111113e5bba8f43&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;206&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VersionControlUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Version Management" source="com.snc.version"&gt;d69009876d2620100acb70b353433035&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_37e43d7ec3933000c111113e5bba8f43&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-04-17 18:52:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;496&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:53</sys_created_on>
+        <sys_id>9f6c45ba2f331110d8a4d5f62799b650</sys_id>
+        <sys_name>VersionControlUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9f6c45ba2f331110d8a4d5f62799b650</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

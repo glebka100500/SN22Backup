@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6bd632ed9f622200598a5bb0657fcf61</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InterProjectEventManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Inter project event manager - does two things - it raises events and handle the event&lt;/description&gt;
+        &lt;name&gt;InterProjectEventManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InterProjectEventManager = Class.create();
+InterProjectEventManager.prototype = {
+    initialize: function() {
+    },
+
+    type: 'InterProjectEventManager'
+};
+
+InterProjectEventManager.EVENT = 'inter.project.relation.recalculate';
+InterProjectEventManager.FULL_RECALCULATE_EVENT = 'inter.project.relation.full_recalculate';
+
+InterProjectEventManager.raiseEvent = function (topTaskId, dirtyTasks) {
+    gs.info("InterProjectEventManager: raiseEvent -&gt; " + topTaskId + " | " + dirtyTasks);
+    if(JSUtil.notNil(topTaskId) &amp;&amp; JSUtil.notNil(dirtyTasks)) {
+        var gr = new GlideRecord("planned_task");
+        if( gr.get(topTaskId) ) {
+            gs.eventQueue(InterProjectEventManager.EVENT, gr, topTaskId, dirtyTasks);
+        }
+    }
+};
+
+InterProjectEventManager.raiseFullRecalculateEvent = function (topTaskId) {
+    gs.info("InterProjectEventManager: raiseFullRecalculateEvent -&gt; " + topTaskId);
+    // Currently we raise in diffrent flows or InterProjectTaskDeletionHandler and InterProjectRelationDeletionaHandler
+    if( !InterProjectEventManager.isFullRecalculateInProgress(topTaskId) ) {
+        var gr = new GlideRecord("planned_task");
+        if(gr.get(topTaskId))
+            gs.eventQueue(InterProjectEventManager.FULL_RECALCULATE_EVENT, gr, topTaskId);
+    }
+};
+
+InterProjectEventManager.handleEvent = function (topTaskId, dirtyTasks) {
+    gs.info("InterProjectEventManager: handleEvent -&gt; " + topTaskId + " | " + dirtyTasks);
+    if( JSUtil.notNil(topTaskId) &amp;&amp; JSUtil.notNil(dirtyTasks)) {
+        (new InterProjectEventProcessor()).process(topTaskId, dirtyTasks);
+    }
+};
+
+InterProjectEventManager.handleFullRecalculateEvent = function (topTaskId) {
+    gs.info("InterProjectEventManager: handleFullRecalculateEvent -&gt; " + topTaskId);
+    if( JSUtil.notNil(topTaskId) ) {
+        (new InterProjectEventProcessor()).processForFullRecalculate(topTaskId);
+    }
+};
+
+InterProjectEventManager.isFullRecalculateInProgress = function (topTaskId) {
+    gs.info("InterProjectEventManager: isFullRecalculateInProgress -&gt; " + topTaskId);
+    if( JSUtil.notNil(topTaskId) ) {
+        var gr = new GlideRecord("sysevent");
+        gr.addQuery("name", InterProjectEventManager.FULL_RECALCULATE_EVENT);
+        gr.addQuery("state", "ready");
+        gr.addQuery("parm1", topTaskId);
+        gr.addQuery("sys_created_on", "&gt;=" , gs.daysAgoStart(1));
+        gr.query();
+        if(gr.next()) {
+            gs.info("InterProjectEventManager: isFullRecalculateInProgress -&gt; TRUE");
+            return true;
+        } 
+        gs.info("InterProjectEventManager: isFullRecalculateInProgress -&gt; FALSE");
+        return false;
+    }
+    return true; // If undefined
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-18 21:38:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6bd632ed9f622200598a5bb0657fcf61&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InterProjectEventManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6bd632ed9f622200598a5bb0657fcf61&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:27&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2672&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:17</sys_created_on>
+        <sys_id>7fbc013e2f331110d8a4d5f62799b685</sys_id>
+        <sys_name>InterProjectEventManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7fbc013e2f331110d8a4d5f62799b685</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

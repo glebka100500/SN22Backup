@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>887a65619f230200598a5bb0657fcfee</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CostRollupHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CostRollupHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CostRollupHandler = Class.create();
+CostRollupHandler.prototype = {
+    initialize: function() {
+    },
+
+    handle: function(childRecord, parentTable, parentNavigator, rollupColumn, isAverage) {
+        var rollupStructureLoader = new RollupStructureLoader();
+        var parentSysId = childRecord.getValue(parentNavigator);
+        var rollupStructure = rollupStructureLoader.loadStructure(childRecord, 
+                rollupColumn, parentNavigator, parentSysId);
+        this.updateParent(parentTable, parentSysId, 
+                rollupStructure, childRecord.getTableName(), rollupColumn, isAverage);
+    },
+
+    updateParent: function(parentTable, parentSysId, 
+                rollupStructure, childTable, rollupColumn, isAverage) {
+        var value = this.aggregateCost(rollupStructure, rollupColumn, isAverage);
+        // TODO: Check if the Table &lt;fm_expense_line&gt; Exists! And Fallback Scenarios
+        if(value) {
+            var parentTaskRecord = new GlideRecord(parentTable);
+            if( parentTable.get(parentSysId) ) {
+                parentTaskRecord.setValue(rollupColumn, value);
+                parentTaskRecord.update();    
+            }
+        }
+    },
+
+    aggregateCost: function(rollupStructure, rollupColumn, isAverage) {
+        var aggregationHelper = new AggregationHelper();
+        return aggregationHelper.aggregateFloat(rollupStructure, rollupColumn, isAverage);
+    },
+
+    type: 'CostRollupHandler'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-11-05 16:47:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;887a65619f230200598a5bb0657fcfee&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CostRollupHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_887a65619f230200598a5bb0657fcfee&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-11-09 12:16:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1449&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:15</sys_created_on>
+        <sys_id>86fc057e2f331110d8a4d5f62799b6ff</sys_id>
+        <sys_name>CostRollupHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_86fc057e2f331110d8a4d5f62799b6ff</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

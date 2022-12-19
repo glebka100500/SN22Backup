@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>83ee7ed9670203008b52f3b457415a22</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdSMSNotificationManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PwdSMSNotificationManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdSMSNotificationManager = Class.create();
+PwdSMSNotificationManager.prototype = Object.extendsObject(PwdNotificationManager, {
+
+    TYPE: "SMS",
+    NotEnrolled: "mobile",
+    INVALID_PHONE_NUMBER: -4,
+
+    initialize: function() {
+        this.useNotifyPlugin = new PasswordResetUtil().useNotifyInPasswordReset();
+    },
+
+    /* 
+      Send reset code to enrolled devices or devices from user profile
+      @param requestId
+      @param verificationId
+      @param mode: subscription or mobile
+      @param providerId: optional
+    */
+    sendResetCode: function(requestId, verificationId, mode, providerId) {
+        var response = this.GENERIC_FAIL_RESPONSE;
+
+        try {
+            var isRequestInvalid = new SNC.PwdTrackingManager().isRequestInvalid(requestId);
+            if (isRequestInvalid) {
+              return this.SUCCESS_RESPONSE;
+            }
+            response = this.pwdNotifMgr.generateSMSCode(requestId, verificationId);
+            if (this._doesResponseContainCode(response)) {
+                var userSysId = this._getUserId(requestId);
+                response = this._sendCodeToNotificationDevices(userSysId, mode, providerId, response);
+            }
+        } catch (err) {
+            return err;
+        }
+
+        return response &gt; 0 ? 1 : response;
+    }, 
+
+    /*
+    Send SMS Code to specified user for given Password Reset Request Id OR a context id
+    @requestId : Password Reset Request or ContextId
+    @verificationId : Verification Id
+    @mode : enrollment mode
+    @providerId :SMS service Provider Id
+    @userSysId: User Sys Id
+    */
+    sendResetCodeToUser: function(requestId, verificationId, mode, providerId, userSysId) {
+        var response = this.GENERIC_FAIL_RESPONSE;
+
+        try {
+            response = this.pwdNotifMgr.generateSMSCodeForUser(requestId, verificationId, userSysId);
+
+            if (this._doesResponseContainCode(response)) {
+				response = this._sendCodeToNotificationDevices(userSysId, mode, providerId, response);
+            }
+        } catch (err) {
+            return err;
+        }
+
+        return response &gt; 0 ? 1 : response;
+    },
+    
+    _doesResponseContainCode: function(response) {
+    	var FAILURE = 0;
+		return response &gt; FAILURE;
+	},   
+
+    /* 
+	  Verify reset code
+	  @param requestId
+	  @param verificationId
+      @param code
+	*/
+    verifyResetCode: function(requestId, verificationId, code) {
+        return this.pwdNotifMgr.verifySMSCode(requestId, verificationId, code);
+    },
+
+    _sendCodeToNotificationDevices: function(userSysId, mode, providerId, code) {
+		var responseCode = this.SUCCESS_RESPONSE;
+        var devices = this._collectDevicesAddress(userSysId, mode, providerId);
+        if (devices.length == 0)
+            responseCode = this.GENERIC_FAIL_RESPONSE;
+
+        this._sendCodeToDevices(devices, code, userSysId);
+		return responseCode;
+    },
+
+    // @Override
+    _getDeviceAddr: function(notifDevGr) {
+        if (this.useNotifyPlugin)
+            return this._getPhoneNumber(notifDevGr);
+        else
+            return notifDevGr.getValue("email_address"); // SMS address is constructed as email_address: 1234567@txt.att.net
+    },
+
+    // @Override
+    // Take the mobile phone number from profile as it is
+    _getDeviceAddrFromProfile: function(userId, providerId) {
+        var phone = this.pwdNotifHelper.getMobileFromProfile(userId);
+        if (phone == null)
+            return null;
+
+        // remove non digits but keep plus if there is one for it could be an international format
+        phone = String(phone).replace(/[^0-9+]/g, '');
+
+        var deviceId = this.pwdNotifHelper.deviceExistsForPhone(userId, phone);
+        if (deviceId == null)
+            deviceId = this.pwdNotifHelper.createDevice(userId, phone, providerId, 'Mobile from User profile');
+        else if (!this.pwdNotifHelper.updateProvider(deviceId, providerId))
+            return null;
+
+        var notifDevGr = new GlideRecord("cmn_notif_device");
+        notifDevGr.get(deviceId);
+
+        return this._getDeviceAddr(notifDevGr);
+    },
+
+    // @Override
+    _sendCodeToDevices: function(devices, code, userSysId) {
+        if (this.useNotifyPlugin)
+            this._sendSMSCodeViaNotifyPlugin(devices, code);
+        else {
+            var parm1 = devices.join(",");
+
+            // DEF0063745: Need to pass notification_type
+            parm1 = "SMS," + parm1;
+
+            // PRB1263734: Use cmn_notif_device as the target record to check ACL
+            var deviceGr = this._getDeviceGr(userSysId);
+
+            gs.eventQueue(this.PWD_CODE_EVENT, deviceGr, parm1, code);
+        }
+    },
+
+    _getPhoneNumber: function(notifDevGr) {
+        var grPwdDevice = new GlideRecord('pwd_device');
+        grPwdDevice.addQuery('device', notifDevGr.sys_id);
+        grPwdDevice.query();
+        if (grPwdDevice.next()) { // Subscription mode
+            var code = grPwdDevice.getValue('country_code');
+
+            // set default country code and country name
+            if (!code) {
+                grPwdDevice.setValue('country_code', '+1');
+                grPwdDevice.setValue('country_name', 'United States');
+                code = '+1';
+            }
+            grPwdDevice.update();
+            return code + notifDevGr.getValue("phone_number");
+        } else { // Mobile mode
+            // Phone number needs to be E.164 compliant
+            var phoneNumber = notifDevGr.getValue("phone_number");
+            var gePN = new GlideElementPhoneNumber();
+            if (!gePN.setPhoneNumber(phoneNumber, true))
+                throw this.INVALID_PHONE_NUMBER;
+            return phoneNumber;
+        }
+
+    },
+
+    _sendSMSCodeViaNotifyPlugin: function(phoneNumbers, code) {
+        var notify = new SNC.Notify();
+        var notifyPhoneNumbers = notify.getPhoneNumbers();
+        if (notifyPhoneNumbers == null || notifyPhoneNumbers.size() == 0)
+            return;
+
+        var notifyPhoneNumber = notifyPhoneNumbers.get(0);
+        phoneNumbers.forEach(function(phoneNumber) {
+            notify.sendSMS(notifyPhoneNumber, phoneNumber,
+                gs.getMessage('Password reset verification code: {0}', code));
+        });
+    },
+
+    type: 'PwdSMSNotificationManager'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-10-26 00:21:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;83ee7ed9670203008b52f3b457415a22&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;32&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdSMSNotificationManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_83ee7ed9670203008b52f3b457415a22&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-12 16:18:52&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6210&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:02</sys_created_on>
+        <sys_id>07ec017e2f331110d8a4d5f62799b676</sys_id>
+        <sys_name>PwdSMSNotificationManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_07ec017e2f331110d8a4d5f62799b676</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

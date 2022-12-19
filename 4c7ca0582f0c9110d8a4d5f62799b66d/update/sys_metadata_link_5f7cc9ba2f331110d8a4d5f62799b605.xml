@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4401d68e5303330063ddddeeff7b1284</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.insertRecord&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Insert record &lt;/description&gt;
+        &lt;name&gt;insertRecord&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[function insertRecord(current){
+  if (typeof current.number != 'undefined' &amp;&amp; current.number)
+      current.number = ""; // generate a new number
+    else if (typeof current.u_number != 'undefined' &amp;&amp; current.u_number)
+      current.u_number = ""; // generate a new number
+
+    var fieldList = [];
+    var fileAttachmentOldIds = {};
+    var oldId = current.getValue('sys_id');
+    var table = current.getTableName();
+    var td = GlideTableDescriptor.get(table);
+    var elements = td.getSchemaList();
+    for (var i = 0, len = elements.size(); i &lt; len; i++) {
+      var ed = elements.get(i);
+      var fieldType = ed.getInternalType();
+      if (fieldType == "user_image" || fieldType == "file_attachment") {
+        var fieldName = ed.getName();
+		if (fieldType == "user_image") {
+			fieldList.push(fieldName);
+		} else {
+			fieldList.push(current.getDisplayValue(ed));
+			fileAttachmentOldIds[current.getValue(ed)] = fieldName;
+		}
+        current[fieldName] = undefined; // remove the existing
+      }
+    }
+    var newId = current.insert();
+    if (newId) {
+        var attachmentMap = GlideSysAttachment.copyAttachmentsByFieldNames(table, oldId, table, newId, fieldList);
+		if(attachmentMap != null &amp;&amp; attachmentMap.size() &gt; 0) {
+			for (var key = 0; key &lt; fieldList.length - 1; key++) {
+				if (attachmentMap.get(key)) {
+					var oldCommaNewIds = attachmentMap.get(key);
+					var oldAndNew = oldCommaNewIds.split(",");
+					if (fileAttachmentOldIds[oldAndNew[0]])
+						current[fileAttachmentOldIds[oldAndNew[0]]] = oldAndNew[1];
+				}
+			}
+			current.update();
+		}
+        return newId;
+    }
+    return oldId;
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-05 10:01:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4401d68e5303330063ddddeeff7b1284&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;insertRecord&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4401d68e5303330063ddddeeff7b1284&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-05-01 05:01:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1620&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:09</sys_created_on>
+        <sys_id>5f7cc9ba2f331110d8a4d5f62799b605</sys_id>
+        <sys_name>insertRecord</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5f7cc9ba2f331110d8a4d5f62799b605</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

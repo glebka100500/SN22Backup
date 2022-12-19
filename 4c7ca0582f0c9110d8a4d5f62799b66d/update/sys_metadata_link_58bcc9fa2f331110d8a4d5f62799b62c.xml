@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>64ac4fd7b72010100e173307fe11a9f3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisMLSearchRelevancySignalConverter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AisMLSearchRelevancySignalConverter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var json = new global.JSON();
+
+var AisMLSearchRelevancySignalConverter = Class.create();
+AisMLSearchRelevancySignalConverter.prototype = {
+    initialize: function() {
+    },
+	
+	convertSignal : function(signalEventGr) {
+		var signal = {};
+		
+		signal.query = '' + signalEventGr.search_event.search_query;
+		signal.search_profile_id = '' + signalEventGr.search_event.ais_profile;
+		signal.date = '' + signalEventGr.sys_created_on;
+		signal.locale = '' + signalEventGr.search_event.language;
+		if (gs.nil(signal.locale))
+			signal.locale = 'en';
+		
+		var signal_records = [];
+		var record_count =0;
+		
+		var signalActionGr = new GlideRecord('sys_search_signal_result_event_action');
+		signalActionGr.addQuery('search_signal_result_event.search_signal_event', signalEventGr.sys_id);
+		signalActionGr.query();
+		
+		while(signalActionGr.next()) {
+			var signal_record = {};
+			signal_record.signal_type = '' + signalActionGr.signal_type;
+			signal_record.signal_value = '' + signalActionGr.signal_value;
+			signal_record.ais_doc_id = '' + signalActionGr.search_signal_result_event.ais_doc_id;
+			signal_records.push(signal_record);
+			record_count++;
+		}
+		
+		
+		var random_record = {};
+		random_record.signal_type = 'random';
+		random_record.signal_value = '0';
+		random_record.ais_doc_id = '';
+		signal_records.push(random_record);
+		
+		signal.signal_records = signal_records;
+		
+		var hasValidFV = this._populateFeatureVectors(signal);	
+		
+		if (record_count &gt; 0) {
+			if (hasValidFV)
+				return json.encode(signal);
+		}
+		
+		return null;
+	},
+	
+	_populateFeatureVectors: function(signal) {
+		var api = new sn_ais.FeatureVectorProvider();
+		
+		// Populate click records feature vectors
+		var featureVectorRequests = [];
+		
+		for (var i = 0; i &lt; signal.signal_records.length; i++) {
+			var signal_record = signal.signal_records[i];
+			var featureVectorRequest = this._createFeatureVectorRequest(signal.query, signal_record.ais_doc_id, signal.date, signal.locale);
+			featureVectorRequests.push(featureVectorRequest);
+		}
+		
+		var featureVectorResponses = json.decode(api.getForString(json.encode(featureVectorRequests), signal.search_profile_id));
+		
+		if (featureVectorResponses.length &lt; signal.signal_records.length)
+			return false;
+		for (var responseCount = 0; responseCount &lt; signal.signal_records.length; responseCount++) {
+			signal.signal_records[responseCount].feature_vector = featureVectorResponses[responseCount].featureVector;
+			signal.signal_records[responseCount].ais_doc_id = featureVectorResponses[responseCount].id;
+		}
+		return true;
+	},
+	
+	_createFeatureVectorRequest: function(query, docId, date, locale) {
+		var featureVectorRequest = {};
+		featureVectorRequest.query = query;
+		featureVectorRequest.docId = docId;
+		featureVectorRequest.date = date;
+		featureVectorRequest.locale = locale;
+		return featureVectorRequest;
+	},
+	
+    type: 'AisMLSearchRelevancySignalConverter'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-05-08 20:58:08&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;64ac4fd7b72010100e173307fe11a9f3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;36&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisMLSearchRelevancySignalConverter&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_64ac4fd7b72010100e173307fe11a9f3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-07-08 20:59:55&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2898&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:03</sys_created_on>
+        <sys_id>58bcc9fa2f331110d8a4d5f62799b62c</sys_id>
+        <sys_name>AisMLSearchRelevancySignalConverter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_58bcc9fa2f331110d8a4d5f62799b62c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

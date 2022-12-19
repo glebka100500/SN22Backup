@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7de5c72293c72200c9a7db47c47ffbc7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScopedAdminMetadataChoiceTables&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Returns a list of valid tables, that directly extend sys_metadata&amp;#13;
+&amp;#13;
+Used by choice_table on sys_scoped_admin_acl_table&lt;/description&gt;
+        &lt;name&gt;ScopedAdminMetadataChoiceTables&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScopedAdminMetadataChoiceTables = Class.create();
+ScopedAdminMetadataChoiceTables.prototype = {
+	initialize: function() {
+	},
+	
+	process: function(tableName) {
+		var sysMeta = GlideDBObjectManager.get().getAllExtensions("sys_metadata");
+		
+		answer = [];
+		var l = sysMeta.size();
+		for(var i = 0; i &lt; l; i++) {
+			var metaTable = sysMeta.get(i);
+			if (!metaTable)
+				continue;
+			if (metaTable.indexOf("usageanalytics_count_cfg") == 0)
+				continue;
+			if (metaTable.startsWith("pwd_"))
+				continue;
+			if (metaTable.startsWith("jrobin_"))
+				continue;
+			if (metaTable.startsWith("round_robin_"))
+				continue;
+			
+			answer.push(metaTable + '');
+		}
+		return answer;
+	},
+	
+	type: 'ScopedAdminMetadataChoiceTables'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-11-15 21:49:22&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7de5c72293c72200c9a7db47c47ffbc7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScopedAdminMetadataChoiceTables&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Applications Core" source="com.snc.apps"&gt;562db4076d2220100acb70b353433099&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7de5c72293c72200c9a7db47c47ffbc7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-03-09 17:22:24&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;727&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:51</sys_created_on>
+        <sys_id>54ec0d3e2f331110d8a4d5f62799b687</sys_id>
+        <sys_name>ScopedAdminMetadataChoiceTables</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_54ec0d3e2f331110d8a4d5f62799b687</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

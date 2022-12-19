@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8fb7decb7753330033b5270bba1061b8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.QBStatusRecordsToDelete&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;QBStatusRecordsToDelete&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var QBStatusRecordsToDelete = Class.create();
+QBStatusRecordsToDelete.prototype = {
+    initialize: function() {},
+    getQueryExecutionIds: function() {
+        var resultTables = [];
+        var latestexecutionIds = [];
+        var recordsToDelete = [];
+		var savedQueryIds = [];
+        var status = ['COMPLETE', 'MAX_LIMIT'];
+		
+		var glideSavedQuery = new GlideRecordSecure('qb_saved_query');
+		glideSavedQuery.addJoinQuery('sysauto_query_builder');
+        glideSavedQuery.query();
+        while (glideSavedQuery.next()) {
+            var resultTableName = glideSavedQuery.getValue('result_table');
+            resultTables.push(resultTableName);
+        }
+
+        for (var i = 0; i &lt; resultTables.length; i++) {
+            var glideQbStatus1 = new GlideRecordSecure('qb_query_status');
+            glideQbStatus1.addQuery('table_name', resultTables[i]);
+            glideQbStatus1.addQuery('status', 'IN', status);
+            glideQbStatus1.orderByDesc('sys_updated_on');
+            glideQbStatus1.setLimit(1);
+            glideQbStatus1.query();
+            if (glideQbStatus1.next()) {
+                latestexecutionIds.push(glideQbStatus1.getValue('sys_id'));
+            }
+        }
+
+        var glideQbStatus2 = new GlideRecordSecure('qb_query_status');
+        glideQbStatus2.addQuery('sys_id', 'NOT IN', latestexecutionIds);
+        glideQbStatus2.query();
+        while (glideQbStatus2.next()) {
+            recordsToDelete.push(glideQbStatus2.getValue('sys_id'));
+        }
+        return recordsToDelete;
+    },
+    type: 'QBStatusRecordsToDelete'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-20 23:01:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8fb7decb7753330033b5270bba1061b8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;22&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;QBStatusRecordsToDelete&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8fb7decb7753330033b5270bba1061b8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-10 01:24:42&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1572&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:34</sys_created_on>
+        <sys_id>2a0d097e2f331110d8a4d5f62799b67a</sys_id>
+        <sys_name>QBStatusRecordsToDelete</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2a0d097e2f331110d8a4d5f62799b67a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

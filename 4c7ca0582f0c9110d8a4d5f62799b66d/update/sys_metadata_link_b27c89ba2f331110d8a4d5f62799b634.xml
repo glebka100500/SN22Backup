@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>424ee3d00f1333005605539ac4767ebd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MigrateUINotificationToV2&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;MigrateUINotificationToV2&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MigrateUINotificationToV2 = Class.create();
+MigrateUINotificationToV2.prototype = {
+    initialize: function() {},
+
+    migrate: function(id) {
+        var trigger = new GlideRecord('notification_trigger');
+        if (!trigger.isValid()) {
+            gs.warn('table notification_trigger is not found');
+            return;
+        }
+
+        if (!trigger.get(id)) {
+            gs.warn('unable to find trigger by id: ' + id);
+            return;
+        }
+
+        var recipientUsers = [];
+        var recipientFields = [];
+        trigger.recipient_users.split(',').forEach(function(item) {
+            if (item.startsWith('${') &amp;&amp; item.endsWith('}')) {
+                recipientFields.push(item.substring(2, item.length - 1));
+            }
+
+            if (GlideStringUtil.isEligibleSysID(item)) {
+                var user = new GlideRecord('sys_user');
+                if (user.get(item)) {
+                    recipientUsers.push(item);
+                }
+            }
+        });
+
+        var notification = new GlideRecord('sys_notification');
+        if (!notification.isValid()) {
+            gs.warn('table sys_notification is not found');
+            return;
+        }
+
+        notification.active = trigger.active;
+        notification.table = trigger.collection;
+        notification.triggered_by = 'record_change';
+        notification.action_insert = trigger.action_insert;
+        notification.action_update = trigger.action_update;
+        notification.condition = trigger.condition;
+        notification.recipient_users = recipientUsers.join(',');
+        notification.recipient_fields = recipientFields.join(',');
+        notification.include_originator = !trigger.exclude_creator;
+        notification.name = trigger.name;
+        notification.description = trigger.description;
+        notification.order = trigger.order;
+        notification.sys_domain = trigger.sys_domain;
+        notification.sys_scope = trigger.sys_scope;
+        notification.sys_overrides = trigger.sys_overrides;
+        notification.insert();
+
+        trigger.content.split(',').forEach(function(item) {
+            var triggerContent = new GlideRecord('notification_content');
+            if (!triggerContent.get(item)) {
+                gs.warn('unable to find content by id: ' + item);
+                return;
+            }
+
+            var workspaceContent = new GlideRecord('sys_notification_workspace_content');
+            workspaceContent.active = true;
+            workspaceContent.name = triggerContent.name;
+            workspaceContent.route = triggerContent.route;
+            workspaceContent.notification = notification.getUniqueValue();
+            workspaceContent.insert();
+        });
+
+        gs.info('created new notification: ' + notification.getUniqueValue());
+    },
+
+    type: 'MigrateUINotificationToV2'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-12 16:18:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;424ee3d00f1333005605539ac4767ebd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;18&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MigrateUINotificationToV2&lt;/sys_name&gt;
+        &lt;sys_package display_value="UI Notifications" source="com.glide.ui_notification"&gt;ef5305c36da620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_424ee3d00f1333005605539ac4767ebd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-29 16:31:08&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2835&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:07</sys_created_on>
+        <sys_id>b27c89ba2f331110d8a4d5f62799b634</sys_id>
+        <sys_name>MigrateUINotificationToV2</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b27c89ba2f331110d8a4d5f62799b634</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

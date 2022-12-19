@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5107787137203000dcd48c00dfbe5da7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OSChoice&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utilities for the 'os' field of cmdb_ci_computer.&lt;/description&gt;
+        &lt;name&gt;OSChoice&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * Utilities for the 'os' field of cmdb_ci_computer.
+ */
+var OSChoice = Class.create();
+
+/**
+ * Adds the specified OS to the list of available operating systems in cmdb_ci_computer, if not already available.
+ * @param string os The label / value of the choice entry.
+ * @return string Returns the matched os value or the same os label / value passed to this method if not matched
+ */
+OSChoice.reconcile = function(os) {
+	var gr = new GlideRecord('sys_choice');
+	gr.setWorkflow(false); // dont write out changes
+	gr.addQuery('name', 'cmdb_ci_computer');
+	gr.addQuery('element', 'os');
+	gr.addQuery('label', os);
+	gr.query();
+
+	if (gr.next()) {
+		if (gr.inactive == false)
+			return gr.getValue("value");
+
+		gr.inactive = false;
+		gr.update();
+		return gr.getValue("value");
+	} else {
+		// use a mutex to prevent the insertion of duplicate OS in sys_choice table 
+		var mutexName = '&lt;&lt;&lt;-- OSChoice Mutex of '+ os + '--&gt;&gt;&gt;';
+		var mutexMetricName = 'OSChoice Mutex';
+		var mutex = new SelfCleaningMutex(mutexName, mutexMetricName);
+		// limit our attempt to get a mutex to 120 seconds... 
+		mutex.setSpinWait(500);
+		mutex.setMaxSpins(240);
+		mutex.setMutexExpires(120000); //120 seconds 
+		
+		if (mutex.get()) {
+			try {
+				// check to see that it doesn't exist already
+				var sr = new GlideRecord('sys_choice');
+				sr.setWorkflow(false); // dont write out changes
+				sr.addQuery('name', 'cmdb_ci_computer');
+				sr.addQuery('element', 'os');
+				sr.addQuery('label', os);
+				sr.query();
+				
+				if (!sr.next()) {
+					sr.initialize();
+					sr.setValue('name', 'cmdb_ci_computer');
+					sr.setValue('element', 'os');
+					sr.setValue('value', os);
+					sr.setValue('label', os);
+					sr.setValue('inactive', false);
+					sr.setValue('language', 'en');
+					sr.insert();
+				}
+			} finally {
+				mutex.release();
+			}
+		} else {
+			//lock failed
+			gs.log("Unable to lock on to " + mutexName);
+		}
+	}
+	
+	return os;
+};
+
+OSChoice.prototype = {
+    initialize: function() { /* do nothing */ },
+	
+	reconcile: function(os) {
+		return OSChoice.reconcile(os);
+	},
+	
+    type: 'OSChoice'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;sky.lin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-09-18 23:46:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5107787137203000dcd48c00dfbe5da7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OSChoice&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5107787137203000dcd48c00dfbe5da7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-05-05 15:09:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2089&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:29</sys_created_on>
+        <sys_id>c89c8dba2f331110d8a4d5f62799b65d</sys_id>
+        <sys_name>OSChoice</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c89c8dba2f331110d8a4d5f62799b65d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

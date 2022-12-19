@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>76d78e72c302110038bf506adfba8fa1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PAAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX methods for Performance Analytics&lt;/description&gt;
+        &lt;name&gt;PAAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PAAjax = Class.create();
+
+PAAjax.prototype =  Object.extendsObject(AbstractAjaxProcessor, {
+	retrieveBreakdownSource: function() {
+
+		// Check the type of dependent value. If dependent field is referring to dimensions then query for dimension in pa_breakdowns else query for breakdown source field directly
+		var ref = this.getParameter('sysparm_ref');
+		var ge = new GlideCompositeElement(ref);
+		var ed = ge.getTargetED();
+		var dependent = ed.getDependent();
+
+		var gr = new GlideRecordSecure("pa_breakdowns");
+
+		if (typeof dependent !== 'undefined' &amp;&amp; dependent) {
+			dependent = dependent.substring(0, dependent.indexOf('.'));
+			ge = new GlideCompositeElement(ed.getTableName() + '.' + dependent);
+			ed = ge.getTargetED();
+			if (ed &amp;&amp; ed.isReference()) {
+				var dependentTableName = ed.getReference();
+				if (dependentTableName == 'pa_dimensions') {
+					gr.get('dimension', this.getValue());
+					this.getRootElement().setAttribute("table", gr.dimension.facts_table);
+					this.getRootElement().setAttribute("condition", gr.dimension.conditions);
+					return;
+				}
+			}
+		}
+
+		gr.get(this.getValue());
+		// if breakdown is External breakdown set different table and conditions
+		if (gr.type == 3) {
+			this.getRootElement().setAttribute("table", "pa_ext_elements");
+			this.getRootElement().setAttribute("condition", "breakdown="+gr.sys_id);
+			return;
+		}
+		this.getRootElement().setAttribute("table", this._getBreakdownSourceTargetTable(gr));
+		this.getRootElement().setAttribute("condition", this._getBreakdownSoureConditions(gr));
+	},
+
+	getTableListViews: function () {
+		var table = this.getValue();
+		this.getRootElement().setAttribute('views', new SNC.PADBView().getTableListViews(table));
+	},
+
+	_getIndicatorFrequency: function(id) {
+		if (id == null)
+			return -1;
+		var gr = new GlideRecord('pa_cubes');
+		if (!gr.get(id))
+			return -1;
+		return gr.frequency;
+	},
+
+	_getSysPropertyIndex: function(frequency) {
+		if (frequency == 10)
+			return 0;
+		else if (frequency == 20)
+			return 1;
+		else if (frequency == 30)
+			return 2;
+		else if (frequency == 35)
+			return 3;
+		else if (frequency == 40)
+			return 4;
+		else if (frequency == 50)
+			return 5;
+		else if (frequency == 60)
+			return 6;
+		else if (frequency == 65)
+			return 7;
+		else if (frequency == 70)
+			return 8;
+		else if (frequency == 80)
+			return 9;
+		else if (frequency == 85)
+			return 10;
+		else
+			return -1;
+	},
+
+	_getScorePeriods: function() {
+		return gs.getProperty('com.snc.pa.dc.keep_scores_for.frequency');
+	},
+
+	_getSnapshotPeriods: function() {
+		return gs.getProperty('com.snc.pa.dc.keep_snapshots_for.frequency');
+	},
+
+	_getBreakdownSourceTargetTable: function(gr) {
+		if (!gr.dimension)
+			return null;
+
+		var factsTable = gr.dimension.facts_table;
+		var field = gr.dimension.field;
+		if (field == 'sys_id')
+			return factsTable;
+
+		if (field.endsWith('.sys_id'))
+			field = field.substring(0, String(field).length - 7);
+
+		return this._getTargetTable(factsTable, field);
+	},
+
+	_getBreakdownSoureConditions: function(gr) {
+		if (!gr.dimension)
+			return null;
+
+		var field = gr.dimension.field;
+		if (field == 'sys_id')
+			return gr.dimension.conditions;
+
+		if (field.endsWith('.sys_id'))
+			field = field.substring(0, String(field).length - 7);
+
+		var targetTable = this._getBreakdownSourceTargetTable(gr);
+		if (!targetTable)
+			return null;
+
+		var factsTable = gr.dimension.facts_table;
+		return this._getEncodedConditions(factsTable, field, gr.dimension.conditions);
+	},
+
+	_getTargetTable: function(factsTable, field) {
+		var ge = new GlideCompositeElement(factsTable + '.' + field);
+		ed = ge.getTargetED();
+		if (!ed || !ed.isReference())
+			return null;
+
+		var ref = ed.getReference();
+		return ref;
+	},
+
+	_getEncodedConditions: function(factsTable, field, baseConditions) {
+		var index = field.lastIndexOf('.');
+		var conditions;
+		if (index &lt; 0) {
+			conditions = 'SUBQUERY';
+			conditions += 'sys_id' + ',' + field + ',' + factsTable;
+			conditions += '^' + baseConditions + '^';
+			conditions += 'ENDSUBQUERY';
+			return conditions;
+		}
+
+		var partialField = field.substring(0, index);
+		var lastField = field.substring(index + 1, String(field).length);
+		var targetTable = this._getTargetTable(factsTable, partialField);
+		var subConditions = this._getEncodedConditions(factsTable, partialField, baseConditions);
+		conditions = 'SUBQUERY';
+		conditions += 'sys_id' + ',' + lastField + ',' + targetTable;
+		conditions += '^(' + subConditions + ')^';
+		conditions += 'ENDSUBQUERY';
+		return conditions;
+	},
+
+	getDefaultScorePeriod: function() {
+		var cube = this.getParameter('sysparm_cube');
+		var frequency = this._getIndicatorFrequency(cube);
+		var index = this._getSysPropertyIndex(frequency);
+		if (index == -1)
+			return -1;
+		var periods = this._getScorePeriods().split(';');
+		return periods[index];
+	},
+
+	getDefaultSnapshotPeriod: function() {
+		var cube = this.getParameter('sysparm_cube');
+		var frequency = this._getIndicatorFrequency(cube);
+		var index = this._getSysPropertyIndex(frequency);
+		if (index == -1)
+			return -1;
+		var periods = this._getSnapshotPeriods().split(';');
+		return periods[index];
+	},
+
+	checkFilter: function() {
+		var filter = this.getParameter('sysparm_filter');
+		return !(new PAUtils().hasRestrictedOperatorsInConditions(filter));
+	},
+
+	getStartOfWeek: function() {
+		var value = gs.getProperty('glide.ui.filter.first_day_of_week');
+		if (!value)
+			return '2';
+		return value;
+	},
+
+	checkFormula: function () {
+		var f = new SNC.PAFormula(this.getParameter('sysparm_formula').toString(), this.getParameter('sysparm_id').toString());
+		this.getRootElement().setAttribute('answer', f.isValid());
+		this.getRootElement().setAttribute('error', f.getError());
+		this.getRootElement().setAttribute('sys_id', this.getParameter('sysparm_id'));
+	},
+	
+	getMaxRowCountIndicatorSource: function() {
+		var propertyValue = gs.getProperty("com.snc.pa.dc.max_row_count_indicator_source");
+		if (!propertyValue)
+			propertyValue = '50000';
+		
+		return propertyValue;
+	},
+
+	type: "PAAjax"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-01-07 13:58:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;76d78e72c302110038bf506adfba8fa1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;147&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PAAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Performance Analytics" source="com.snc.pa"&gt;97a305876da620100acb70b353433004&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_76d78e72c302110038bf506adfba8fa1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-01-10 06:54:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6035&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:38</sys_created_on>
+        <sys_id>89dcc53e2f331110d8a4d5f62799b667</sys_id>
+        <sys_name>PAAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_89dcc53e2f331110d8a4d5f62799b667</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

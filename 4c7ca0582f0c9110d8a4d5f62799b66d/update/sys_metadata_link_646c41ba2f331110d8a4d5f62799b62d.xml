@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3014075607131000dada43c0d1021e24</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RESTMessageGenerator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;generate rest message&lt;/description&gt;
+        &lt;name&gt;RESTMessageGenerator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RESTMessageGenerator = Class.create();
+
+RESTMessageGenerator.prototype = {
+
+    /**
+     * Constructor takes a sys_rest_message GlideRecord as argument
+     * call the process method after constructing this object
+     */
+    initialize : function () {
+    },
+
+    /**
+     * Test UI action code
+     */
+    test : function(cur) {
+        var requestBody;
+        var responseBody;
+        var status;
+        var endpoint;
+        var query;
+		var scope = cur.rest_message.sys_scope ? cur.rest_message.sys_scope.scope : null;
+		var restMesssageName = scope ? scope + "." + cur.rest_message.name : cur.rest_message.name;
+
+        try {
+            var rm = new sn_ws.RESTMessageV2(restMesssageName, cur.function_name);
+            var pgr = new GlideRecord('sys_rest_message_fn_parameters');
+            pgr.addQuery('rest_message_function', cur.sys_id);
+            pgr.query();
+            while(pgr.next()) {
+                if (pgr.type == 'string')
+                    rm.setStringParameter(pgr.name, pgr.value);
+                else
+                    rm.setStringParameterNoEscape(pgr.name, pgr.value);
+            }
+            var response = rm.execute();
+            endpoint = rm.getEndpoint();
+            if (!cur.use_mid_server.nil()) {
+                response.waitForResponse(60);// Wait at most 60 seconds to get response if required
+            }
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            status = response.getStatusCode();
+            query = response.getQueryString();
+        } catch(ex) {
+            responseBody = ex.getMessage();
+            status = "500";
+        } finally{
+            requestBody = rm ? rm.getRequestBody() : null;
+        }
+
+        return this.logRESTTest(cur, endpoint, query, requestBody, responseBody, status);
+    },
+
+    logRESTTest : function(cur, endpoint, query, requestBody, responseBody, status) {
+        var tgr = new GlideRecord('sys_rest_message_fn_test');
+        tgr.initialize();
+        tgr.rest_message_function = cur.getValue('sys_id');
+        tgr.endpoint = endpoint;
+        tgr.parameters = query;
+        tgr.content = requestBody;
+        tgr.response = responseBody
+        tgr.http_status = status;
+        tgr.insert();
+
+        return tgr;
+    }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;jimmy.yuan&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-01-03 23:39:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3014075607131000dada43c0d1021e24&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;35&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RESTMessageGenerator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Web Service Consumer" source="com.glide.web_service_consumer"&gt;c8dcb8836d2220100acb70b35343301b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3014075607131000dada43c0d1021e24&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-10-07 23:42:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2299&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:42</sys_created_on>
+        <sys_id>646c41ba2f331110d8a4d5f62799b62d</sys_id>
+        <sys_name>RESTMessageGenerator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_646c41ba2f331110d8a4d5f62799b62d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

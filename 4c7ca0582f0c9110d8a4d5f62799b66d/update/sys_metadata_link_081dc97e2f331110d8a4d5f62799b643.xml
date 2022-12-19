@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>924e4e6a0a0a0b42001dfea2b43057bb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Mailbox&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;Mailbox&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var Mailbox = Class.create();
+
+Mailbox.prototype = {
+
+    initialize : function() {
+    },
+
+    set : function(/* GlideRecord */ gr) {
+        var type = gr.type;
+        if (type == 'received') {
+            // the email client creates outbound emails with a type of 'received'
+            // even though they are, in fact, going out. Don't put them in the inbox
+            if (gr.uid.nil())
+                return;
+            if (gr.state == 'ready')
+               gr.mailbox = 'inbox'
+            else
+               gr.mailbox = 'received';
+        } else if (type == 'sent')
+            gr.mailbox = 'sent'
+        else if (type == 'send-ready')
+            gr.mailbox = 'outbox'
+        else if (type == 'send-ignored') {
+            gr.mailbox = 'skipped';
+            gr.state = 'ignored';
+        } else if (type == 'send-failed') {
+            gr.mailbox = 'failed';
+            gr.state = 'ignored';
+        } else if (type == 'received-ignored') {
+            gr.mailbox = 'junk';
+            gr.state = 'ignored';
+        }
+    }
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-06-16 16:56:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;924e4e6a0a0a0b42001dfea2b43057bb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Mailbox&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Mailboxes" source="com.glide.mailbox"&gt;23ccf4836d2220100acb70b3534330df&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_924e4e6a0a0a0b42001dfea2b43057bb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;glide.maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2009-01-07 22:01:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1116&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:40</sys_created_on>
+        <sys_id>081dc97e2f331110d8a4d5f62799b643</sys_id>
+        <sys_name>Mailbox</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_081dc97e2f331110d8a4d5f62799b643</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

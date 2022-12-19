@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5dd3cc9e77b90110f14a24f1cd5a99eb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionMLFactory&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AutoResolutionMLFactory&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionMLFactory = Class.create();
+
+AutoResolutionMLFactory.createMLHelper = function(arConfigId) {	
+	if (AutoResolutionUtil.checkSolutionWithCapabilityExists(arConfigId, AutoResolutionConstants.AZ_ENCODED_QUERY) || !AutoResolutionLanguageHelper.isLanguageConfigRecordPresent(arConfigId))
+		return new global.AutoResolutionMLHelper(arConfigId);
+	else if (AutoResolutionUtil.checkSolutionWithCapabilityExists(arConfigId, AutoResolutionConstants.LX_ENCODED_QUERY))
+		return new global.AutoResolutionLanguageX(arConfigId);
+	else
+		throw "Solution capability is not supported by Issue Auto-resolution";
+};
+
+AutoResolutionMLFactory.createMLHelperForCapability = function(capability, arConfigId) {
+	if (capability === AutoResolutionConstants.ML_CAPBILITIES.AGENT_ZERO || 
+		capability === AutoResolutionConstants.ML_CAPBILITIES.AGENT_ZERO_WORKFLOW)
+		return new global.AutoResolutionMLHelper(arConfigId);
+	else if (capability === AutoResolutionConstants.ML_CAPBILITIES.LANGUAGEX) 
+		return new global.AutoResolutionLanguageX(arConfigId);
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-02-22 19:36:43&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5dd3cc9e77b90110f14a24f1cd5a99eb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;39&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionMLFactory&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5dd3cc9e77b90110f14a24f1cd5a99eb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-13 17:19:07&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1046&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:49</sys_created_on>
+        <sys_id>09ac45fa2f331110d8a4d5f62799b6ee</sys_id>
+        <sys_name>AutoResolutionMLFactory</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_09ac45fa2f331110d8a4d5f62799b6ee</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

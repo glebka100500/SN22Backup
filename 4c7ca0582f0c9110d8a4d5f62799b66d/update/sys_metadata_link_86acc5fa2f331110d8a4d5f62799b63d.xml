@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5f90008037b231003e7d40ed9dbe5d58</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SLAMessage&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Collection of functions that create the data driven messages used on the SLA forms&lt;/description&gt;
+        &lt;name&gt;SLAMessage&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SLAMessage = Class.create();
+
+SLAMessage.prototype = {
+    SLA_ALWAYS_POPULATE_BUSINESS: 'com.snc.sla.always_populate_business_fields',
+
+    initialize: function(_gr) {
+        this.alwaysPopulateBusiness = (gs.getProperty(this.SLA_ALWAYS_POPULATE_BUSINESS, 'false') + '' === 'true');
+        this.gr = _gr;
+    },
+
+    /**
+     * Calculates the message to be used the Task SLA form describing how the
+     * actual and business values will be calculated.
+     *
+     * @param gr
+     * @returns
+     */
+    getBusinessValuesCalculatedMsg: function() {
+        if (!this.gr)
+            return "";
+
+        var message;
+        if (this.gr.schedule.isNil()) {
+            if (this.alwaysPopulateBusiness)
+                message = gs.getMessage("Business values will be the same as Actual values when no schedule is applied");
+            else
+                message = gs.getMessage("Business values are not populated as there is no schedule applied");
+        } else
+            message = gs.getMessage("Business values are calculated using the '{0}' schedule", this.gr.schedule.name);
+
+        return message;
+    },
+
+    type: "SLAMessage"
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-03-09 14:14:06&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5f90008037b231003e7d40ed9dbe5d58&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SLAMessage&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service level management" source="com.snc.sla"&gt;367209c76d6620100acb70b35343304f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5f90008037b231003e7d40ed9dbe5d58&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-06-17 17:40:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1150&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:53</sys_created_on>
+        <sys_id>86acc5fa2f331110d8a4d5f62799b63d</sys_id>
+        <sys_name>SLAMessage</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_86acc5fa2f331110d8a4d5f62799b63d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

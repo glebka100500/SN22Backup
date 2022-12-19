@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>939b91f85f3111001c9b2572f2b477e8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_CatalogItemRecordProducerService&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper class for sc_cat_item_producer_service for the Item Creator&lt;/description&gt;
+        &lt;name&gt;sc_ic_CatalogItemRecordProducerService&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_CatalogItemRecordProducerService = Class.create();
+sc_ic_CatalogItemRecordProducerService.prototype = Object.extendsObject(sc_ic_CatalogItemRecordProducer,{
+    initialize: function(_gr,_gs) {
+        sc_ic_Base.prototype.initialize.call(this,_gr,_gs);
+    },
+	
+	refresh: function(item) {
+		sc_ic_CatalogItem.prototype.refresh.call(this,item);
+		this._createEntitlements(item, true);
+	},
+	
+	_copyFields: function(item) {
+		sc_ic_CatalogItemRecordProducer.prototype._copyFields.call(this,item);  // Do the default copy
+		
+		// Copy specific things for the producer service
+		this._gr.submission_message = item.submission_message;
+		this._gr.processing_workflow = item.workflow;
+		return this;
+	},
+	
+	_createEntitlements: function(item, deleteOldCriteria) {
+		var loc = new GlideRecord("sc_cat_item_location_mtom");
+		loc.addQuery("sc_cat_item", this._gr.getUniqueValue());
+		loc.deleteMultiple();
+		var dept = new GlideRecord("sc_cat_item_dept_mtom");
+		dept.addQuery("sc_cat_item", this._gr.getUniqueValue());
+		dept.deleteMultiple();
+		var group = new GlideRecord("sc_cat_item_group_mtom");
+		group.addQuery("sc_cat_item", this._gr.getUniqueValue());
+		group.deleteMultiple();
+		if (deleteOldCriteria) {
+			var criteria = new GlideRecord("sc_cat_item_user_criteria_mtom");
+			criteria.addQuery("sc_cat_item", this._gr.getUniqueValue());
+			criteria.deleteMultiple();
+		}
+		var json = new JSON();
+		var o = json.decode(item.entitlements || {});
+		var locations = o.cmn_location;
+		var departments = o.cmn_department;
+		var groups = o.sys_user_group;
+		var uc = new GlideRecord("user_criteria");
+		var arr = [];
+		for (var i = 0; i &lt; locations.length; i++) {
+			loc = new GlideRecord("sc_cat_item_location_mtom");
+			loc.sc_cat_item = this._gr.getUniqueValue();
+			loc.sc_avail_location = locations[i].value;
+			loc.insert();
+			arr.push(locations[i].value);
+		}
+		uc.location = arr.join(",");
+		arr = [];
+		for (i = 0; i &lt; departments.length; i++) {
+			dept = new GlideRecord("sc_cat_item_dept_mtom");
+			dept.sc_cat_item = this._gr.getUniqueValue();
+			dept.sc_avail_dept = departments[i].value;
+			dept.insert();
+			arr.push(departments[i].value);
+		}
+		uc.department = arr.join(",");
+		arr = [];
+		for (i = 0; i &lt; groups.length; i++) {
+			group = new GlideRecord("sc_cat_item_group_mtom");
+			group.sc_cat_item = this._gr.getUniqueValue();
+			group.sc_avail_group = groups[i].value;
+			group.insert();
+			arr.push(groups[i].value);
+		}
+		uc.group = arr.join(",");
+		uc.name = this._gr.name;
+		if (!uc.group.nil() || !uc.location.nil() || !uc.department.nil()) {
+			var criterion = uc.insert();
+			var uc_m2m = new GlideRecord("sc_cat_item_user_criteria_mtom");
+			uc_m2m.sc_cat_item = this._gr.getUniqueValue();
+			uc_m2m.user_criteria = criterion;
+			uc_m2m.insert();
+		}
+	},
+	
+    type: 'sc_ic_CatalogItemRecordProducerService'
+});
+
+/**
+ * Creates a regular Catalog Item from a Item Creator definition.
+ *
+ * Parameters: simpleItem - The GlideRecord of the Item to use as a base.
+ * Returns: GlideRecord("sc_cat_item") that represents the new catalog item.
+ */
+sc_ic_CatalogItemRecordProducerService.create = function(item) {
+	if (item == null || item.getRowCount() == 0 || item.getTableName()+"" !== sc_ic.ITEM_STAGING)
+		return null;
+	
+	var ci = new GlideRecord("sc_cat_item_producer_service");
+	var catItem = sc_ic_Factory.wrap(ci);
+	catItem._copyFields(item);
+	ci.insert();
+	catItem._copyTranslations(item);
+	catItem._copyCategories(item);
+	catItem._copyAttachments(item);
+	catItem._copyApprovals(item);
+	catItem._copyTasks(item);
+	catItem._copyVariables(item);
+	catItem._createEntitlements(item);
+	ci.update();
+	return ci;
+};
+
+sc_ic_CatalogItemRecordProducerService.createFrom = sc_ic_CatalogItemRecordProducerService.create;]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-12-19 19:21:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;939b91f85f3111001c9b2572f2b477e8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_CatalogItemRecordProducerService&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_939b91f85f3111001c9b2572f2b477e8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-10-27 23:06:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3745&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:42</sys_created_on>
+        <sys_id>f01d0d7e2f331110d8a4d5f62799b60c</sys_id>
+        <sys_name>sc_ic_CatalogItemRecordProducerService</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f01d0d7e2f331110d8a4d5f62799b60c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

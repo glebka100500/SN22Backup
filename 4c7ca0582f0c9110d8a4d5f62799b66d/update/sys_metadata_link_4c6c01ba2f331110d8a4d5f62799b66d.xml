@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2eef0ff05303101034d1ddeeff7b12e9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeModel&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Customer customisation point for the ChangeModelSNC class&lt;/description&gt;
+        &lt;name&gt;ChangeModel&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeModel = Class.create();
+ChangeModel.prototype = Object.extendsObject(ChangeModelSNC, {
+    initialize: function(modelGr, _gs) {
+		ChangeModelSNC.prototype.initialize.call(this, modelGr, _gs);
+    },
+
+    type: 'ChangeModel'
+});
+
+ChangeModel.getDefaultReadRoles = ChangeModelSNC.getDefaultReadRoles;
+ChangeModel.getRefQualForChangeRequest = ChangeModelSNC.getRefQualForChangeRequest;
+ChangeModel.getDefaultModelValue = ChangeModelSNC.getDefaultModelValue;
+ChangeModel.getDefaultTypeValue = ChangeModelSNC.getDefaultTypeValue;]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-02 09:22:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2eef0ff05303101034d1ddeeff7b12e9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeModel&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Change Models" source="com.snc.change_management.change_model"&gt;38b449cf6da620100acb70b353433085&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2eef0ff05303101034d1ddeeff7b12e9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-28 16:22:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;534&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:40</sys_created_on>
+        <sys_id>4c6c01ba2f331110d8a4d5f62799b66d</sys_id>
+        <sys_name>ChangeModel</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4c6c01ba2f331110d8a4d5f62799b66d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

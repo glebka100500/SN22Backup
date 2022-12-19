@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>335ce6ea0be713008e64aabcb4673aed</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ConferenceParticipants&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implements extension point global.ConferenceParticipants&lt;/description&gt;
+        &lt;name&gt;ConferenceParticipants&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * @typedef {{
+			table: string,
+			sysId: string,
+			confId?: string,
+			}} InputData
+ * @typedef {Array&lt;{
+					 name: string,
+					 id: string,
+					 phoneNumber?: string,
+					 showGroupName?: boolean,
+					 users?: Array&lt;{name: string, id: string, phoneNumber?: string}&gt;}&gt;} ParticipantData
+ * @typedef {{table: string, sysId: string, confId: string, items: ParticipantData}} ConfInputData
+*/
+var ConferenceParticipants = Class.create();
+ConferenceParticipants.prototype = {
+	ACTION: {
+		SELF_JOIN: 'selfJoin',
+		SEND_SMS: 'sendSms'
+	},
+
+	initialize: function () {
+		this.notifyUtils = new global.NotifyUtil();
+	},
+	/**
+	 * @param {InputData} inputData
+	 * @param {ParticipantData} previousContacts
+	 * @returns {ParticipantData}
+	 */
+	getContacts: function (inputData, previousContacts, type) {
+		var sourceGr = new GlideRecord(inputData.table);
+		if (!sourceGr.get(inputData.sysId) || !sourceGr.instanceOf('task'))
+			return [];
+		var contacts = [];
+		// Return all contacts based on sys_user reference fields.
+		var numbers = [];
+		var fields = sourceGr.getFields();
+		for (var i = 0; i &lt; fields.size(); i++) {
+			/**
+			 * @type {GlideElement}
+			 */
+			var field = fields.get(i);
+			if (!field)
+				continue;
+			if (field.nil())
+				continue;
+			var ed = field.getED();
+			if (!ed.isReference())
+				continue;
+			var refRec = field.getRefRecord();
+			var absBase = GlideDBObjectManager.getAbsoluteBase(refRec.getTableName());
+			if (absBase != 'sys_user')
+				continue;
+			if (!refRec.active)
+				continue;
+			numbers = this.notifyUtils.getUniquePhoneNumbersForUsersAndGroups([], [field.sys_id + ''], [], type);
+			var ob = {
+				name: gs.getMessage('{0} ({1})', [field.getDisplayValue(), field.getLabel()]),
+				id: field.sys_id + '',
+				phoneNumber: numbers.length &gt; 0 ? numbers[0] : ''
+			};
+			contacts.push(ob);
+		}
+
+		if (!sourceGr.isValidField('assignment_group'))
+			return contacts;
+		if (sourceGr.assignment_group.nil())
+			return contacts;
+
+		/**
+		 * @type {SysUserGroupGR}
+		 */
+		var groupRefRec = sourceGr.assignment_group.getRefRecord();
+		if (!groupRefRec.isValidRecord() || !groupRefRec.active)
+			return contacts;
+
+		contacts.push({
+			name: groupRefRec.name + '',
+			id: groupRefRec.sys_id + '',
+			users: [] // The users are resolved later by getGroupMembers
+		});
+		if (groupRefRec.manager.nil())
+			return contacts;
+
+		numbers = this.notifyUtils.getUniquePhoneNumbersForUsersAndGroups([], [groupRefRec.manager + ''], [], type);
+		contacts.push({
+			name: gs.getMessage("{0} ({1})", [groupRefRec.manager.getDisplayValue(), groupRefRec.manager.getLabel()]),
+			id: groupRefRec.manager + '',
+			phoneNumber: numbers.length &gt; 0 ? numbers[0] : ''
+		});
+		return contacts;
+	},
+
+	/**
+	 * @param {string} groupId
+	 * @param {InputData} inputData
+	 * @param {ParticipantData} groupData
+	 * @returns {ParticipantData}
+	 */
+	getGroupDetails: function (groupId, inputData, alreadyGotGroupDetails, type) {
+		var sourceGr = new GlideRecord(inputData.table);
+		if (!sourceGr.get(inputData.sysId) || !sourceGr.instanceOf('task'))
+			return;
+
+		var grpGr = new GlideRecord("sys_user_group");
+		if (!grpGr.get(groupId) || !grpGr.active)
+			return;
+
+		if (GlidePluginManager.isActive("com.snc.on_call_rotation")) // If On-Call is active then do not contribute
+			return;
+
+		// Return all users in the group (upto a limit)
+		var userGr = new GlideRecord("sys_user");
+		userGr.addActiveQuery();
+		var cond = userGr.addJoinQuery("sys_user_grmember", "sys_id", "user");
+		cond.addCondition("group", groupId);
+		userGr.setLimit(parseInt(gs.getProperty("glide.notify.ontask.max_users_to_fetch_per_group", "50")));
+		userGr.query();
+		var numbers;
+		var contacts = [];
+		while (userGr.next()) {
+			numbers = this.notifyUtils.getUniquePhoneNumbersForUsersAndGroups([], [userGr.getUniqueValue() + ''], [], type);
+			contacts.push({
+				name: gs.getMessage("{0} ({1})", [userGr.getDisplayValue(), grpGr.getDisplayValue()]),
+				id: userGr.getUniqueValue() + '',
+				phoneNumber: numbers.length &gt; 0 ? numbers[0] : ''
+			});
+		}
+		return {users: contacts};
+	},
+
+	/**
+	 * @param {GlideRecord} src
+	 * @param {string} userId
+	 */
+	isConferenceLeader: function(src, userId) {
+		if ((src instanceof GlideRecord) &amp;&amp; src.instanceOf('task')) {
+			if (userId) {
+				var userObj = GlideUser.getUserByID(userId);
+				if (userObj)
+					return userObj.hasRoles();
+				else
+					return false;
+			}
+			return gs.getUser().hasRoles();
+		}
+		return;
+	},
+
+	/**
+	 * @param {string} actionName
+	 * @param {GlideRecord} sourceGr
+	 * @param {string} userId
+	 */
+	isActionAllowed: function(actionName, sourceGr, /* Optional */ userId) {
+		if (actionName === this.ACTION.SELF_JOIN || actionName === this.ACTION.SEND_SMS)
+			return this.isConferenceLeader(sourceGr, userId);
+		return;
+	},
+
+	type: 'ConferenceParticipants'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-07-30 05:02:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;335ce6ea0be713008e64aabcb4673aed&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;83&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ConferenceParticipants&lt;/sys_name&gt;
+        &lt;sys_package display_value="Notify" source="com.snc.notify"&gt;b567f9452f140110d8a4d5f62799b6e4&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_335ce6ea0be713008e64aabcb4673aed&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-17 11:37:57&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4805&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:47</sys_created_on>
+        <sys_id>8e6cc1ba2f331110d8a4d5f62799b62c</sys_id>
+        <sys_name>ConferenceParticipants</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8e6cc1ba2f331110d8a4d5f62799b62c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

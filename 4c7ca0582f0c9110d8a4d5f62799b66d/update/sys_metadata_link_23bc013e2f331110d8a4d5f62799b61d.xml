@@ -1,0 +1,708 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6b376ced73021010395108b24ff6a73f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.LFUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;It provides utility functions for the Localization Framework.&lt;/description&gt;
+        &lt;name&gt;LFUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var LFUtils = Class.create();
+LFUtils.prototype = {
+    initialize: function() {
+        this.CSV_KEY_DELIMITER = ": ";
+        this.lfConstants = new LFConstants();
+        this.lfLogger = new LFLogger("LFUtils");
+        this.lfSettingUtils = new LFSettingUtils();
+        this.XLIFF_XML_INIT = "&lt;xliff xmlns=\"urn:oasis:names:tc:xliff:document:1.2\" version=\"1.2\"&gt;&lt;/xliff&gt;";
+    },
+
+    //		XLIFF 1.2 schema:
+    // 		&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    // 		&lt;xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2"&gt;
+    // 			&lt;file original="LFTASK_number" datatype="html" source-language="sourceLanguage" target-language="targetLanguage"&gt;
+    // 				&lt;body&gt;
+    // 					&lt;Group id="group_id"&gt; --&gt; contains group info where group_id is the groupName
+    // 						&lt;trans-unit id="trans_unit_id"&gt; --&gt; contains info of each translatable string where trans_unit_id is the groupName + fieldLabel ('- choice_n' in case of choices ie - choice_1,- choice_2, ... etc.)
+    // 							&lt;source/&gt; --&gt; contains originalValue
+    // 							&lt;target/&gt; --&gt; contains translatedValue (if the system already has the translated value then we append 'state="final"' attribute to &lt;target&gt;)
+    // 						&lt;/trans-unit&gt;
+    // 					&lt;/Group&gt;
+    // 				&lt;/body&gt;
+    // 			&lt;/file&gt;
+    // 		&lt;/xliff&gt;
+
+    createXLIFFFromDocumentContent: function(content, sourceLanguageId, targetLanguageId, originalFile) {
+        var xliffInit = this.XLIFF_XML_INIT;
+        var xmlDoc = new XMLDocument2();
+        xmlDoc.parseXML(xliffInit);
+        var fileNode = xmlDoc.createElement("file");
+        fileNode.setAttribute("datatype", "html");
+        if (originalFile) {
+            fileNode.setAttribute("original", originalFile);
+        }
+        if (sourceLanguageId) {
+            fileNode.setAttribute(this.lfConstants.XLIFF_SOURCE_LANGUAGE, sourceLanguageId);
+        }
+        if (targetLanguageId) {
+            fileNode.setAttribute(this.lfConstants.XLIFF_TARGET_LANGUAGE, targetLanguageId);
+        }
+
+        var bodyNode = xmlDoc.createElement("body");
+        fileNode.appendChild(bodyNode);
+
+        var groupNameList = Object.keys(content);
+        for (var groupIdx = 0; groupIdx &lt; groupNameList.length; groupIdx++) {
+            var groupName = groupNameList[groupIdx];
+
+            var groupNode = xmlDoc.createElement("Group");
+            bodyNode.appendChild(groupNode);
+            groupNode.setAttribute("id", groupName);
+
+            var contentElementList = content[groupName]; // Array of fields with same groupName
+            for (var contentElementIdx = 0; contentElementIdx &lt; contentElementList.length; contentElementIdx++) {
+                var contentElement = contentElementList[contentElementIdx];
+
+                var fieldInfo = contentElement.fieldInfo;
+                var fieldInfoLength = fieldInfo.length;
+
+                for (var fieldInfoIdx = 0; fieldInfoIdx &lt; fieldInfoLength; fieldInfoIdx++) {
+                    var transUnitNode = xmlDoc.createElement("trans-unit");
+                    groupNode.appendChild(transUnitNode);
+
+                    var id = this._createFieldForXliff(contentElement, fieldInfoIdx);
+                    transUnitNode.setAttribute("id", id);
+
+                    var fieldInfoElement = fieldInfo[fieldInfoIdx];
+
+                    var originalValue = this._replaceText(fieldInfoElement.originalValue);
+                    var sourceNode = xmlDoc.createElementWithTextValue("source", originalValue);
+                    transUnitNode.appendChild(sourceNode);
+
+                    var translatedValue = fieldInfoElement.translatedValue;
+                    if (translatedValue) {
+                        translatedValue = this._replaceText(translatedValue);
+                        var targetNode = xmlDoc.createElementWithTextValue("target", translatedValue);
+                        if (fieldInfoElement.isFieldLocked) {
+                            targetNode.setAttribute("state", "final");
+                        }
+                        transUnitNode.appendChild(targetNode);
+
+                    }
+                }
+            }
+        }
+        //XMLDocument2 automatically escapes '&amp;' character, so unescaping manually here
+        xmlDoc = xmlDoc.toString().replace(/&amp;amp;lt;/g, "&amp;lt;").replace(/&amp;amp;gt;/g, "&amp;gt;");
+        return xmlDoc;
+    },
+
+    updateContentFromFileData: function(fileType, fileData, content, sourceLanguage, targetLanguage, source, overrideExistingTranslations) {
+        var fileHasAnyTranslatedValue;
+        if (fileType === this.lfConstants.XLIFF_FILE_TYPE) {
+            fileHasAnyTranslatedValue = this.updateContentFromXLIFF(fileData, content, sourceLanguage, targetLanguage, source, overrideExistingTranslations);
+        } else if (fileType === this.lfConstants.CSV_FILE_TYPE) {
+            fileHasAnyTranslatedValue = this.updateContentFromCSV(fileData, content, sourceLanguage, targetLanguage, source, overrideExistingTranslations);
+        }
+        return fileHasAnyTranslatedValue;
+    },
+
+    updateContentFromXLIFF: function(XLIFF_data, content, sourceLanguage, targetLanguage, source, overrideExistingTranslations) {
+        overrideExistingTranslations = (overrideExistingTranslations == undefined) || overrideExistingTranslations;
+        var translationMap = {};
+        var xmlDoc = new XMLDocument2();
+        xmlDoc.parseXML(XLIFF_data);
+
+        var fileNode = xmlDoc.getNode('//file');
+        var fileHasAnyTranslatedValue = false;
+        if ((fileNode.hasAttribute(this.lfConstants.XLIFF_SOURCE_LANGUAGE) &amp;&amp; fileNode.getAttribute(this.lfConstants.XLIFF_SOURCE_LANGUAGE) != sourceLanguage) ||
+            (fileNode.hasAttribute(this.lfConstants.XLIFF_TARGET_LANGUAGE) &amp;&amp; fileNode.getAttribute(this.lfConstants.XLIFF_TARGET_LANGUAGE) != targetLanguage) ||
+            (fileNode.getAttribute(this.lfConstants.XLIFF_ORIGINAL) != source)) {
+            return fileHasAnyTranslatedValue;
+        }
+
+        var node = xmlDoc.getNode('//body');
+        var groupIterator = node.getChildNodeIterator();
+        while (groupIterator.hasNext()) {
+            var groupNode = groupIterator.next();
+            if (groupNode.getNodeName().toLowerCase() !== "group")
+                continue;
+
+            var groupName = groupNode.getAttribute("id");
+            var transUnitIterator = groupNode.getChildNodeIterator();
+
+            while (transUnitIterator.hasNext()) {
+                var transUnitNode = transUnitIterator.next();
+                if (transUnitNode.getNodeName().toLowerCase() !== "trans-unit")
+                    continue;
+
+                var fieldLabel = transUnitNode.getAttribute("id");
+                var fieldKey = [groupName, fieldLabel].join();
+                var fieldDetailsIterator = transUnitNode.getChildNodeIterator();
+                var translatedValue = "";
+
+                while (fieldDetailsIterator.hasNext()) {
+                    var fieldDetailsNode = fieldDetailsIterator.next();
+                    var fieldDetailsNodeValue = fieldDetailsNode.getNodeName().toLowerCase();
+                    if (fieldDetailsNodeValue === "target") {
+                        translatedValue = fieldDetailsNode.getTextContent();
+                    }
+                }
+                translationMap[fieldKey] = translatedValue;
+            }
+        }
+
+        for (var contentIdx = 0; contentIdx &lt; content.length; contentIdx++) {
+            var contentElement = content[contentIdx];
+            var fieldInfo = contentElement.fieldInfo;
+            var fieldInfoLength = fieldInfo.length;
+
+            for (var fieldInfoIdx = 0; fieldInfoIdx &lt; fieldInfoLength; fieldInfoIdx++) {
+                var fieldInfoElement = fieldInfo[fieldInfoIdx];
+                var label = this._createFieldForXliff(contentElement, fieldInfoIdx);
+                fieldKey = [contentElement.groupName, label].join();
+                if (translationMap.hasOwnProperty(fieldKey)) {
+                    if (fieldInfoElement.translatedValue &amp;&amp; overrideExistingTranslations) {
+                        fieldInfoElement.primaryTranslatedValue = fieldInfoElement.translatedValue;
+                    }
+                    fileHasAnyTranslatedValue = fileHasAnyTranslatedValue || translationMap[fieldKey] != "";
+                    if (overrideExistingTranslations || !fieldInfoElement.translatedValue) {
+                        fieldInfoElement.translatedValue = translationMap[fieldKey];
+                    }
+                }
+            }
+        }
+        return fileHasAnyTranslatedValue;
+    },
+
+    createCSVFromDocumentContent: function(content, sourceLanguageId, targetLanguageId, fileName) {
+        var BOM = "\uFEFF";
+        var csv = BOM;
+        csv = this._addCommentsToCSV(csv, sourceLanguageId, targetLanguageId, fileName);
+        var groupNameList = Object.keys(content);
+        for (var groupIdx = 0; groupIdx &lt; groupNameList.length; groupIdx++) {
+            var groupName = groupNameList[groupIdx];
+
+            var contentElementList = content[groupName]; // Array of fields with same groupName
+            for (var contentElementIdx = 0; contentElementIdx &lt; contentElementList.length; contentElementIdx++) {
+                var contentElement = contentElementList[contentElementIdx];
+                var fieldInfo = contentElement.fieldInfo;
+                var fieldInfoLength = fieldInfo.length;
+
+                for (var fieldInfoIdx = 0; fieldInfoIdx &lt; fieldInfoLength; fieldInfoIdx++) {
+                    var fieldInfoElement = fieldInfo[fieldInfoIdx];
+
+                    originalValue = fieldInfoElement.originalValue;
+                    originalValue = originalValue.replace(/"/g, '""').replace(/&amp;#39;/g, "'");
+
+                    var translatedValue = "";
+                    if (fieldInfoElement.translatedValue) {
+                        translatedValue = fieldInfoElement.translatedValue;
+                        translatedValue = translatedValue.replace(/"/g, '""').replace(/&amp;#39;/g, "'");
+                    }
+                    var fieldName = this._createFieldForCSV(contentElement, fieldInfoIdx);
+                    csv += this._createCSVLine(fieldName, originalValue, translatedValue);
+                }
+            }
+        }
+        return csv;
+    },
+
+    updateContentFromCSV: function(fileData, content, sourceLanguage, targetLanguage, source, overrideExistingTranslations) {
+        overrideExistingTranslations = (overrideExistingTranslations == undefined) || overrideExistingTranslations;
+        var translationMap = {};
+        var fileHasAnyTranslatedValue = false;
+        var csvToJsonResult = this._convertCSVToJSON(fileData, sourceLanguage, targetLanguage);
+        var metaData = csvToJsonResult["metaData"];
+        if (Object.keys(metaData).length &gt; 0) {
+            if (!metaData['Source'] || source != metaData['Source'].replace(/"/g, '') ||
+                !metaData['Source Language'] || sourceLanguage != metaData['Source Language'].replace(/"/g, '') ||
+                !metaData['Target Language'] || targetLanguage != metaData['Target Language'].replace(/"/g, '')) {
+                return fileHasAnyTranslatedValue;
+            }
+        } else {
+            var headerList = csvToJsonResult["headerList"];
+            if (headerList[1] != sourceLanguage || headerList[2] != targetLanguage) {
+                return fileHasAnyTranslatedValue;
+            }
+        }
+        var csvJson = csvToJsonResult["dataObject"];
+        for (var idx = 0; idx &lt; csvJson.length; idx++) {
+            var jsonMapKey = csvJson[idx]['Field'].replace(/""/g, '"').replace(/\r/g, "");
+            translationMap[jsonMapKey] = csvJson[idx][targetLanguage];
+        }
+
+        for (var contentIdx = 0; contentIdx &lt; content.length; contentIdx++) {
+            var contentElement = content[contentIdx];
+            var fieldInfoArr = contentElement.fieldInfo;
+            var fieldInfoLength = fieldInfoArr.length;
+
+            for (var fieldInfoIdx = 0; fieldInfoIdx &lt; fieldInfoLength; fieldInfoIdx++) {
+                var fieldInfoElement = fieldInfoArr[fieldInfoIdx];
+                var fieldKey = this._createFieldForCSV(contentElement, fieldInfoIdx);
+                if (translationMap.hasOwnProperty(fieldKey)) {
+                    if (fieldInfoElement.translatedValue &amp;&amp; overrideExistingTranslations) {
+                        fieldInfoElement.primaryTranslatedValue = fieldInfoElement.translatedValue;
+                    }
+                    fileHasAnyTranslatedValue = fileHasAnyTranslatedValue || translationMap[fieldKey] != "";
+                    if (overrideExistingTranslations || !fieldInfoElement.translatedValue) {
+                        fieldInfoElement.translatedValue = translationMap[fieldKey];
+                    }
+                }
+            }
+        }
+        return fileHasAnyTranslatedValue;
+    },
+
+    hasConflicts: function(content) {
+        for (var contentIdx = 0; contentIdx &lt; content.length; contentIdx++) {
+            var contentElement = content[contentIdx];
+            var fieldInfoArr = contentElement.fieldInfo;
+            for (var fieldInfoIdx = 0; fieldInfoIdx &lt; fieldInfoArr.length; fieldInfoIdx++) {
+                fieldInfoElement = fieldInfoArr[fieldInfoIdx];
+                if (fieldInfoElement.isFieldLocked &amp;&amp; fieldInfoElement.primaryTranslatedValue &amp;&amp; (fieldInfoElement.translatedValue != fieldInfoElement.primaryTranslatedValue))
+                    return true;
+            }
+        }
+        return false;
+    },
+
+    getDefaultSourceLanguage: function() {
+        var configuredDefaultSourceLanguage = gs.getProperty('glide.localization.framework.default.source.language');
+        if (!configuredDefaultSourceLanguage) {
+            return 'en';
+        }
+
+        var gr = new GlideRecord('sys_language');
+        gr.addQuery('id', configuredDefaultSourceLanguage);
+        gr.query();
+        if (gr.next()) {
+            return configuredDefaultSourceLanguage;
+        }
+
+        this.lfLogger.logError("glide.localization.framework.default.source.language doesn't contain a valid language.");
+        return 'en';
+    },
+
+    getActiveLanguagesList: function() {
+        var languages = [];
+        var gr = this._getActiveSysLanguages();
+        while (gr.next()) {
+            languages.push(gr.getValue('id'));
+        }
+        return languages;
+    },
+
+    getInstanceLanguages: function(artifactInternalName, parms) {
+        // Parms can take {"sourceLanguage": sourceLanguage, "targetLanguages":[]}
+        // This will remove sourceLanguage and add details for input targetLanguages
+
+        var targetLanguages = (parms &amp;&amp; parms.targetLanguages) || [];
+        var defaultSourceLanguage = parms &amp;&amp; parms.sourceLanguage;
+        defaultSourceLanguage = defaultSourceLanguage ? defaultSourceLanguage : this.getDefaultSourceLanguage();
+        var configuredLanguagesObj = this.lfSettingUtils.fetchConfiguredLanguages(artifactInternalName);
+        var gr = this._getActiveSysLanguages(targetLanguages);
+        var languagesDetailsArray = [];
+        while (gr.next()) {
+            if (gr.getValue('id') != defaultSourceLanguage) {
+                var language = {};
+                language['label'] = gr.getValue('name');
+                language['value'] = gr.getValue('id');
+                language['sysId'] = gr.getUniqueValue();
+                language['isDisabled'] = false;
+                if (!configuredLanguagesObj[language['sysId']])
+                    language['isDisabled'] = true;
+                languagesDetailsArray.push(language);
+            }
+        }
+        return languagesDetailsArray;
+    },
+
+    showUIAction: function(internalName) {
+
+        var artifactUtils = new LFArtifactUtils(internalName);
+        if (!artifactUtils.isArtifactActive()) {
+            return false;
+        }
+
+        var defaultSourceLanguage = this.getDefaultSourceLanguage();
+        var langCounter = new GlideAggregate('sys_language');
+        langCounter.addQuery('active', true);
+        langCounter.addQuery('id', '!=', defaultSourceLanguage);
+        langCounter.addAggregate('COUNT');
+        langCounter.query();
+        var activeLangCount = langCounter.next() ? langCounter.getAggregate('COUNT') : '0';
+        return activeLangCount !== '0';
+    },
+
+    showVerifyTranslationsUIAction: function(approvalRecord) {
+        return approvalRecord.source_table == "sn_lf_task" &amp;&amp; (new ApprovalDelegationUtil().isMyApproval(approvalRecord) || gs.hasRole('admin') || gs.hasRole('approval_admin')) &amp;&amp; (new LFApprovalUtils(approvalRecord.document_id.getRefRecord()).showVerifyTranslations("sysapproval_approver"));
+    },
+
+    sortArrayOfJsonBy: function(arrayOfJson, key) {
+        return arrayOfJson.sort(function(a, b) {
+            var x = a[key];
+            var y = b[key];
+            return ((x &lt; y) ? -1 : 0);
+        });
+    },
+
+    getTranslationflowTimeout: function() {
+        return parseInt(gs.getProperty("com.glide.sn_lf.translation_flow_timeout", 30000));
+    },
+
+    getSubFlowCallableName: function(subflowId) {
+        var subFlowCallableName;
+        var gr = new GlideRecord("sys_hub_flow");
+        if (gr.get(subflowId)) {
+            var internalName = gr.getValue("internal_name");
+            var scope = gr.sys_scope.scope;
+            subFlowCallableName = scope + '.' + internalName;
+        }
+        return subFlowCallableName;
+    },
+
+    getLanguageCodeDetails: function(languageCode) {
+        var gr = new GlideRecord('sys_language');
+        gr.addQuery('id', languageCode);
+        gr.query();
+        if (gr.next()) {
+            return {
+                'sysId': gr.sys_id,
+                'label': gr.name
+            };
+        }
+    },
+
+    groupByProperty: function(arr) {
+        var finalJson = {};
+        for (var i = 0; i &lt; arr.length; i++) {
+            var keys = Object.keys(finalJson);
+            var index = keys.indexOf(arr[i].groupName);
+            if (index != -1) {
+                finalJson[arr[i].groupName].push(arr[i]);
+            } else {
+                finalJson[arr[i].groupName] = new Array(arr[i]);
+            }
+        }
+        return finalJson;
+    },
+
+    retrieveOriginalContent: function(groupedContent) {
+        var originalContent = [];
+        for (var group in groupedContent) {
+            for (var i = 0; i &lt; groupedContent[group].length; i++) {
+                originalContent.push(groupedContent[group][i]);
+            }
+        }
+        return originalContent;
+    },
+
+    getReadOnlyInfoForAdhocUI: function(artifactId, targetLanguage) {
+        if (!gs.hasRole(this.lfConstants.EDITOR)) {
+            return {
+                "hasLFEditorRole": false,
+                "isReadOnlyMode": true
+            };
+        }
+        var lfAPI = new LocalizationFrameworkAPIV2();
+        var statusOfLRITMs = lfAPI.getRequestedItemDetails([artifactId], {
+            "targetLanguages": [targetLanguage]
+        });
+        var lritmStatus = statusOfLRITMs[artifactId][targetLanguage];
+        var anyTaskIsInProgress = lritmStatus.exists &amp;&amp; !lritmStatus["details"]["isClosed"];
+        return {
+            "anyTaskIsInProgress": anyTaskIsInProgress,
+            "hasLFEditorRole": true,
+            "isReadOnlyMode": anyTaskIsInProgress
+        };
+    },
+
+    getAllLanguages: function() {
+        var allLanguages = {};
+        var sortedLanguageSysIds = [];
+        var gr = new GlideRecord('sys_language');
+        gr.orderBy('name');
+        gr.query();
+        while (gr.next()) {
+            var sysId = gr.getUniqueValue();
+            allLanguages[sysId] = gr.getValue('name');
+            sortedLanguageSysIds.push(sysId);
+        }
+        return {
+            'allLanguages': allLanguages,
+            'sortedLanguageSysIds': sortedLanguageSysIds
+        };
+    },
+
+    getFailedTranslationRequests: function(artifactConfigInternalName, translationRequests) {
+        var failedTranslationRequests = [];
+        var languageIdToNameMap = {};
+        var artifactIdToNameMap = {};
+        var artifactUtils = new LFArtifactUtils(artifactConfigInternalName);
+        for (var index = 0; index &lt; translationRequests.length; index++) {
+            if (translationRequests[index].isError) {
+                var languageId = translationRequests[index].targetLanguage;
+                if (!languageIdToNameMap[languageId]) {
+                    languageIdToNameMap[languageId] = this.getLanguageCodeDetails(languageId).label;
+                }
+                var artifactSysId = translationRequests[index].sysId;
+                if (!artifactIdToNameMap[artifactSysId]) {
+                    artifactIdToNameMap[artifactSysId] = this.getArtifactDisplayName(artifactUtils.getArtifactConfigurationTableName(), artifactSysId);
+                }
+                failedTranslationRequests.push(artifactIdToNameMap[artifactSysId] + "-" + languageIdToNameMap[languageId]);
+            }
+        }
+        return failedTranslationRequests;
+    },
+
+    getArtifactDisplayName: function(artifactTable, sysId) {
+        var gr = new GlideRecord(artifactTable);
+        gr.addQuery('sys_id', sysId);
+        gr.query();
+        if (gr.next()) {
+            return gr.getDisplayValue();
+        }
+    },
+
+    //For backward compatibility of Q to R
+    getLFSetting: function(languageSysId) {
+        // there is no context of artifact in Q, checking if setting exists for all_artifacts
+        return this.lfSettingUtils.getLFSetting('all_artifacts', languageSysId);
+    },
+
+    getLocalizedLanguageLabel: function(languageId, sourceLanguageId) {
+        var languageLabel = this.getLanguageCodeDetails(languageId).label;
+        return gs.getMessageLang(languageLabel, sourceLanguageId);
+    },
+
+    getItemToTranslateInAdhocMode: function(internalName, artifactId, sourceLanguage, targetLanguage, configAdditionalParams) {
+        var lfValidationUtils = new LFValidationUtils();
+        lfValidationUtils.validateArtifact(internalName, [artifactId]);
+        lfValidationUtils.validateTargetLanguages([targetLanguage]);
+        if (sourceLanguage) {
+            lfValidationUtils.validateSourceLanguage(sourceLanguage);
+        }
+        sourceLanguage = sourceLanguage || this.getDefaultSourceLanguage();
+        lfValidationUtils.isSourceLanguageInTargetLanguages(sourceLanguage, [targetLanguage]);
+        var sourceLanguageLabel = String(this.getLanguageCodeDetails(sourceLanguage).label);
+        var targetLanguageDetails = this.getLanguageCodeDetails(targetLanguage);
+        var targetLanguageLabel = String(targetLanguageDetails.label);
+        var targetLanguageId = String(targetLanguageDetails.sysId);
+
+        return {
+            "internalName": internalName,
+            "documentContent": new LFReadSaveScriptUtils().generateDocumentContent(internalName, artifactId, targetLanguage, configAdditionalParams),
+            "sourceLanguage": sourceLanguage,
+            "sourceLanguageLabel": sourceLanguageLabel,
+            "targetLanguage": targetLanguage,
+            "targetLanguageLabel": targetLanguageLabel,
+            "targetLanguageId": targetLanguageId
+        };
+    },
+
+    //reference : https://stackoverflow.com/questions/1293147/javascript-code-to-parse-csv-data
+    _convertCSVToJSON: function(fileData, sourceLanguage, targetLanguage) {
+        // Create a regular expression to parse the CSV values.
+        var arrMatches = null;
+        var processedIndex = 0;
+        var index = 0;
+        var fileDataWithoutComments = '';
+        var metadata = {};
+        // metadata will store the csv meta data which starts with ## in the csv file
+        //{Source: identifier, Source Language: sourceLanguageId, Target Language: targetLanguageId}
+        var objPattern = new RegExp(
+            "(^(?:\"#|#) [^\\r\\n]*$[\\r\\n])|(^(?:,,|\"\")$[\\r\\n])|(^(?:\"##|##) [^\\r\\n]*$[\\r\\n])",
+            "gim");
+
+        while (fileData &amp;&amp; (arrMatches = objPattern.exec(fileData))) {
+            if (arrMatches[3]) {
+                var comment = arrMatches[3].trim().split(",")[0];
+                var keyValue = comment.split(" : ");
+                var idx = keyValue[0].indexOf("## ");
+                if (idx != -1) {
+                    metadata[keyValue[0].substr(idx + 3)] = keyValue[1];
+                }
+            }
+            index = arrMatches.index;
+            if (processedIndex &lt; index) {
+                fileDataWithoutComments += fileData.substr(processedIndex, index - processedIndex);
+            }
+            processedIndex = fileData.indexOf('\r\n', index) + 2;
+        }
+        fileDataWithoutComments += fileData.substr(processedIndex);
+
+        objPattern = new RegExp(
+            (
+                // Delimiters.
+                "(\\,|\\r?\\n|\\r|^)" +
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                // Standard fields.
+                "([^\"\\,\\r\\n]*))"
+            ),
+            "gi"
+        );
+
+        arrMatches = null;
+        var dataObject = [];
+        var headers = [];
+        var columnCount = 0;
+        var isHeaderBuilt = false;
+        if (Object.keys(metadata).length &gt; 0) {
+            isHeaderBuilt = true;
+            headers[0] = 'Field';
+            headers[1] = sourceLanguage;
+            headers[2] = targetLanguage;
+        }
+        var rowInformation = {};
+        // Keep looping over the regular expression matches
+        // until we can no longer find a match.
+        while (fileDataWithoutComments &amp;&amp; (arrMatches = objPattern.exec(fileDataWithoutComments))) {
+            // Get the delimiter that was found.
+            var strMatchedValue = '';
+            var strMatchedDelimiter = arrMatches[1];
+            // Check to see if the given delimiter has a length
+            // (is not the start of string) and if it matches
+            // field delimiter. If id does not, then we know
+            // that this delimiter is a row delimiter.
+            if (strMatchedDelimiter.length &amp;&amp; (strMatchedDelimiter !== ",")) {
+                // Since we have reached a new row of data,
+                // add an empty row to our data array.
+                // reset column count and initialize the rowInformation object
+                isHeaderBuilt = true;
+                columnCount = 0;
+                rowInformation = {};
+            }
+            // Now that we have our delimiter out of the way,
+            // let's check to see which kind of value we
+            // captured (quoted or unquoted).
+
+            if (arrMatches[2]) {
+                // We found a quoted value. When we capture
+                // this value, unescape any double quotes.
+                strMatchedValue = arrMatches[2].replace(new RegExp("\"\"", "g"), "\"");
+            } else {
+                // We found a non-quoted value.
+                strMatchedValue = arrMatches[3];
+            }
+
+            //Build keys based on header row
+            if (!isHeaderBuilt) {
+                headers.push(strMatchedValue);
+            }
+            // Once header is built, now start creating object for each row
+            if (isHeaderBuilt) {
+                // If column count reaches last key in header
+                if (columnCount == headers.length - 1) {
+                    dataObject.push(rowInformation);
+                }
+                if (JSUtil.nil(strMatchedValue)) {
+                    rowInformation[headers[columnCount]] = '';
+                } else {
+                    rowInformation[headers[columnCount]] = strMatchedValue;
+                }
+            }
+
+            columnCount++;
+        }
+        return {
+            "dataObject": dataObject,
+            "headerList": headers,
+            "metaData": metadata
+        };
+    },
+
+    _createFieldForXliff: function(contentElement, fieldInfoIdx) {
+        return (contentElement.id || contentElement.label) + this._getChoiceLabel(contentElement, fieldInfoIdx);
+    },
+
+    _createFieldForCSV: function(contentElement, fieldInfoIdx) {
+        return (contentElement.id || (contentElement.groupName + this.CSV_KEY_DELIMITER + contentElement.label)) + this._getChoiceLabel(contentElement, fieldInfoIdx);
+    },
+
+    _getChoiceLabel: function(contentElement, fieldInfoIdx) {
+        return (contentElement.fieldInfo.length &gt; 1) ? (" - choice_" + fieldInfoIdx) : "";
+    },
+
+    // Replacing the values of special characters such as &lt;,&gt;," etc. in order to get the whole html into one &lt;target&gt; specifically for HTML field 
+    _replaceText: function(text) {
+        text = text.replace(/&amp;#39;/g, "'").replace(/"/g, "'").replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
+        return text;
+    },
+
+    _addCommentsToCSV: function(csv, sourceLanguageId, targetLanguageId, fileName) {
+        var sourceLanguageLabel = this.getLocalizedLanguageLabel(sourceLanguageId, sourceLanguageId);
+        var targetLanguageLabel = this.getLocalizedLanguageLabel(targetLanguageId, sourceLanguageId);
+        var comments = ["# " + gs.getMessageLang("Please read the below comments starting with (#). These comments should not be edited.", sourceLanguageId),
+            "",
+            "# " + gs.getMessageLang("Column details are as follows:", sourceLanguageId),
+            "# - " + gs.getMessageLang("The Field column contains details of the ServiceNow's internal field labels.", sourceLanguageId),
+            "# - " + gs.getMessageLang("The Source language column ({0}) contains text that needs to be translated.", sourceLanguageId, [sourceLanguageLabel]),
+            "# - " + gs.getMessageLang('The Target language column ({0}) contains text that is translated. Please fill the translations for the text in this column. If the translations already exist for some fields, the column gets prefilled with the available translations.', sourceLanguageId, [targetLanguageLabel]),
+            "",
+            "## Source : " + fileName,
+            "## Source Language : " + sourceLanguageId,
+            "## Target Language : " + targetLanguageId,
+            ""
+        ];
+        for (var cmntIdx = 0; cmntIdx &lt; comments.length; cmntIdx++) {
+            csv += this._createCSVLine(comments[cmntIdx]);
+        }
+        csv += this._createCSVLine("# " + gs.getMessageLang('Field', sourceLanguageId), sourceLanguageLabel, targetLanguageLabel);
+        return csv;
+    },
+
+    _createCSVLine: function() {
+        var csvLine = "";
+        for (var idx1 = 0; idx1 &lt; arguments.length; idx1++) {
+            csvLine += '"' + arguments[idx1] + '"';
+            if (idx1 !== arguments.length - 1) {
+                csvLine += ",";
+            }
+        }
+        return csvLine + "\r\n";
+    },
+
+    _getActiveSysLanguages: function(targetLanguages) {
+        var gr = new GlideRecord('sys_language');
+        gr.orderBy('name');
+        gr.addActiveQuery().addOrCondition("id", "IN", targetLanguages);
+        gr.query();
+        return gr;
+    },
+
+    type: 'LFUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-07-16 11:57:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6b376ced73021010395108b24ff6a73f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;45&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;LFUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Localization Framework" source="com.glide.localization_framework"&gt;be2124c92f241110d8a4d5f62799b640&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6b376ced73021010395108b24ff6a73f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-23 12:00:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;30807&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:16</sys_created_on>
+        <sys_id>23bc013e2f331110d8a4d5f62799b61d</sys_id>
+        <sys_name>LFUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_23bc013e2f331110d8a4d5f62799b61d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

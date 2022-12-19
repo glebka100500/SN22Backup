@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>68c8e5223730020033cb26877e41f1f5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlanningConsoleMessages&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;All error message translations for planning console&lt;/description&gt;
+        &lt;name&gt;PlanningConsoleMessages&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlanningConsoleMessages = Class.create();
+
+PlanningConsoleMessages.seededMessages = function(message, arg1, arg2) {
+    var msgs = {};
+    msgs.successor_state_error = gs.getMessage('Cannot add relation to a successor task which has already started');    
+    msgs.cyclic_exception = gs.getMessage('The relationship cannot be created as it creates a recursive relationship');
+    msgs.relation_to_self = gs.getMessage('The relationship cannot be created as it creates a relation to self');
+    msgs.relation_exists = gs.getMessage('The relationship already exists');
+    msgs.relation_successor_start_date_before_project_start_date = gs.getMessage('Cannot add relation as it makes successor start date before project start date');
+    msgs.task_start_before_project = gs.getMessage('Invalid update. Task cannot start before the project start date');
+	msgs.task_start_before_start_on_parent = gs.getMessage('Invalid update. Task cannot start before the parent start date');	
+    msgs.sub_project_start_before_project = gs.getMessage('Invalid update. Sub project cannot start before the project start date');
+    msgs.change_of_planned_start_date_not_allowed = gs.getMessage('Change of planned start date is not allowed for wip/closed tasks');
+	msgs.change_of_constraint_date_not_allowed = gs.getMessage('Change of constraint date is not allowed for wip/closed tasks');
+    msgs.change_of_planned_start_date_of_rollup_not_allowed = gs.getMessage('Change of planned start date is not allowed for parent tasks');
+    msgs.change_of_planned_end_date_not_allowed = gs.getMessage('Change of planned end date is not allowed for closed tasks');
+    msgs.operation_task_start_before_project = gs.getMessage('Invalid operation. Task start date cannot be before project start date');
+	msgs.operation_task_start_before_start_on_parent = gs.getMessage('Invalid operation. Task start date cannot be before parent start date');	
+    msgs.change_of_actual_start_date_not_allowed = gs.getMessage('Change of actual start date is not allowed for pending/open tasks');
+    msgs.change_of_actual_end_date_not_allowed = gs.getMessage('Change of actual end date is not allowed for pending/open/wip tasks');
+    msgs.change_of_actual_duration_not_allowed = gs.getMessage('Change of actual duration is not allowed for pending/open/wip tasks');
+    msgs.change_of_planned_start_date_of_closed_project = gs.getMessage('Change of planned start date is not allowed for closed project');
+    msgs.start_date_before_least_start_date = gs.getMessage('Project cannot start before the program');
+    msgs.start_date_after_max_start_date = gs.getMessage('Program cannot start after the project/demand start dates');
+    msgs.end_date_before_least_end_date = gs.getMessage('Program cannot end before the project/demand end dates');
+    msgs.could_not_calculate_start_date_of_the_task_as_the_schedule_has_more_than_three_consecutive_weeks_as_holidays = gs.getMessage('Could not calculate start date of the task as the schedule has more than three consecutive weeks as holidays');
+    msgs.cannot_add_relation_on_shadow_task = gs.getMessage('Adding Relation on the Shadow task is not allowed');
+    msgs.cannot_delete_shadow_task_with_more_than_one_relation = gs.getMessage("Cannot Delete the Shadow task with more than one relations");
+    msgs.tasks_cannot_be_under_same_project = gs.getMessage("Tasks cannot be under same project");
+    msgs.no_task_found_for_wbs = gs.getMessage("No task is found for provided wbs");
+    msgs.more_than_one_task_found_for_wbs = gs.getMessage("More than one task are found for provided wbs");
+    msgs.invalid_wbs = gs.getMessage("Invalid wbs provided");
+    msgs.no_project_found_for_project_number = gs.getMessage("No project is found for provided project number");
+    msgs.more_than_one_project_found_for_project_number = gs.getMessage("More than one project are found for provided project number");
+    msgs.invalid_project_number = gs.getMessage("Invalid project number provided");
+    msgs.only_fs_relation_supported = gs.getMessage("Only finish to start relations supported for inter project dependency");
+    msgs.cannot_delete_predecessor_shadow_task = gs.getMessage("Cannot delete outgoing shadow task/relation");
+    msgs.update_on_the_task_is_not_allowed = gs.getMessage("Update on the task is not allowed");
+    msgs.user_does_not_have_access = gs.getMessage("Permission denied to perform the action");
+    msgs.task_invalid_duration = gs.getMessage("Invalid duration");
+    msgs.task_invalid_start_date = gs.getMessage("Invalid start date");
+	msgs.scheduling_conflict = gs.getMessage("Invalid update, this causes scheduling conflict");
+	msgs.task_end_date_before_start_date = gs.getMessage("Invalid update, end date cannot be before start date");
+    return JSON.stringify(msgs);
+};
+
+PlanningConsoleMessages.getValidationMessage = function (message, arg1, arg2) {
+     var msgs = (new JSON()).decode(PlanningConsoleMessages.seededMessages(message, arg1, arg2));
+     return msgs[message];
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-25 02:21:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;68c8e5223730020033cb26877e41f1f5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;42&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlanningConsoleMessages&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_68c8e5223730020033cb26877e41f1f5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5007&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:11</sys_created_on>
+        <sys_id>9ebc4dfa2f331110d8a4d5f62799b6f1</sys_id>
+        <sys_name>PlanningConsoleMessages</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9ebc4dfa2f331110d8a4d5f62799b6f1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

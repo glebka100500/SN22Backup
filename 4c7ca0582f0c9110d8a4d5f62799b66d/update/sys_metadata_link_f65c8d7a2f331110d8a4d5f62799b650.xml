@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2af354275f1200107ef72224de73130a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SchedulerVNCC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;New Scheduler with Versatile Node and Cluster Config logic&lt;/description&gt;
+        &lt;name&gt;SchedulerVNCC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/* 
+ * Use SchedulerScriptFactory script include to get SchedulerVNCC object
+ *
+ * Scheduler script include used with Versatile Node and Cluster Configuration
+ */
+gs.include("PrototypeServer");
+var SchedulerVNCC = Class.create();
+SchedulerVNCC.prototype = {
+    initialize: function() {
+        this.local_id = GlideClusterSynchronizer.getSystemID();
+        this.schedulersFromNodeType = GlideClusterSynchronizer.autoSetNodeTypeByRoleParticipation() ||
+            GlideProperties.getBoolean("com.snc.cluster.vncc.schedulers_on_node_type");
+    },
+    stop: function(node_id) {
+        this._queueAction(node_id, 'stop');
+    },
+    start: function(node_id) {
+        this._queueAction(node_id, 'start');
+    },
+    /*_________________________________________________________________
+    * Description: Ensures child sys_trigger entries for the specified node
+                   for any run "ALL NODES" scheduled jobs. Handles insertions
+                   and deletions of nodes.
+    * Parameters:
+    * Returns:
+    ________________________________________________________________*/
+    propagateRATriggersForNode: function(node) {
+        var trig = new GlideRecord("sys_trigger");
+        trig.addQuery("system_id", "IN", "ALL NODES,ACTIVE NODES");
+        trig.query();
+        while (trig.next()) {
+            this._propagateAllNodes(node, trig);
+        }
+    },
+    /*_________________________________________________________________
+    * Description: Ensures run "ALL NODES" for a given scheduled job are
+                   propagated to all nodes. 
+    * Parameters:
+    * Returns:
+    ________________________________________________________________*/
+    propagateRANodesForTrigger: function(trigger) {
+        var nd = new GlideRecord("sys_cluster_state");
+        nd.addQuery("status", "online");
+        // not querying on schedulers as we want to remove unwanted existing child jobs
+        nd.query();
+        while (nd.next()) {
+            this._propagateAllNodes(nd, trigger);
+        }
+    },
+    _getSchedulersFromNodeType: function() {
+        return this.schedulersFromNodeType;
+    },
+    /**
+     * a utility method to log a message with node and trigger details
+     */
+    _logInfo: function(msg, node_gr, trigger_gr) {
+        gs.print("[SchedulerVNCC] " + msg +
+            "; context: " + "node.system_id=" + node_gr.system_id + ", node.sys_id=" + node_gr.sys_id +
+            ", trigger.name=" + trigger_gr.name + ", trigger.sys_id=" + trigger_gr.sys_id + ", trigger.system_id=" + trigger_gr.system_id);
+    },
+
+    /**
+     * log reason for not creating child jobs
+     */
+    _logNotCreated: function(reason, node_gr, trgger_gr) {
+        this._logInfo("Child job not created - " + reason, node_gr, trgger_gr);
+    },
+
+    /*_________________________________________________________________
+     * Description: Will create or delete sys_trigger entries for run "ALL NODES" jobs.
+     * Parameters: GlideRecord(SYS_CLUSTER_STATE), GlideRecord(SYS_TRIGGER)
+    ________________________________________________________________*/
+    _propagateAllNodes: function(node_gr, trigger_gr) {
+        var mutexName = "propagateAllNodes_" + node_gr.system_id + "_" + trigger_gr.sys_id;
+        var mutex = new GlideSelfCleaningMutex(mutexName, mutexName);
+        mutex.setSpinWait(500);
+        mutex.setMaxSpins(10);
+        mutex.setMutexExpires(10000);
+
+        var mutexObtained = mutex.get();
+        try {
+            if (!mutexObtained) {
+                // best attempt to avoid conflict
+                this._logInfo("Unable to obtain mutex name:" + mutexName + ". Proceeding without Mutex", node_gr, trigger_gr);
+                // FALL-THROUGH
+            }
+
+            this._propagateNodeAndTriggerInMutex(node_gr, trigger_gr);
+        } finally {
+            if (mutexObtained)
+                mutex.release();
+        }
+    },
+
+    /*_________________________________________________________________
+     * Description: Creates and/or deletes child jobs for a given node and trigger
+     * Parameters: GlideRecord(SYS_CLUSTER_STATE), GlideRecord(SYS_TRIGGER)
+    ________________________________________________________________*/
+    _propagateNodeAndTriggerInMutex: function(node_gr, trigger_gr) {
+        this._logInfo("SchedulerVNCC()._propogateAllNodes", node_gr, trigger_gr);
+
+        var nodeSystemId = node_gr.getValue("system_id");
+        var triggerSysId = trigger_gr.getValue("sys_id");
+        var triggerSystemId = trigger_gr.getValue("system_id");
+
+        var nc = new GlideRecord("sys_trigger");
+        nc.addQuery("sys_id", trigger_gr.sys_id);
+        nc.query();
+        //Don't recreate in the case of a delete op (ref cascade handles actual delete)
+        if (!nc.next())
+            return;
+        var ch = GlideRecord("sys_trigger");
+        ch.addQuery("system_id", node_gr.system_id);
+        ch.addQuery("parent", trigger_gr.sys_id);
+        ch.query();
+        // delete any duplicate child jobs
+        while (ch.next()) {
+            gs.print("Deleting the existing child job (id- " + ch.sys_id + " ) of parent - " +
+                trigger_gr.name + "(sys_id=" + trigger_gr.sys_id + ")" + " for node - " + node_gr.system_id);
+            ch.deleteRecord();
+        }
+        if (nc.system_id != trigger_gr.system_id)
+            return;
+
+        // case when node is deleted
+        // operation == "delete" is true when sys_cluster_state record is deleted. In that case, this script is called from DELETE Business Rule on sys_cluster_state.
+        if (node_gr.operation() == "delete" || (!this._isNodeRecordPresent(nodeSystemId))) {
+            this._logNotCreated("node not present", node_gr, trigger_gr);
+            return;
+        }
+
+        // parent's job system_id is --None-- =&gt; no child job for any node
+        if (JSUtil.nil(triggerSystemId) || triggerSystemId == "none") {
+            this._logNotCreated("trigger system_id is " + triggerSystemId, node_gr, trigger_gr);
+            return;
+        }
+
+        if (node_gr.status == "offline") {
+            gs.print("Node " + node_gr.system_id + " status is offline, not adding any child job (for " + trigger_gr.name + " (sys_id=" + trigger_gr.sys_id + ")" + ") pinned to this node");
+            return;
+        }
+        var schedulers;
+        if (this._getSchedulersFromNodeType())
+            schedulers = node_gr.node_type.schedulers;
+        else
+            schedulers = node_gr.schedulers;
+        if (JSUtil.nil(schedulers) || schedulers == "none") {
+            gs.print("Node " + node_gr.system_id + " scheduler mode is none, not adding any child job (for " + trigger_gr.name + " (sys_id=" + trigger_gr.sys_id + ")" + ") pinned to this node");
+            return;
+        }
+        if (trigger_gr.system_id == "ACTIVE NODES" &amp;&amp; schedulers != "any") {
+            gs.print("Node scheduler is not set to ANY (mode is " + schedulers + ") , not adding any child job (for " + trigger_gr.name + " (sys_id=" + trigger_gr.sys_id + ")" + ") pinned to this node");
+            return;
+        }
+
+        nc.addEncodedQuery(node_gr.node_type.job_criteria);
+        nc.query();
+        if (!nc.next())
+            return;
+        nc.parent = trigger_gr.sys_id;
+        nc.system_id = node_gr.system_id;
+        var insertSysId = nc.insert();
+        gs.print("Inserted child " + " (sys_id=" + insertSysId + ") entry for parent job " + trigger_gr.name + " (sys_id=" + trigger_gr.sys_id + ")" + " for node - " + node_gr.system_id);
+    },
+
+    /**
+     * returns true if sys_cluster_state record is present with given systemId, otherwise false
+     */
+    _isNodeRecordPresent: function(systemId) {
+        var ga = new GlideAggregate("sys_cluster_state");
+        ga.addQuery("system_id", systemId);
+        return ga.getCount() &gt; 0;
+    },
+
+    _queueAction: function(node_id, action) {
+        this.node_id = node_id;
+        var node_list = this._getNodeList();
+        for (var i = 0; i &lt; node_list.length; i++)
+            GlideClusterMessage.postDirected('scheduler.action', action, node_list[i]);
+    },
+    _getNodeList: function() {
+        var node_list = new Array();
+        if (this.node_id == 'ALL') {
+            var gr = new GlideRecord('sys_cluster_state');
+            gr.query();
+            while (gr.next())
+                node_list.push(gr.system_id + '');
+        } else
+            node_list.push(this.node_id);
+        return node_list;
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-01-18 05:52:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2af354275f1200107ef72224de73130a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;28&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SchedulerVNCC&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2af354275f1200107ef72224de73130a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-10-19 23:55:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8406&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:34</sys_created_on>
+        <sys_id>f65c8d7a2f331110d8a4d5f62799b650</sys_id>
+        <sys_name>SchedulerVNCC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f65c8d7a2f331110d8a4d5f62799b650</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

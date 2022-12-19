@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3f7aea665313001001a3ddeeff7b12cd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSSO_SAMLMetaDataHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;MultiSSO_SAMLMetaDataHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MultiSSO_SAMLMetaDataHelper = Class.create();
+MultiSSO_SAMLMetaDataHelper.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    loadSAMLMetaFromXML: function() {
+        var meta_xml = this.getParameter("sysparm_meta_xml");
+        var sys_id = this.getParameter("sysparm_sys_id");
+        var result = this.newItem("result");
+        if (SNC.GlideMultiSSO.isMultiSSOv2()) {
+            var resultMap = SNC.GlideMultiSSO.loadSAMLMetaFromXML(meta_xml, sys_id);
+            if (resultMap.get('sys_id') != null)
+                result.setAttribute("sys_id", resultMap.get('sys_id'));
+            if (resultMap.get('error_msg') != null)
+                result.setAttribute("error_msg", resultMap.get('error_msg'));
+        } else {
+            var resultArray = new SSO_SAMLMetaUtil().loadSAMLMetaFromXML(meta_xml, sys_id);
+            if (resultArray.sys_id != null)
+                result.setAttribute("sys_id", resultArray.sys_id);
+            result.setAttribute("error_msg", resultArray.error_msg);
+        }
+    },
+
+    loadSAMLMetaFromURL: function() {
+        var meta_url = this.getParameter("sysparm_meta_url");
+        var sys_id = this.getParameter("sysparm_sys_id");
+        var result = this.newItem("result");
+        if (SNC.GlideMultiSSO.isMultiSSOv2()) {
+            var resultMap = SNC.GlideMultiSSO.loadSAMLMetaFromURL(meta_url, sys_id);
+            if (resultMap.get('sys_id') != null)
+                result.setAttribute("sys_id", resultMap.get('sys_id'));
+            if (resultMap.get('error_msg') != null)
+                result.setAttribute("error_msg", resultMap.get('error_msg'));
+        } else {
+            var resultArray = new SSO_SAMLMetaUtil().loadSAMLMetaFromURL(meta_url, sys_id);
+            if (resultArray.sys_id != null)
+                result.setAttribute("sys_id", resultArray.sys_id);
+            result.setAttribute("error_msg", resultArray.error_msg);
+        }
+    },
+    type: 'MultiSSO_SAMLMetaDataHelper'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-03-05 07:12:38&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3f7aea665313001001a3ddeeff7b12cd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSSO_SAMLMetaDataHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3f7aea665313001001a3ddeeff7b12cd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-05 07:40:59&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1967&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:05</sys_created_on>
+        <sys_id>127c49ba2f331110d8a4d5f62799b644</sys_id>
+        <sys_name>MultiSSO_SAMLMetaDataHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_127c49ba2f331110d8a4d5f62799b644</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

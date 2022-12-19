@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>558a6f8cc34221007cae8039dfba8f92</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WorkflowElementActivityAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Client-callable AJAX functions for ActivityElements&lt;/description&gt;
+        &lt;name&gt;WorkflowElementActivityAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WorkflowElementActivityAjax = Class.create();
+WorkflowElementActivityAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	canEdit: function() {
+		var canEdit = false;
+		var activityId = this.getParameter("sysparm_activity_id");
+		var gr = new GlideRecord("wf_element_activity");
+		
+		if (gr.get(activityId)) {
+			var vGR = new GlideRecord("wf_versionable");
+			vGR.addQuery("version_container_id", gr.getValue("version_container_id"));
+			vGR.orderByDesc("version");
+			vGR. setLimit(1);
+			vGR.query();
+			
+			if (vGR.next()) {
+				// If currently checked out, is it by this current user?
+				canEdit = (vGR.getValue("published") == 0 &amp;&amp; gs.getUserID() == vGR.getValue("checked_out_by") &amp;&amp;
+							vGR.getValue("wf_element_definition") == gr.getValue("sys_id"));
+			}
+		}
+		gs.log("return canEdit = " + canEdit);
+		return canEdit;
+	},
+
+	isPublished: function() {
+		var published = false;
+		var activityId = this.getParameter("sysparm_activity_id");
+		var gr = new GlideRecord("wf_element_activity");
+		
+		if (gr.get(activityId)) {
+			var vGR = new GlideRecord("wf_versionable");
+			vGR.addQuery("version_container_id", gr.getValue("version_container_id"));
+			vGR.orderByDesc("version");
+			vGR. setLimit(1);
+			vGR.query();
+			published = (vGR.next() &amp;&amp; vGR.getValue("published") == "1");
+		}
+		return published;
+	},
+
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;arturo.ma&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-07-17 04:44:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;558a6f8cc34221007cae8039dfba8f92&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;33&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WorkflowElementActivityAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_558a6f8cc34221007cae8039dfba8f92&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;rick.crawford&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-01-19 17:20:43&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1338&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:36</sys_created_on>
+        <sys_id>799c01fa2f331110d8a4d5f62799b6dc</sys_id>
+        <sys_name>WorkflowElementActivityAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_799c01fa2f331110d8a4d5f62799b6dc</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7dd76e39c0a8016400e1a1086761d0cd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AbstractList&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AbstractList&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var AbstractList = Class.create();
+
+AbstractList.prototype = {
+    SYS_USER : 'sys_user',
+    NAME : 'name',
+    VIEW : 'view',
+    PARENT : 'parent',
+    SYS_UI_LIST : 'sys_ui_list',
+    RELATIONSHIP : 'relationship',
+    DOMAIN : 'sys_domain',
+    NOT_FOUND_ID: "-1",
+
+    initialize : function(table, view, viewName) {
+        this.tableName = table;
+        this.view = view;
+        this.parentName = '';
+        this.relationshipID = '';
+        this.user = gs.getUserID();
+        this.defaultViewID = new GlideScriptViewManager("").getID();
+        this.domainID = GlideDomainSupport.getCurrentDomainValueOrGlobal();
+
+        // mobile always gets the mobile view, regardless of what we asked for
+        if (GlideMobileExtensions.getDeviceType() == 'mobile')
+            this.viewName = 'Mobile';
+
+        if (viewName)
+            this.viewName = viewName.toLowerCase();
+    },
+
+    setParent : function(parent) {
+        this.parentName = parent;
+    },
+
+    setRelationshipID : function(relID) {
+        this.relationshipID = relID;
+    },
+
+    addParentQuery : function(gr) {
+        if (this.parentName != '')
+            gr.addQuery(this.PARENT, this.parentName);
+        else
+            gr.addNullQuery(this.PARENT);
+    },
+
+    addRelationshipQuery : function(gr) {
+        if (this.relationshipID != '')
+            gr.addQuery(this.RELATIONSHIP, this.relationshipID);
+        else
+            gr.addNullQuery(this.RELATIONSHIP);
+    },
+
+    domainQuery : function(gr, domainID) {
+        GlideDomainSupport.queryLowestLevelDomain(gr,domainID);
+    },
+
+    getParents : function() {
+        var answer = this._getParentArray(this.tableName);
+
+        if (!GlidePluginManager.isRegistered('com.glideapp.staged_tables'))
+            return answer;
+
+        var s = new StagingEngine();
+        var staged = s.getStagedTable(this.tableName);
+        if (staged == null)
+            return answer;
+
+        var merged = new Array();
+        merged.push(staged);
+        var list = this._getParentArray(staged);
+        if (list == null || answer == null)
+            return merged;
+
+        var maxlength = list.length;
+        if (maxlength &lt; answer.length)
+            maxlength = answer.length;
+
+        for (var i = 0; i &lt; maxlength; i++) {
+            if (i &lt; answer.length)
+                merged.push(answer[i]);
+
+            if (i &lt; list.length)
+                merged.push(list[i]);
+        }
+
+        return merged;
+    },
+
+    _getParentArray : function(tableName) {
+        var list = GlideDBObjectManager.getActionTables(tableName);
+        if (list == null || list.size() &lt; 2)
+            return null;
+
+        var answer = new Array();
+        for (var i = 1; i &lt; list.size(); i++)
+            answer[i-1] = list.get(i);
+
+        return answer;
+    }
+}        ]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-12-28 13:45:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7dd76e39c0a8016400e1a1086761d0cd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;44&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AbstractList&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7dd76e39c0a8016400e1a1086761d0cd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;don goodliffe&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-02-08 00:35:39&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2922&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:51</sys_created_on>
+        <sys_id>c8ec0d3e2f331110d8a4d5f62799b680</sys_id>
+        <sys_name>AbstractList</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c8ec0d3e2f331110d8a4d5f62799b680</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

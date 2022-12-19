@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>46c0aa1137102100904961d8bcbe5dcc</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.General&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;General Application : Extensible&lt;/description&gt;
+        &lt;name&gt;General&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * Only add methods here that are safe to apply to all objects extending General
+ * 
+ * 
+ * 
+ * @author SERVICE-NOW\walter.brame
+ */
+var General = Class.create();
+General.STATICS = {};
+General.STATICS.DEBUG = '';
+General.STATICS.DEBUG_ARG = 'debug';
+General.STATICS.PROP = 'general.application.debug';
+General.prototype = {
+	initialize : function() { // this function won't be executed because only init is called from GeneralForm
+		this.initDebug(General
+				.getProperty(General.STATICS.PROP + this.getType()));
+		this.init.apply(this, arguments);
+	},
+	
+	init : function() {	
+		var args2 = {};
+		for ( var i = 0; i &lt; arguments.length; i += 1) {
+			var args = arguments[i];
+			for ( var arg in args) {		
+				if (args.hasOwnProperty(arg)) {
+					if (!args2[this.getType()]) {
+						args2[this.getType()] = {};
+					}
+					args2[this.getType()][arg] = args[arg];
+					// The default behavior is to assign whatever is passed in
+					// but special cases can be handled here
+					if (arg == General.STATICS.DEBUG_ARG) {
+						var deb = args[arg];
+						this.initDebug(deb); // Caller controlled debug
+					} else {
+						this[arg] = args[arg];     // args.value are set to the args.key, referring to your original construction();
+					}
+				}
+			}
+		}
+
+		if (this.debug.level &gt;= 3) {
+			for ( var arg2 in args2) {
+				if (args2.hasOwnProperty(arg2)) {
+					this.debug.log(3, 'INIT: ' + arg2);
+					var args1 = args2[arg2];
+					for ( var arg1 in args1) {
+						if (args1.hasOwnProperty(arg1)) {
+							this.debug.log(3, 'ARG: ' + arg1 + ' = '
+									+ args1[arg1]);
+						}
+					}
+				}
+			}
+		}
+	},
+
+	// The Class has an existing debugger object in OFF mode on initialize and
+	// it
+	// may be turned ON here with a (optional) prefix
+	initDebug : function(deb) {
+		this.debug = new GeneralDebug(this.getType(), null, 0);
+		// A system property is always used to control the debugger default.
+		// This makes it so debug can always be provided at any time even for
+		// any existing callers that do not turn the debugger ON.
+		if (deb) {
+			if (deb.prefix) {
+				this.debug.setMessagePrefix(deb.prefix);
+			}
+			if (deb.level) {
+				this.debug.setDebugLevel(deb.level);
+			}
+		}
+	},
+
+	getDebugLevel : function() {
+		return this.debug.level;
+	},
+
+	getType : function() {
+		var ret = null;
+		if (this.type) {
+			ret = this.type;
+		}
+		return ret;
+	},
+
+	type : 'General'
+};
+
+/**
+ * This will return a system property as normal but we can operate on it here
+ * and create different types of results based on storing data in system
+ * properties differently. Basically making this a system property processor.
+ * 
+ * &lt;pre&gt;
+ * var p = GeneralForm.getProperty('my.properties');
+ * 
+ * for ( var name in p) {
+ * 	gs.print(name + ' = ' + p[name]);
+ * }
+ * &lt;/pre&gt;
+ * 
+ * @param systemProperty
+ * @returns {}
+ */
+General.getProperty = function(systemProperty) {
+	var property = gs.getProperty(systemProperty, null);
+	var ret = null;
+	if (property) {
+		// If this is a property list
+		if (property.indexOf(',') != -1) {
+			ret = {};
+			var propertyList = property.split(',');
+			for ( var i = 0; i &lt; propertyList.length; i += 1) {
+				var prop = propertyList[i];
+				var propSplit = prop.split(':');
+				ret[propSplit[0]] = propSplit[1];
+			}
+		} else {
+			ret = property;
+		}
+	}
+	return ret;
+};
+
+General.startDebug = function(debug) {
+	if (!debug
+			|| ((!debug.level) || (debug.level &amp;&amp; debug.level == 0)))
+		return new GeneralDebug(this.getType(), null, 1);
+
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-04-24 20:18:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;46c0aa1137102100904961d8bcbe5dcc&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;21&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;General&lt;/sys_name&gt;
+        &lt;sys_package display_value="PDF Generator" source="com.snc.pdf_generator"&gt;c364414f6da620100acb70b353433099&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_46c0aa1137102100904961d8bcbe5dcc&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-06 23:41:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3455&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:13</sys_created_on>
+        <sys_id>d88c0dba2f331110d8a4d5f62799b644</sys_id>
+        <sys_name>General</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d88c0dba2f331110d8a4d5f62799b644</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7d29eff9c3901010cc343f52c1d3ae17</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeRiskDetailsHelperSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Base Change Risk Details helper class&lt;/description&gt;
+        &lt;name&gt;ChangeRiskDetailsHelperSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeRiskDetailsHelperSNC = Class.create();
+ChangeRiskDetailsHelperSNC.prototype = {
+
+	ML_RISK_PLUGIN: "com.snc.change_management.ml.risk",
+	LOG_PROPERTY: "com.snc.change_request.risk_details_helper.log.level",
+	CHG_SUCCESS_PROBABILITY: "com.snc.change_management.success_probability",
+	
+	TABLES:{
+		PROBABILITY_DETAILS: "sn_chg_probability_details",
+		CHANGE_REQUEST: "change_request",
+	},
+
+	RISK_ASSESSMENT: "risk_assessment",
+	RISK_CONDITION: "risk_condition",
+	LEGACY_RISK_ASSESSMENT: "legacy_risk_assessment",
+	RISK_ML: "risk_ml",
+	RISK_SCORE: "calculated_risk_score",
+
+	SYS_PROPERTIES:{
+		SHOW_CALCULATED_RISK_SCORE: "change.risk.show_calculated_risk_score",
+	},
+
+	initialize: function() {
+		this._log = new GSLog(this.LOG_PROPERTY, this.type).setLog4J();
+	},
+
+	canRead: function(changeSysId) {
+		var gr = new GlideRecordSecure("change_request");
+		if (!gr.get(changeSysId))
+			return false;
+
+		return this._canRead(gr);
+	},
+
+	showDetailsButton: function(changeGr) {
+		if (changeGr.isNewRecord() || this.getViewDetailsEnabled() !== "enable")
+			return false;
+
+		var changeSysId = changeGr.getUniqueValue();
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[showDetailsButton] changeSysId: " + changeSysId);
+
+		var changeRiskDetailsGr = this._getChangeRiskDetails(changeSysId);
+
+		// If it has a record, then a Risk Calculation was run
+		return changeRiskDetailsGr.hasNext();
+	},
+
+	showDetailsLink: function() {
+		if (!this.isServicePortal() &amp;&amp; this.getViewDetailsEnabled() === "enable")
+			return true;
+		return false;
+	},
+
+	applyRiskValue: function() {
+		if (!GlidePluginManager.isActive("com.snc.change_management.ml.risk"))
+			return false;
+
+		return new sn_chg_ml_risk.ChangeMLRiskCalculator().applyRiskValue();
+	},
+
+	isSolutionEnabled: function() {
+		if (!GlidePluginManager.isActive("com.snc.change_management.ml.risk"))
+			return false;
+
+		return new sn_chg_ml_risk.ChangeMLRiskCalculator().isSolutionEnabled();
+	},
+
+	_initChangeRiskDetails: function(changeSysId) {
+
+		var changeRiskDetailsGr = this._getChangeRiskDetails(changeSysId);
+		if (!changeRiskDetailsGr.next())
+			return {};
+
+		var changeRiskDetails = this.toJS(changeRiskDetailsGr);
+
+		// Avoid adding ACLs to risk_conditions table, so bypass to get risk condition name and sys_id
+		if (!changeRiskDetails.risk_condition) {
+			var riskConditionGr = changeRiskDetailsGr.risk_condition.getRefRecord();
+			changeRiskDetails.risk_condition = {
+				display_value: riskConditionGr.getDisplayValue(),
+				value: riskConditionGr.getUniqueValue()
+			};
+		}
+
+		if (changeRiskDetails.change_request) {
+			var changeRequestGr = changeRiskDetailsGr.change_request.getRefRecord();
+			changeRiskDetails.change_request.risk = {
+				value: changeRequestGr.getValue("risk"),
+				display_value: changeRequestGr.getDisplayValue("risk")
+			};
+		}
+
+		changeRiskDetails.mlOptions = {
+			isReadOnly: !this.applyRiskValue(),
+			isEnabled: this.isSolutionEnabled() + "" === "true"
+		};
+
+		return changeRiskDetails;
+	},
+
+	getChangeRiskDetails: function(changeSysId) {
+
+		if (!changeSysId)
+			return {};
+
+		var changeRiskDetails = this._initChangeRiskDetails(changeSysId);
+		if (!changeRiskDetails.change_request)
+			return {};
+
+		changeRiskDetails.highestRisk = this.getHighestRisk(changeSysId, changeRiskDetails);
+
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[getChangeRiskDetails] changeRiskDetails: " + JSON.stringify(changeRiskDetails));
+
+		return changeRiskDetails;
+	},
+
+	getHighestRisk: function(changeSysId, changeRiskDetails) {
+
+		var highestRiskObject = {
+			field: "other",
+			label: "Other",
+			value: "",
+			display_value: ""
+		};
+
+		if (!changeSysId)
+			return highestRiskObject;
+
+		changeRiskDetails = changeRiskDetails || this._initChangeRiskDetails(changeSysId);
+
+		if (!changeRiskDetails)
+			return highestRiskObject;
+
+		var highestRiskValue = null;
+		var highestRiskField = "";
+
+		// Highest risk wins (actually lowest value, High=2, Moderate=3, Low=4)
+		if (this._isValidField(changeRiskDetails, this.RISK_SCORE, "calculated_risk_score_risk")) {
+			var riskCalculatedScoreValue = parseInt(changeRiskDetails.calculated_risk_score_risk.value);
+			if (!isNaN(riskCalculatedScoreValue) &amp;&amp; (highestRiskValue === null || highestRiskValue &gt;= riskCalculatedScoreValue)){
+				highestRiskValue = riskCalculatedScoreValue;
+				highestRiskField = this.RISK_SCORE;
+			}
+		}
+
+		if (changeRiskDetails.risk_ml_set &amp;&amp; changeRiskDetails.risk_ml_set.value === true &amp;&amp; this._isValidField(changeRiskDetails, this.RISK_ML)) {
+			var riskMlValue = parseInt(changeRiskDetails.risk_ml.value);
+			if (!isNaN(riskMlValue) &amp;&amp; (highestRiskValue === null || highestRiskValue &gt;= riskMlValue)){
+				highestRiskValue = riskMlValue;
+				highestRiskField = this.RISK_ML;
+			}
+		}
+
+		if (GlidePluginManager.isActive("com.snc.change.risk_assessment") &amp;&amp;
+			!GlidePluginManager.isActive("com.snc.change_management.risk_assessment") &amp;&amp;
+			this._showLegacyRiskAssessment(changeRiskDetails)) {
+				var riskLegacyAssessmentValue = parseInt(changeRiskDetails.legacy_risk_assessment.value);
+				if (!isNaN(riskLegacyAssessmentValue) &amp;&amp; (highestRiskValue === null || highestRiskValue &gt;= riskLegacyAssessmentValue)) {
+					highestRiskValue = riskLegacyAssessmentValue;
+					highestRiskField = this.LEGACY_RISK_ASSESSMENT;
+				}
+		}
+
+		if (GlidePluginManager.isActive("com.snc.change_management.risk_assessment") &amp;&amp; this._isValidField(changeRiskDetails, this.RISK_ASSESSMENT)) {
+			var riskAssessmentValue = parseInt(changeRiskDetails.risk_assessment.value);
+			if (!isNaN(riskAssessmentValue) &amp;&amp; (highestRiskValue === null || highestRiskValue &gt;= riskAssessmentValue)) {
+				highestRiskValue = riskAssessmentValue;
+				highestRiskField = this.RISK_ASSESSMENT;
+			}
+		}
+
+		if (this._isValidField(changeRiskDetails, this.RISK_CONDITION, "risk_condition_risk")) {
+			var riskConditionValue = parseInt(changeRiskDetails.risk_condition_risk.value);
+			if (!isNaN(riskConditionValue) &amp;&amp; (highestRiskValue === null || highestRiskValue &gt;= riskConditionValue)){
+				highestRiskValue = riskConditionValue;
+				highestRiskField = this.RISK_CONDITION;
+			}
+		}
+
+		var changeRequestRiskValue = parseInt(changeRiskDetails.change_request.risk.value);
+
+		if (!isNaN(changeRequestRiskValue) &amp;&amp; !isNaN(highestRiskValue) &amp;&amp; (changeRequestRiskValue === highestRiskValue)) {
+
+			switch(highestRiskField) {
+				case this.RISK_CONDITION:
+					highestRiskObject = this._getRisk("risk_condition_risk", gs.getMessage("Risk Conditional Rule"), changeRiskDetails);
+					break;
+				case this.LEGACY_RISK_ASSESSMENT:
+					highestRiskObject = this._getRisk(this.LEGACY_RISK_ASSESSMENT, gs.getMessage("Legacy Risk Assessment"), changeRiskDetails);
+					break;
+				case this.RISK_ASSESSMENT:
+					highestRiskObject = this._getRisk(this.RISK_ASSESSMENT, gs.getMessage("Risk Assessment"), changeRiskDetails);
+					break;
+				case this.RISK_ML:
+					highestRiskObject = this._getRisk(this.RISK_ML, gs.getMessage("Risk Intelligence"), changeRiskDetails);
+					break;
+				case this.RISK_SCORE:
+					highestRiskObject = this._getRisk("calculated_risk_score_risk", gs.getMessage("Calculated Risk Score"), changeRiskDetails);
+					break;
+			}
+		}
+
+		return highestRiskObject;
+	},
+
+	_getRisk: function(fieldName, riskLabel, changeRiskDetails) {
+
+		return {
+			value: changeRiskDetails[fieldName].value,
+			display_value: changeRiskDetails[fieldName].display_value,
+			field: fieldName,
+			label: riskLabel
+		};
+	},
+
+	_isValidField: function(changeRiskDetails, fieldName, riskName) {
+
+		if(!changeRiskDetails)
+			return false;
+
+		if (!fieldName)
+			return false;
+
+		riskName = riskName || fieldName;
+
+		var hasRun = changeRiskDetails[fieldName + "_has_run"] &amp;&amp; changeRiskDetails[fieldName + "_has_run"].value;
+		var hasValue = changeRiskDetails[riskName] &amp;&amp; changeRiskDetails[riskName].value;
+
+		return hasRun &amp;&amp; hasValue;
+	},
+
+	_showLegacyRiskAssessment: function(changeRiskDetails) {
+
+		var showLegacyRiskAssessment = this.getShowLegacyRiskAssessment();
+		switch(showLegacyRiskAssessment) {
+			case "always":
+				return true;
+			case "never":
+				return false;
+			case "match":
+				return this._isValidField(changeRiskDetails, this.LEGACY_RISK_ASSESSMENT);
+		}
+	},
+
+	getChangeProbabilityDetails: function(changeSysId){
+		var changeProbabilityDetailsGr = this._getChangeProbabilityDetails(changeSysId);
+		if (!changeProbabilityDetailsGr || !changeProbabilityDetailsGr.next())
+			return {};
+
+		var changeProbabilityDetails = this.toJS(changeProbabilityDetailsGr);
+		
+		if (changeProbabilityDetails.probability_module){
+			var probabilitySuccessGr = changeProbabilityDetailsGr.probability_module.getRefRecord();
+			changeProbabilityDetails.probabilityType = probabilitySuccessGr.getDisplayValue("probability");
+		}
+		
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[getChangeProbabilityDetails] changeProbabilityDetails: " + JSON.stringify(changeProbabilityDetails));
+
+		return changeProbabilityDetails;
+	},
+
+	isServicePortal: function() {
+		try {
+			return (gs.action.getGlideURI() + "").indexOf("api/now/sp") !== -1;
+		} catch (error) {
+			return false;
+		}
+	},
+
+	getViewDetailsEnabled: function() {
+		return gs.getProperty("change.risk.enable_view_details", "enable");
+	},
+
+	getShowRiskCondition: function() {
+		return gs.getProperty("change.risk.show_risk_condition", "never");
+	},
+
+	getShowRiskAssessment: function() {
+		return gs.getProperty("change.risk.show_risk_assessment", "never");
+	},
+
+	getShowLegacyRiskAssessment: function() {
+		return gs.getProperty("change.risk.show_legacy_risk_assessment", "never");
+	},
+
+	getShowRiskIntelligence: function() {
+		return gs.getProperty("change.risk.show_risk_intelligence", "never");
+	},
+	
+	getShowCalculatedRiskScore: function() {
+		return gs.getProperty(this.SYS_PROPERTIES.SHOW_CALCULATED_RISK_SCORE, "never");
+	},
+
+	_canRead: function(chgGr) {
+		return chgGr.risk.canRead();
+	},
+
+	_getChangeRiskDetails: function(changeSysId) {
+		if (!changeSysId)
+			return;
+
+		var changeRequestGr = new GlideRecordSecure("change_request");
+		if (!changeRequestGr.get(changeSysId) || !this._canRead(changeRequestGr))
+			return;
+
+		var changeRiskDetailsGr = new GlideRecord("change_risk_details");
+		changeRiskDetailsGr.addQuery("change_request", changeRequestGr.getUniqueValue());
+		changeRiskDetailsGr.query();
+
+		return changeRiskDetailsGr;
+	},
+	
+	_getChangeProbabilityDetails: function(changeSysId){
+		if (!changeSysId || !GlidePluginManager.isActive(this.CHG_SUCCESS_PROBABILITY))
+			return;
+
+		var changeRequestGr = new GlideRecordSecure(this.TABLES.CHANGE_REQUEST);
+		if (!changeRequestGr.get(changeSysId) || !this._canRead(changeRequestGr))
+			return;
+
+		var changeProbabilityDetailsGr = new GlideRecord(this.TABLES.PROBABILITY_DETAILS);
+		changeProbabilityDetailsGr.addQuery("change_request", changeRequestGr.getUniqueValue());
+		changeProbabilityDetailsGr.query();
+
+		return changeProbabilityDetailsGr;
+	},
+
+	toJS: function(gr) {
+		return ChangeCommon.toJS(gr);
+	},
+
+	type: ChangeRiskDetailsHelperSNC
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-21 21:01:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7d29eff9c3901010cc343f52c1d3ae17&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;87&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeRiskDetailsHelperSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7d29eff9c3901010cc343f52c1d3ae17&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-26 15:22:38&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10986&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:48</sys_created_on>
+        <sys_id>dbdcc93e2f331110d8a4d5f62799b632</sys_id>
+        <sys_name>ChangeRiskDetailsHelperSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dbdcc93e2f331110d8a4d5f62799b632</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

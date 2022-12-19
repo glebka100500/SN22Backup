@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>99eaa69253331010bca8ddeeff7b12c3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisModelUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AisModelUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisModelUtil = Class.create();
+AisModelUtil.prototype = {
+	initialize: function() {
+	},
+
+	/*
+	* create sys_trigger to train lookup sources and publish Search model
+	* @parm lookupSysIds, comma separeted lookup source sys id
+	* @parm modelSysId, model sys id in sys_nlu_model table
+	* @parm delayInMins, sys_trigger delay in minutes
+	*/
+	createJobToTrainAndPublishModel: function(lookupSysIds, modelSysId, delayInMins, options) {
+		var grTrigger = new GlideRecord('sys_trigger');
+		grTrigger.initialize();
+		grTrigger.setValue('name', 'AI Search Train Lookup Sources');
+		grTrigger.setValue('next_action', gs.minutesAgo(-delayInMins));
+		grTrigger.setValue('trigger_type', 0);
+		grTrigger.setValue('script', "new AisModelUtil().trainLookupSources('" + lookupSysIds + "', '" + modelSysId + "', '" + JSON.stringify(options) + "');");
+		grTrigger.insert();
+	},
+
+	trainLookupSources: function(lookupSysIds, modelSysId, optionsStr) {
+		if (!lookupSysIds || !modelSysId)
+			return;
+
+		var options = JSUtil.notNil(optionsStr) ? JSON.parse(optionsStr) : {};
+		var lookupSysIdArray = lookupSysIds.split(",");
+		var successCnt = 0;
+		var result;
+		for (var i = 0; i &lt; lookupSysIdArray.length; i++) {
+			result = new NLULookupTrainer(lookupSysIdArray[i]).trainLookup(options);
+			gs.info("AI Search, train lookup with sys id " + lookupSysIdArray[i] + ", result: " + JSON.stringify(result));
+			if ("success" == result.status) {
+				successCnt++;
+			}
+		}
+		if (successCnt == 5) {
+			this.createJobToCheckTrainingStatus(lookupSysIds, modelSysId, options);
+		}
+	},
+
+	createJobToCheckTrainingStatus: function(lookupSysIds, modelSysId, options) {
+		var grTrigger = new GlideRecord('sys_trigger');
+		grTrigger.initialize();
+		grTrigger.setValue('name', 'AI Search Check Training Status');
+		grTrigger.setValue('next_action', gs.minutesAgo(-15));
+		grTrigger.setValue('trigger_type', 0);
+		grTrigger.setValue('script', "new AisModelUtil().checkLookupSourceTrainingStatus('" + lookupSysIds + "', '" + modelSysId + "', '" + JSON.stringify(options) + "');");
+		grTrigger.insert();
+	},
+
+	checkLookupSourceTrainingStatus: function(lookupSysIds, modelSysId, optionsStr) {
+		if (!lookupSysIds || !modelSysId)
+			return;
+		var options = JSUtil.notNil(optionsStr) ? JSON.parse(optionsStr) : {};
+		var lookupSysIdArray = lookupSysIds.split(",");
+		var result;
+		var successCnt = 0;
+		var failureCnt = 0;
+		for (var i = 0; i &lt; lookupSysIdArray.length; i++) {
+			result = new NLULookup(lookupSysIdArray[i]).getStatus();
+			if ("success" == result.status
+				&amp;&amp; result.activeSolution
+				&amp;&amp; result.activeSolution.version
+				&amp;&amp; result.latestSolution
+				&amp;&amp; result.latestSolution.state
+				&amp;&amp; "success" == result.latestSolution.state) {
+				successCnt++;
+			} else if ("failure" == result.status || (result.latestSolution &amp;&amp; "failure" == result.latestSolution.state)) {
+				failureCnt++;
+				break;
+			}
+		}
+		if (successCnt == 5) {
+			gs.info("AI Search, all lookup source training completed successfully");
+			this.trainAndPublishModel(modelSysId, options);
+		} else if (failureCnt &gt; 0) {
+			gs.error("AI Search, lookup source training failed");
+		} else {
+			this.createJobToCheckTrainingStatus(lookupSysIds, modelSysId, options);
+		}
+	},
+
+	trainAndPublishModel: function(modelSysId, options) {
+		var result = NLUStudioTrainer.trainModel(modelSysId, options);
+		gs.info("AI Search: model training result: " + JSON.stringify(result));
+		if ('success' == result.status) {
+			result = NLUStudioPublisher.publishModel(modelSysId);
+			gs.print("AI Search, publish model result: " + JSON.stringify(result));
+			if ('success' == result.status) {
+				this.createOrUpdateGRA();
+				this.callPredictToLoadModelToServer(modelSysId);
+				GlideClusterMessage.postScript("new AisModelUtil().callPredictToLoadModelToServer('" + modelSysId + "')");
+			}
+		}
+	},
+
+	createOrUpdateGRA: function() {
+		var util = new AisGeniusResultUtil();
+		var grProfile = new GlideRecord('ais_search_profile');
+		grProfile.query();
+		while (grProfile.next()) {
+			var m2mGR = new GlideRecord('ais_search_profile_ais_genius_result_configuration_m2m');
+			m2mGR.addQuery('profile', grProfile.getUniqueValue());
+			m2mGR.query();
+			if (m2mGR.next()) {
+				util.createOrUpdateGRAByProfile(grProfile.getUniqueValue());
+			}
+		}
+	},
+	
+	callPredictToLoadModelToServer: function(modelSysId) {
+		try {
+			var modelGR = new GlideRecord('sys_nlu_model');
+			if (modelGR.get(modelSysId)) {
+				var solution = sn_ml.NLUSolutionStore.get(modelGR.getValue('name'));
+				var solutionVersion = solution.getActiveVersion();
+				var inputJson = {
+					"utterance": "test"
+				};
+				solutionVersion.predict(inputJson);
+			}
+		} catch(e) {
+			//expected to throw request timeout
+		}
+	},
+
+	type: 'AisModelUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-10-14 05:18:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;99eaa69253331010bca8ddeeff7b12c3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisModelUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_99eaa69253331010bca8ddeeff7b12c3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-05-27 04:21:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4734&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:40</sys_created_on>
+        <sys_id>724d85be2f331110d8a4d5f62799b616</sys_id>
+        <sys_name>AisModelUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_724d85be2f331110d8a4d5f62799b616</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

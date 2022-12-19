@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>17ba7f531b121100227e5581be0713e2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSSO_DigestedToken&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This class handles the out-of-the-box logic for digested token authentication.&lt;/description&gt;
+        &lt;name&gt;MultiSSO_DigestedToken&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var MultiSSO_DigestedToken = Class.create();
+MultiSSO_DigestedToken.prototype = Object.extend(new MultiSSO_Abstract_Core(), {
+	
+	process : function() {
+		
+		var userData = SSO_Helper.getHeaderOrCookie(this.propertiesGR.header_key);
+		var userDigest = SSO_Helper.getHeaderOrCookie(this.propertiesGR.encrypted_key);
+		var userField = this.propertiesGR.user_field;
+		var secretKey = this.getSecretKey(this.propertiesGR.secret_key);
+		
+		this.debug("User Data: " + userData);
+		this.debug("User Digest Received: " + userDigest);
+		this.debug("User Field: " + userField);
+		
+		// if found run encryption
+		if (userData &amp;&amp; userDigest) {
+			try {
+				// Replace all spaces with plus(+)'s, converted in url
+				userDigest = userDigest.replaceAll(' ', '+');
+				// Ecrypt the username and secretKey combination to calculate digest
+				var userDigestCalc = this.getDigest(userData, secretKey);
+				
+				this.debug ("User Digest Received: " + userDigest + " Calculated: " + userDigestCalc );
+				
+				// Check for match if recieved digest data matches calculated digest
+				if (userDigest == userDigestCalc) {
+					this.debug("Digest value received matches with calculated");
+					var ugr = new GlideRecord("sys_user");
+					ugr.initialize();
+					if (!ugr.isValidField(userField)) {
+						var Log = GlideLog;
+						Log.warn("External authorization is set to use field: '" + userField + "' which doesn't exist");
+						gs.log("External authorization is set to use field: '" + userField + "' which doesn't exist");
+
+                        SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "failure", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+						return this.getFailedRedirect();
+					}
+					ugr.addQuery(userField, userData);
+					ugr.query();
+					if (!ugr.next()) {
+						var User = GlideUser;
+						var userLoad = User.getUser(userData);
+						if (userLoad == null){
+							gs.log("User authenticated...but we cannot find this user in Service-now");
+                            SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "failure", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+							return this.getFailedRedirect();
+						}
+						ugr.initialize();
+						ugr.addQuery(userField, userData);
+						ugr.query();
+						if (!ugr.next()){
+							gs.log("User authenticated...but we cannot find this user in Service-now 2");
+                            SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "failure", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+							return this.getFailedRedirect();
+						}
+					}
+					
+					this.debug("Success. Logging in user: " + userData);
+					request.getSession().setAttribute("glide.multiSSO.logout_url", this.propertiesGR.external_logout_redirect.toString());
+					
+					// always return user_name as ExternalAuthorization will check if the user is locked using the user_name field
+					var userDataValidated = ugr.getValue("user_name");
+					
+                    SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "success", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+					
+					var requestUri = request.getRequestURI();
+					if (requestUri &amp;&amp; requestUri.indexOf('login_with_sso')&gt;=0) {
+						action.setRedirect("/navpage.do");
+					}
+					//set the login method attribute
+					request.getSession().setAttribute("glide.authenticate.multisso.login.method", "digest");
+					return userDataValidated;
+					
+				} else {
+					gs.log("User Digest Received did not match Calculated Digest");
+                    SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "failure", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+					return this.getFailedRedirect();
+				}
+			} catch(e) {
+				gs.log(e);
+                SNC.SecurityEventSender.sendLoginGCFEvent("Digest", "failure", "user_name=" + userData, "multisso=true,idpsysid=" + this.propertiesGR.getUniqueValue());
+				return this.getFailedRedirect();
+			}
+			// Encoded data didn't match recieved Encoded data
+		} else {
+			// If there is no userData and userDigest together then redirect him to another portal.
+			// Example: Customer's Intranet site where user's Digest Token Authentication URL could already be present.
+			return this.getPortalURLRedirect();
+		}
+	},
+	
+	getDigest : function( data, secretKey ) {
+		try {
+			// default to something JDK 1.4 has
+			var MAC_ALG = "HmacSHA1";
+			return  SncAuthentication.encode(data, secretKey, MAC_ALG);
+		} catch (e) {
+			throw 'failed_missing_requirement';
+		}
+	},
+	
+	getFailedRedirect : function (){
+		var failure_url = (this.propertiesGR.failed_redirect) ? this.propertiesGR.failed_redirect.toString(): "failed_authentication";
+		return failure_url;
+	},
+	
+	getPortalURLRedirect : function () {
+		var portalURL = (this.propertiesGR.portal_url_redirect) ? this.propertiesGR.portal_url_redirect.toString() : "failed_authentication";
+		return portalURL;
+	},
+	//override parent
+	setSSORecord: function(gr) {
+		this.propertiesGR = gr;
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-01-21 21:53:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;17ba7f531b121100227e5581be0713e2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;12&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSSO_DigestedToken&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_17ba7f531b121100227e5581be0713e2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-01 12:18:34&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5139&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:10</sys_created_on>
+        <sys_id>b84c857a2f331110d8a4d5f62799b66b</sys_id>
+        <sys_name>MultiSSO_DigestedToken</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b84c857a2f331110d8a4d5f62799b66b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

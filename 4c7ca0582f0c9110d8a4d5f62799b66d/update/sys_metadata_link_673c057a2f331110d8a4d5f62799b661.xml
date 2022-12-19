@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>13093b100ab301537655c175d512f2fc</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FieldNormalizationAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Provides AJAX services for the Field Normalization plugin.&lt;/description&gt;
+        &lt;name&gt;FieldNormalizationAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// field normalization
+
+var FieldNormalizationAjax = Class.create();
+
+FieldNormalizationAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    // Get value record info
+    // 
+    // parameters:
+    //   sys_parm_normal_id: sys_id of the normal value record
+    //
+    getValueInfo: function() {
+        var normal_id = this.getParameter('sysparm_normal_id');
+        var gr = new GlideRecord('fn_normal_value');
+        gr.get(normal_id);
+        var result = {};
+        result.normal_id = '' + gr.sys_id;
+        result.normal_value = '' + gr.value;
+        result.config_id = '' + gr.config;
+        result.title = gs.getMessage('Aliases for: ') + gr.value;
+        return new JSON().encode(result);
+    },
+
+    // Get values for alias section slush bucket (right and left).
+    // 
+    // parameters:
+    //   sysparm_normal_id: sys_id of the normal value record
+    //   sysparm_config_id: sys_id of the associated configuration record
+    // returns:
+    //   Object with 'left' and 'right' properties, each of which is a map of values to sys_ids in fn_value table.
+    //
+    getSlushValues: function() {
+        var normal_id = this.getParameter('sysparm_normal_id');
+        var config_id = this.getParameter('sysparm_config_id');
+        var result = {
+                         left:{}, 
+                         right:{}
+                     };
+        
+        // first let's get all our pending values...
+        var gr = new GlideRecord('fn_pending_value');
+        gr.addQuery('config', config_id);
+        gr.query();
+        while (gr.next())
+            this._storeSlushValue(result.left, gr);
+        
+        // now let's get all the current aliases...
+        gr = new GlideRecord('fn_alias_value');
+        gr.addQuery('normal', normal_id);
+        gr.query();
+        while (gr.next())
+            this._storeSlushValue(result.right, gr);
+        
+        return new JSON().encode(result);
+    },
+    
+    _storeSlushValue: function(bucket, gr) {
+        bucket['' + gr.value] = '' + gr.sys_id;
+    },
+    
+    // Set the selected aliases
+    //
+    // parameters:
+    //   sysparm_normal_id: sys_id of the normal value record
+    //   sysparm_alias_ids: comma-separated list of value sys_ids that should be aliases
+    //
+    setAliases: function() {
+        var normal_id = this.getParameter('sysparm_normal_id');
+        var alias_ids = j2js(this.getParameter('sysparm_alias_ids')).split(',');
+        var last_id = alias_ids.pop();
+        if (last_id &amp;&amp; last_id.trim() != '')
+            alias_ids.push(last_id);
+        
+        // make a set of the new alias selections...
+        var new_aliases = {};
+        for (var i = 0; i &lt; alias_ids.length; i++)
+            new_aliases[alias_ids[i]] = true;
+        
+        // reconcile the selected aliases against the current aliases, looking for changes...
+        var gr = new GlideRecord('fn_alias_value');
+        gr.addQuery('normal', normal_id);
+        gr.query();
+        while (gr.next()) {
+            var old_alias = '' + gr.sys_id;
+            
+            // did an alias get put back to pending?
+            if (!new_aliases[old_alias]) {
+                var value = SncValue.getFromSysID(old_alias);
+                if (value == null)
+                    continue;
+
+                value.aliasToPending();
+                this._deleteNotStartedAliasJob(old_alias);
+                continue;
+            }
+            
+            // was an alias, still is an alias...
+            delete new_aliases[old_alias];
+        }
+        
+        // any new aliases remaining are changing pending to alias...
+        for (var new_id in new_aliases) {
+            var value = SncValue.getFromSysID(new_id);
+            if (value == null)
+                continue;
+
+            var job = function() {
+                                     value.pendingToAlias(normal_id);
+                                 };
+            FNEnsureJob.ensure('fn_alias_value', new_id, 'alias_application', 'Manually selected alias', job);
+        }
+    },
+    
+    // Delete an alias value job if it hasn't started yet
+    // Only do this when moving an alias back to pending
+    // parameters:
+    //    old_alias: the sys_id of the fn_alias_value record being set moved to fn_pending_value
+    _deleteNotStartedAliasJob: function(old_alias) {
+        var gr = new GlideRecord('fn_extant_data_normalization');
+        gr.addQuery('fn_id', old_alias);
+        gr.addQuery('state', 'not_started');
+        gr.addQuery('type', 'alias_application');
+        gr.query();
+
+        if (gr.next())
+            gr.deleteRecord();
+    },
+    
+    // Test transforms
+    // parameters:
+    //    sysparm_fn_table: the table for the configuration being tested
+    //    sysparm_fn_field: the field for the configuration being tested
+    //    sysparm_fn_value: the raw value to transform
+    // 
+    // return:
+    //    the transformed string value, or "ERROR" if there was a problem of any kind
+    testTransform: function() {
+        var table = j2js(this.getParameter('sysparm_fn_table'));
+        var field = j2js(this.getParameter('sysparm_fn_field'));
+        var value = j2js(this.getParameter('sysparm_fn_value'));
+        
+        var result=new FNUtil().transform(table, field, value);
+        if (result==null) 
+            result='ERROR';
+
+        return result;
+    },
+    
+    type: 'FieldNormalizationAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-11-03 18:40:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;13093b100ab301537655c175d512f2fc&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;40&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FieldNormalizationAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Field Normalization" source="com.snc.field_normalization"&gt;74d312912f730110d8a4d5f62799b6a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_13093b100ab301537655c175d512f2fc&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;steve.bandow&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-04-04 19:18:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5386&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:05</sys_created_on>
+        <sys_id>673c057a2f331110d8a4d5f62799b661</sys_id>
+        <sys_name>FieldNormalizationAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_673c057a2f331110d8a4d5f62799b661</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3ecd5cf923dc3300a5eedc1756bf6595</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UnauthorizedChangeRequestSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;UnauthorizedChangeRequestSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UnauthorizedChangeRequestSNC = Class.create();
+UnauthorizedChangeRequestSNC.prototype = {
+	DEFAULT_6HRS : '21600',
+	PROP_UNAUTHORIZED_ENABLED: 'com.snc.change_request.enable_unauthorized',
+	PLUGIN_SVC_MAPPING: "com.snc.service-mapping",
+	PLUGIN_DISCOVERY: "com.snc.discovery.api",
+	PROPERTY_TABLE: "unauth_chg_prop",
+	PROPERTY_NOTIFICATION_TABLE: "unauth_chg_notifications",
+	PROP_SYSID: "bdaaf92f231650101488dc1756bf6543",
+	PROPERTY_TYPE_COMPATIBILITY: "com.snc.change_management.change_model.type_compatibility",
+	MODEL_SYSID: "aedc6a625323101034d1ddeeff7b1296",
+
+    initialize: function() {
+		var prop = new GlideRecord(this.PROPERTY_TABLE);
+		if (prop.get(this.PROP_SYSID)) {
+			this.query = prop.getValue('query');
+			this.included_class = prop.getValue('include_ci_class');
+			this.notification_duration = prop.ignore_period.dateNumericValue();
+			this.enabled = (prop.enable_event + "" === "true");
+		}
+		this._timeWindow = this.DEFAULT_6HRS;
+    },
+
+	setWindowInSeconds: function(timeInSeconds) {
+		this._timeWindow = timeInSeconds;
+	},
+
+	hasValidChange: function(ciSysId) {
+		if (!ciSysId)
+			return true;
+
+		//Check firstly whether this is an inclusion CI Class 
+		if (!this._isIncludedCIClass(ciSysId))
+			return true;
+
+		if (this._hasExistingNotification(ciSysId))
+			return true;
+
+		var gdt = new GlideDateTime();
+		gdt.addSeconds(this._timeWindow * -1);
+
+		//Check if Discovery is installed and any horizontal discovery jobs have been run in a set time window
+		if (GlidePluginManager.isActive(this.PLUGIN_DISCOVERY)) {
+			var taskCiGr1 = new GlideRecord('task_ci');
+			taskCiGr1.addQuery('ci_item', ciSysId);
+			taskCiGr1.addQuery('discovery_last_updated', '&gt;=', gdt.getValue());
+			taskCiGr1.addQuery('task.sys_class_name', 'change_request');
+			taskCiGr1.query();
+
+			if (taskCiGr1.hasNext())
+				return true;
+		}
+
+		//Check if service mapping is installed and any top down discovery jobs have been run in a set time window
+		if (GlidePluginManager.isActive(this.PLUGIN_SVC_MAPPING)) {
+			var taskServiceGr = new GlideRecord('task_cmdb_ci_service');
+			taskServiceGr.addQuery('cmdb_ci_service', ciSysId);
+			taskServiceGr.addQuery('discovery_last_updated', '&gt;=', gdt.getValue());
+			taskServiceGr.addQuery('task.sys_class_name', 'change_request');
+			taskServiceGr.query();
+
+			if (taskServiceGr.hasNext())
+				return true;
+		}
+
+		//Check if there are any active Change Requests for the configuration item 
+		//with no recent Discovery jobs.
+		if (!this.query)
+			this.query = "active=true^EQ";
+
+		var changeGr = new GlideRecord('change_request');
+		changeGr.addEncodedQuery(this.query);
+		changeGr.addQuery('JOINchange_request.sys_id=task_ci.task!ci_item=' + ciSysId);
+		changeGr.query();
+
+		return changeGr.hasNext();
+	},
+
+	createUnauthorizedChange: function(ciSysId, changedData) {
+		if (!ciSysId)
+			return;
+
+		var chgGr;
+		if (gs.getProperty(this.PROPERTY_TYPE_COMPATIBILITY, 'false') + "" === "true") {
+			chgGr = ChangeRequest.newEmergency();
+			chgGr.setValue('unauthorized', true);
+			chgGr.setValue('short_description', gs.getMessage('An unauthorized change has been detected'));
+		} else
+			chgGr = ChangeRequest.newChange(this.MODEL_SYSID);
+
+		chgGr.setValue('cmdb_ci', ciSysId);
+		chgGr.setValue('description', this._formatChangedData(changedData));
+		chgGr.insert();
+
+		this._updateNotificationTable(ciSysId);
+
+		return chgGr.getGlideRecord();
+	},
+
+	isUnauthorizedEnabled: function() {
+		if (gs.getProperty(this.PROP_UNAUTHORIZED_ENABLED))
+			return gs.getProperty(this.PROP_UNAUTHORIZED_ENABLED, 'true') + "" === "true";
+		else
+			return this.enabled;
+	},
+	
+	_formatChangedData: function(data) {
+		var formattedData = '';
+		if (!data)
+			return formattedData;
+		var jsonData = JSON.parse(data);
+
+		for (var i = 0; i &lt; jsonData.updatedFields.length; i++) {
+			var updatedField = jsonData.updatedFields[i];
+			var values = [];
+			values.push(updatedField.fieldName);
+			values.push(updatedField.oldValue ? updatedField.oldValue : '');
+			values.push(updatedField.newValue);
+			formattedData += gs.getMessage('Field: {0}  Old Value: {1}  New Value: {2}\n', values);
+		}
+
+		return formattedData;
+	},
+
+	_hasExistingNotification: function(ciSysId) {
+		if (!ciSysId)
+			return false;
+
+		var notificationGr = new GlideRecord(this.PROPERTY_NOTIFICATION_TABLE);
+		notificationGr.addQuery('cmdb_ci', ciSysId);
+		notificationGr.query();
+
+		if (notificationGr.next()) {
+			var currentDiff = gs.dateDiff(notificationGr.getValue('last_event_sent'), new GlideDateTime());
+			var diffDuration = new GlideDuration(currentDiff);
+			return diffDuration.getNumericValue() &lt; this.notification_duration;
+		}
+		return false;
+	},
+
+	_isIncludedCIClass: function(ciSysId) {
+		if (!this.included_class)
+			return false;
+
+		var classArray = this.included_class.split(',');
+		var arrUtil = new ArrayUtil();
+
+		var ci = new GlideRecord('cmdb_ci');
+		if (ci.get(ciSysId) &amp;&amp; Array.isArray(classArray)) {
+			return arrUtil.contains(classArray, ci.sys_class_name);
+		}
+
+		return false;
+	},
+
+	_updateNotificationTable: function(ciSysId) {
+		var notificationGr = new GlideRecord(this.PROPERTY_NOTIFICATION_TABLE);
+		notificationGr.addQuery('cmdb_ci', ciSysId);
+		notificationGr.query();
+
+		if (notificationGr.next()) {
+			notificationGr.setDisplayValue('last_event_sent', gs.nowDateTime());
+			notificationGr.update();
+		} else {
+			notificationGr = new GlideRecord(this.PROPERTY_NOTIFICATION_TABLE);
+			notificationGr.setValue('cmdb_ci', ciSysId);
+			notificationGr.setDisplayValue('last_event_sent', gs.nowDateTime());
+			notificationGr.insert();
+		}
+	},
+
+	getExtensions: function() {
+		var table = new TableUtils("cmdb_ci");
+		return table.getTableExtensions();
+	},
+
+    type: 'UnauthorizedChangeRequestSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-03-20 13:42:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3ecd5cf923dc3300a5eedc1756bf6595&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;53&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UnauthorizedChangeRequestSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3ecd5cf923dc3300a5eedc1756bf6595&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-10-21 10:10:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5713&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:04</sys_created_on>
+        <sys_id>027c49ba2f331110d8a4d5f62799b639</sys_id>
+        <sys_name>UnauthorizedChangeRequestSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_027c49ba2f331110d8a4d5f62799b639</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

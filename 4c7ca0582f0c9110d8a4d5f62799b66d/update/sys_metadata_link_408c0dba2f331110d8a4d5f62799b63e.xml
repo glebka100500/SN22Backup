@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>468ccc43c3230200d8d4bea192d3aede</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CredentialTestParser&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Parses the ecc queue response for a credential test.&lt;/description&gt;
+        &lt;name&gt;CredentialTestParser&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CredentialTestParser = Class.create();
+
+CredentialTestParser.prototype = {
+    initialize: function(payload) {
+		if (JSUtil.nil(payload))
+			return;
+
+		this.payload = payload;		
+		this._parseResult();
+    },
+
+	getResult: function() {
+		return this.result;
+	},
+
+	matchError: function(error) {
+		if (error.substring(0, 17) == "CommandPipeline: ")
+			error = error.substring(17);
+
+		var genericAuthFailure = /(.*no valid credential found.*)/i;
+		var awsAuthFailure = /(.*invalid username\/password combo.*)/i;
+		var tcpPortFailure = /(.*failed to connect tcp.*)/i;
+		var timeoutFailure = /(.*timed out while waiting.*)/i;
+		var credTypeFailure = /(.*credential type: .* is not supported.*)/i;
+		var invalidTarget = /(.*UnknownException.*|.*Catastrophic failure.*)/i;
+
+		var msg = "";
+
+		if (error.match(genericAuthFailure) || error.match(awsAuthFailure))
+			msg = "Authentication failed";
+
+		else if (error.match(tcpPortFailure))
+			msg = "Could not connect to specified port";
+
+		else if (error.match(timeoutFailure))
+			msg = "Timed out trying to reach target";
+
+		else if (error.match(credTypeFailure))
+			msg = "This credential type cannot be tested";
+
+		else if (error.match(invalidTarget))
+			msg = "Invalid target specified";
+
+		else
+			msg = error;
+
+		return "error:" + msg;
+	},
+
+	_parseResult: function() {
+		var XMLUtil = GlideXMLUtil;
+		var g_doc = XMLUtil.parse(this.payload);
+
+		var parent = g_doc.getDocumentElement();
+
+		// If no error attribute, it was successful
+		var error = XMLUtil.getAttribute(parent, "error");
+
+		this.result = JSUtil.nil(error) ? "success" : this.matchError(error);
+	},
+
+    type: 'CredentialTestParser'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;josh.gerbasi&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-11-10 01:53:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;468ccc43c3230200d8d4bea192d3aede&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CredentialTestParser&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_468ccc43c3230200d8d4bea192d3aede&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;josh.gerbasi&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-01-29 02:38:55&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1647&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:12</sys_created_on>
+        <sys_id>408c0dba2f331110d8a4d5f62799b63e</sys_id>
+        <sys_name>CredentialTestParser</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_408c0dba2f331110d8a4d5f62799b63e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

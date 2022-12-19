@@ -1,0 +1,1684 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5cfc38231b00200000009141be0713ef</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SAML2_update1&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;SAML2 script objects for SAML2 Update 1. &lt;/description&gt;
+        &lt;name&gt;SAML2_update1&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("SSO_Helper");
+
+var SAML2Error = Class.create();
+SAML2Error.prototype = Object.extend(new Error(), {
+   initialize : function(message) {
+      this.name = "SAML2Error";
+      this.message = message;
+   }
+});
+
+var SAML2ValidationError = Class.create();
+SAML2ValidationError.prototype = Object.extend(new SAML2Error(), {
+   initialize : function(message) {
+      this.name = "SAML2ValidationError";
+      this.message = message;
+   }
+});
+
+var SAML2_update1 = Class.create();
+SAML2_update1.prototype = {
+   initialize : function(ssoHelper) {
+      SSO_Helper.debug(ssoHelper? "Use the SSOHelper passed in." : "Will create a new SSO_Helper object with no auth resolve");
+      
+      this.ssoHelper = ssoHelper ? ssoHelper : new SSO_Helper(null, false);
+      this.propertiesGR = this.ssoHelper.getProperties();
+
+      this.serviceUrl = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.service_url","service_url");
+      
+      //update SAML callback URL with URL ServiceNow instance is accessed (ServiceNow instance URL or custom URL)
+      this.serviceUrl = SNC.SSOUtils.updateSAMLCallbackURL(this.serviceUrl);
+      
+      this.clockskew =  parseInt(this.ssoHelper.getProperty("glide.authenticate.sso.saml2.clockskew","clock_skew", 180));
+      this.clockskew = this.ssoHelper.getInt(this.clockskew, 0, 3600);
+      
+      this.lastGeneratedRequestID = null;
+       //All the request ids generated for a session
+      this.requestIDArr = null;   
+      this.inResponseTo = null;
+      this.logoutFailureEventId = "saml2.logout.validation.failed";
+      this.certGR = this.getCertGR();
+      this.certValidated = false;
+      
+      // Keep SAMLAssertion object for validation
+      this.SAMLResponseObject = null;
+      this.SAMLAssertion = null;
+      
+      // Initialize OpenSAML library.
+      SAML2_update1.bootstrapSAML();
+
+   },
+   
+   resetTestConnSessionVariables: function() {
+      request.getSession().setAttribute(this.getTestConnSessionVariableName("glide.saml2.session_index"), null);
+      request.getSession().setAttribute(this.getTestConnSessionVariableName("glide.saml2.session_id"), null);
+      request.getSession().setAttribute(this.getTestConnSessionVariableName("StatusCode"), null);
+   },
+
+   getTestConnSessionVariableName: function(name) {
+      // return a SSO specific variable name
+      var ssoId = this.propertiesGR.getUniqueValue();
+      return ssoId + "_" + name;
+   },
+       
+   /*
+    * Returns SAML 2.0 Certificate GlideRecord from sys_certificate
+    */
+   getCertGR : function() {
+      var gr = new GlideRecord("sys_certificate");
+      
+      if (this.ssoHelper.isMultiSSOEnabled() || this.propertiesGR)
+          return null;
+      else {
+          gr.addQuery("name", "STARTSWITH", "SAML 2.0");
+          gr.addActiveQuery();
+		  gr.addQuery("type", "trust_store");
+		  gr.orderBy('name');
+          gr.query();
+          if (gr.next())
+              return gr;
+      }
+
+      this.logDebug("Cannot find saml 2 certificate");
+      return null;
+   },
+    
+   validateLoginStatusCodeSuccess: function() {
+      // check if we have correct status code
+      var status = this.SAMLResponseObject.getStatus();
+      var statusCode = null;
+      var statusMessage = null;
+      if (status != null) {
+          statusCode = status.getStatusCode().getValue();
+          var statusMessageImpl = status.getStatusMessage();
+          if (statusMessageImpl != null)
+              statusMessage = statusMessageImpl.getMessage();
+      }
+       
+      this.logDebug("Status code: " + statusCode);
+      this.logDebug("Status message: " + statusMessage);
+      var attrName = SSO_Helper.isTestSAMLConnection() ? this.getTestConnSessionVariableName("StatusCode"): "StatusCode";
+      request.getSession().setAttribute(attrName, statusCode);
+      if (statusCode != 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+          var errorDescr = gs.getMessage('Status code is {0}. When it is supposed to be urn:oasis:names:tc:SAML:2.0:status:Success', statusCode);
+          SNC.SSOUtils.writeLogSummary(false, gs.getMessage('SAML failed to login'), errorDescr);
+          if (GlideStringUtil.notNil(statusMessage))
+              SNC.SSOUtils.appendLogSummaryToLastItem(false, statusMessage);
+          SNC.SSOUtils.appendLogSummaryKeyToLastItem(false, 'authnContextClass');
+          throw new SAML2Error("SAML failed to login, " + errorDescr);
+      } 
+   },
+
+   getSAMLAssertion : function(samlResponseObject) {
+       if (!samlResponseObject) {
+           this.logError("samlResponseObject is null.");
+           return null;
+       }
+       
+       var encryptedAssertions = samlResponseObject.getEncryptedAssertions();
+       if (!encryptedAssertions || encryptedAssertions.size()==0) {
+           SSO_Helper.debug("SAML assertion is not encrypted.");
+           return samlResponseObject.getAssertions().get(0);
+       }
+       
+       SSO_Helper.debug("SAML assertion is encrypted. Decrypting...");
+       var encryptedAssertion = encryptedAssertions.get(0); 
+       var StaticKeyInfoCredentialResolver = Packages.org.opensaml.xml.security.keyinfo.StaticKeyInfoCredentialResolver;
+       try {
+           var credential = this.generateCredential();  // use the same key store as signing request
+           var keyResolver = new StaticKeyInfoCredentialResolver(credential);
+           var Decrypter = Packages.org.opensaml.xml.encryption.Decrypter;
+           var InlineEncryptedKeyResolver = Packages.org.opensaml.xml.encryption.InlineEncryptedKeyResolver;
+           var decrypter = new Decrypter(null, keyResolver, new InlineEncryptedKeyResolver());
+           decrypter.setRootInNewDocument(true); // must re-root!
+           var decryptedAssertion = decrypter.decryptData(encryptedAssertion.getEncryptedData());
+           this.logDebug("Successfully decrypted the EncryptedAssertion");
+           this.logDebug("Decrypted assertion: " + GlideXMLUtil.toString(decryptedAssertion.getDOM()));
+           return decryptedAssertion;
+       } catch(e) {
+           var errorMessage = gs.getMessage('SAML Assertion decryption failed');
+           this.logError(errorMessage);
+           if(e instanceof SAML2Error){
+            var methodPrefix = 'generateCredential:';
+            var errorDescr = e.message;
+            if(errorDescr.indexOf(methodPrefix) == 0)
+                errorDescr = errorDescr.substr(methodPrefix.length);
+               
+            SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorDescr, 'samlAssertion');
+            throw new SAML2Error("getSAMLAssertion:" + errorDescr);
+           }
+           if (e instanceof Packages.java.lang.Throwable){
+               var stackTrace = GlideLog.getStackTrace(e);
+               gs.logError(stackTrace);
+           }
+       }
+       return null;
+   },
+    
+   /**
+    * Don't log when it throws exception as we catch the exception and log the errors in the catch block.
+    * However it needs write the log summary as it only knows the context when it generates the exceptions.
+    */
+   validateLoginResponse : function(samlResponseObject, inResponseTo) {
+      try {
+         this.inResponseTo = inResponseTo;
+         this.SAMLResponseObject = samlResponseObject;
+         this.requestIDArr = SNC.SSOUtils.getRequestIdArray();
+
+        if(!this.SAMLResponseObject){
+            SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage('Could not retrieve SAML Login Response'), gs.getMessage('SAML Login Response is null'), 'samlResponse');
+            throw new SAML2Error("Unable to retrieve SAMLResponseObject");
+         }
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('SAML Login response received'), null);
+         this.validateLoginStatusCodeSuccess();
+          
+         this.logDebug("Signature Reference ID: " + this.SAMLResponseObject.getSignatureReferenceID().toString());
+         
+         // get SAMLAssertion object
+         this.SAMLAssertion = this.getSAMLAssertion(samlResponseObject);
+         if (!this.SAMLAssertion){
+            SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage('SAML Assertion could not be retrieved'), gs.getMessage('SAML Assertion is null'), 'samlResponse');
+            throw new SAML2Error("Unable to retrieve SAML Assertion.");
+         }
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('SAML Assertion retrieved'), null);
+          
+         this.setTestConnectionLogoutParameters();
+          
+         if (this.ssoHelper.isMultiSSOEnabled() || this.propertiesGR)
+            this.validateSignatureAndCertificate();
+         else {
+            this.validateSignatureAndCertificateSAML20();    
+         }
+         
+            
+         this.validateConditions();
+         this.logDebug("Step 3/5: AudienceRestriction/Condition validation is successful");
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('AudienceRestriction/Condition Validated'), null);
+         
+         this.validateIssuer();
+         this.logDebug("Step 4/5: Certificate Issuer validation is successful");
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('Certificate Issuer Validated'), null);
+         
+         
+         this.validateSubjectConfirmations();
+         this.logDebug("Step 5/5: Subject Confirmation validation is successful");
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('Subject Confirmation Validated'), null);
+            
+         this.logDebug("Authn response object validated.");
+         return true;
+      } catch (e) {
+         if (e instanceof Packages.java.lang.Throwable){
+            var stackTrace = GlideLog.getStackTrace(e);
+            gs.logError(stackTrace);
+            if(e.getMessage().indexOf("CertificateException") &gt; -1)
+                SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage('Certificate Validation failed'), gs.getMessage("Ensure that the IDP's x509 certificate is present and is valid"), '');
+         }
+         else{
+            this.logError(e.name + ": " + e.message);
+         }
+         
+         return false;
+      } finally {
+          var session = gs.getSession().getHttpSession();
+          session.setAttribute("glide.saml2.assertion_consumer_service_url",null);
+      }
+   },
+   
+   validateLogoutResponseObject : function(samlResponseObject, inResponseTo) {
+      try {
+         if (!samlResponseObject){
+            SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage('SAML Logout Response validation failed.'), gs.getMessage('Saml Logout Response Object is null.'), 'samlResponse');
+            throw new SAML2ValidationError("Failed to validate logout response. samlResponseObject is null.");
+         }
+         
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage('SAML Logout response received'), null);
+         var inResponseToValue = samlResponseObject.getInResponseTo();
+         var statusValue = samlResponseObject.getStatus().getStatusCode().getValue();
+        
+          //Each logout requests generates a request id (inResponseTo) and passes the request id to this method. Hence we dont need to validate 
+          //againt the request id array in the session
+         if (inResponseTo &amp;&amp; !inResponseTo.equals(inResponseToValue)){
+             var errorDescr = gs.getMessage("Failed to validate logout response. Expected: {0}, Actual: {1}", [inResponseTo, inResponseToValue]);
+            SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SAML Logout Response 'inResponseTo' validation failed"), errorDescr, 'samlResponse');
+            throw new SAML2ValidationError(errorDescr);
+         }
+          
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage("SAML Logout Response 'inResponseTo' validated"), null);  
+         if (!statusValue || !statusValue.equals("urn:oasis:names:tc:SAML:2.0:status:Success")){
+            var errorDescr = gs.getMessage("Failed to validate logout response status. Expected: urn:oasis:names:tc:SAML:2.0:status:Success, Actual: {0}", statusValue);
+            SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SAML Logout Response 'Status' validation failed"), errorDescr, 'samlResponse');
+            throw new SAML2ValidationError(errorDescr);
+         }
+         
+         SNC.SSOUtils.writeLogSummary(true, gs.getMessage("SAML Logout Response 'Status' validated"), null);
+         this.logDebug("SAML2 LogoutResponse validated.");
+         return true;
+      } catch (e) {
+         if (e instanceof Packages.java.lang.Throwable)
+            this.logError(e.getMessage());
+         else
+            this.logError(e.name + ": " + e.message);
+         
+         return false;
+      }
+   },
+   
+   setTestConnectionLogoutParameters : function(){
+        if (SSO_Helper.isTestSAMLConnection()) {
+             var nameId = null;
+            if ( this.propertiesGR.nameid_attribute 
+                &amp;&amp; !this.propertiesGR.nameid_attribute.isNil() ) {
+                this.logDebug("Use nameid_attribute to look up NameID.");
+                nameId = this.getAssertionAttrValueByNameOrFriendlyName(this.propertiesGR.nameid_attribute);
+            }
+            else 
+                nameId = this.getSubjectNameID();
+                
+            if (nameId == null) {
+                return;
+            }
+            
+            this.logDebug("SAML2 NameID: " + nameId);
+            
+            var sessionIndex = this.getSessionIndex();
+            if (sessionIndex == null) {
+                return;
+            }
+            
+            this.logDebug("SAML2 SessionIndex: " + sessionIndex);
+            // pass these values to Logout script
+            request.getSession().setAttribute(this.getTestConnSessionVariableName("glide.saml2.test.session_index"), sessionIndex);
+            request.getSession().setAttribute(this.getTestConnSessionVariableName("glide.saml2.test.session_id"), nameId);
+        } 
+     },
+   
+   getAssertionAttrValueByNameOrFriendlyName: function(name) {
+      var attrStats = this.SAMLAssertion.getAttributeStatements();
+      if (!attrStats || attrStats.size()==0 )
+          return null;
+        
+      for(var i=0; i&lt;attrStats.size(); i++) {
+          var attrs = attrStats.get(i).getAttributes();
+          if(attrs &amp;&amp; attrs.size()&gt;0) {
+              for(var j=0; j&lt; attrs.size(); j++) {
+                  var attr = attrs.get(j);
+                  if (name == attr.getFriendlyName() || name == attr.getName()) {
+                      var attrValues = attr.getAttributeValues();
+                      if (attrValues &amp;&amp; attrValues.size()&gt;0)
+                          return attrValues.get(0).getDOM().getTextContent();
+                  }
+              }
+          }
+      }
+      return null;
+   },
+   
+   generateURLEncodedSignatureForSignedQueryString: function(signingCredential, algorithmURI, queryString) {
+        var Base64 = Packages.org.opensaml.xml.util.Base64;
+        var SigningUtil = Packages.org.opensaml.xml.security.SigningUtil;
+        var JavaString = Packages.java.lang.String;
+        
+        var b64Signature = null;
+        var rawSignature = SigningUtil.signWithURI(signingCredential, algorithmURI, new JavaString(queryString).getBytes("UTF-8"));
+        b64Signature = Base64.encodeBytes(rawSignature, Base64.DONT_BREAK_LINES);
+
+        var uriEncodedQuerySig =  encodeURIComponent(b64Signature);
+        return uriEncodedQuerySig;
+   },
+   
+   generateAuthnRequestRedirectURL : function(request, isTestConn) {
+       try {
+           var baseurl = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp_authnrequest_url", "idp_authnrequest_url");
+      
+           var authReqStr = this.getAuthnRequestString(isTestConn);
+           var origRelayState = this.generateRelayState(request, isTestConn);
+           // always use serviceUrl as relayState, it will lookup the real relayState using "SAML_RelayState" as the key.
+           // failed login does not respond a relayState, so we must put the states into session for test corrections. 
+           if (isTestConn) 
+               request.getSession().setAttribute("Test_SAML_RelayState", origRelayState);
+           else
+               request.getSession().setAttribute("SAML_RelayState", origRelayState);
+           var queryString = "SAMLRequest=" + authReqStr + "&amp;RelayState=" + encodeURIComponent(origRelayState); // pass the origRelayState just in case installation exit is not upgraded.
+
+           var signAuthn = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.require_signed_authnrequest", "require_signed_authnrequest", false);
+           var authReqSig = null;
+           if(this.isTrue(signAuthn)) {
+               var algorithmURI = this.ssoHelper.getProperty('glide.authenticate.sso.saml2.sign_algorithmURI', 'sign_algorithmuri');
+               queryString = queryString + "&amp;SigAlg=" + encodeURIComponent(algorithmURI);
+               authReqSig = this.generateURLEncodedSignatureForSignedQueryString(this.generateCredential(), algorithmURI, queryString);
+               queryString = queryString + "&amp;Signature="+ authReqSig;
+           }
+           var redirectURL = this.constructURL(baseurl, queryString);
+
+           this.logDebug("Redirecting to: " + redirectURL);
+           
+           return redirectURL;
+       } catch (e) {
+         if (e instanceof Packages.java.lang.Throwable){
+            var stackTrace = GlideLog.getStackTrace(e);
+            this.logError(stackTrace);
+         }
+         else{
+            this.logError(e.name + ": " + e.message);
+         }
+         
+         return null;
+      }
+   },
+   
+   getAuthnRequestString : function(isTestConn) {
+      var AuthnRequestMarshaller = Packages.org.opensaml.saml2.core.impl.AuthnRequestMarshaller;
+      var httpSession = gs.getSession().getHttpSession();
+      var reAuthFlow = httpSession.getAttribute("snc.internal.reauth.flow");
+      var samlOptions = null;
+      if (isTestConn || (reAuthFlow!=null &amp;&amp; this.isTrue(reAuthFlow))) {
+          samlOptions = {
+                           forceAuthn: true
+                        };
+      }
+
+      var authnRequest = this.createAuthnRequestWithOptions(samlOptions);
+
+      var arm = new AuthnRequestMarshaller();
+      var elem = arm.marshall(authnRequest);
+      
+      return SAML2_update1.getEncodedSAMLRequest(elem, true, true);
+   },
+   
+   generateLogoutRequestURL : function(request, isTestConn) {
+      try {
+         //PRB1281697
+         var samlRequestElement = this.getLogoutRequestElementRedirectBinding(request, isTestConn);
+         var samlRequest = SAML2_update1.getEncodedSAMLRequest(samlRequestElement, true, true);
+         var idpLogoutURL = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp_logout_url", "idp_logout_url", null);
+       	 
+       	 if(GlideStringUtil.nil(idpLogoutURL)) {
+ 		 	this.logDebug("IdP's Logout URL is not set!");
+ 		   	return null;
+ 	 }
+       	 
+         var origRelayState = this.serviceUrl;
+         var ssoId = null;
+		 if(this.propertiesGR)
+		 	ssoId = this.propertiesGR.getUniqueValue();
+		 var relayState = SNC.SSOUtils.getLogoutRelayState(ssoId);
+		 var queryString = "SAMLRequest=" + samlRequest + "&amp;RelayState=" + encodeURIComponent(relayState);
+		  
+          //PRB1281697
+          var signLogout = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.require_signed_logoutrequest", "require_signed_logoutrequest", false);
+          if(this.isTrue(signLogout)) {
+             var algorithmURI = this.ssoHelper.getProperty('glide.authenticate.sso.saml2.sign_algorithmURI', 'sign_algorithmuri');
+             queryString = queryString + "&amp;SigAlg=" + encodeURIComponent(algorithmURI);
+             var signatureString = this.generateURLEncodedSignatureForSignedQueryString(this.generateCredential(), algorithmURI, queryString);
+             queryString = queryString + "&amp;Signature="+ signatureString;
+          }
+          var redirectURL = this.constructURL(idpLogoutURL,  queryString);
+          return redirectURL;
+      } catch (e) {
+         if (e instanceof Packages.java.lang.Throwable){
+            var stackTrace = GlideLog.getStackTrace(e);
+            this.logError(stackTrace);
+         }
+         else{
+            this.logError(e.name + ": " + e.message);
+         }
+         
+         return null;
+      }    
+   },
+   
+   //PRB1281697         
+   getLogoutRequestElementRedirectBinding : function(request, isTestConn) {
+      var LogoutRequestMarshaller = Packages.org.opensaml.saml2.core.impl.LogoutRequestMarshaller;
+      var logoutRequest = this.createLogoutRequest(request, isTestConn);
+      var lrm = new LogoutRequestMarshaller();
+      var elem = lrm.marshall(logoutRequest);
+      return elem;
+   },
+	
+   constructURL : function (baseurl, queryString) {
+      if(!queryString)
+         return baseurl;
+      
+      if(baseurl &amp;&amp; baseurl.indexOf('?') &gt; -1)
+         baseurl = baseurl + '&amp;';
+      else
+         baseurl = baseurl + '?';
+      
+      var url = baseurl + queryString;
+      
+      return url;  
+   },     
+   
+   getLogoutRequestElement : function(request, isTestConn) {
+      var LogoutRequestMarshaller = Packages.org.opensaml.saml2.core.impl.LogoutRequestMarshaller;
+      var logoutRequest = this.createLogoutRequest(request, isTestConn);
+      var signLogout = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.require_signed_logoutrequest", "require_signed_logoutrequest", false);
+      if(this.isTrue(signLogout))
+         this.signSAMLObject(logoutRequest);
+      
+      var lrm = new LogoutRequestMarshaller();
+      var elem = lrm.marshall(logoutRequest);
+      
+      return elem;
+   },
+   
+   generateLogoutRequestForm : function(request, isTestConn) {
+      try {
+         var samlRequestElement = this.getLogoutRequestElement(request, isTestConn);
+         var samlRequest = SAML2_update1.getEncodedSAMLRequest(samlRequestElement, false, false);
+         var idpLogoutURL = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp_logout_url", "idp_logout_url");
+		  
+         var ssoId = null;
+		 if(this.propertiesGR)
+		 	ssoId = this.propertiesGR.getUniqueValue();
+		 var relayState = SNC.SSOUtils.getLogoutRelayState(ssoId);
+		 return this.createSAMLRequestPostForm(idpLogoutURL, samlRequest, relayState);		  
+      } catch (e) {
+         if (e instanceof Packages.java.lang.Throwable){
+            var stackTrace = GlideLog.getStackTrace(e);
+            this.logError(stackTrace);
+         }
+         else{
+            this.logError(e.name + ": " + e.message);
+         }
+         
+         return null;
+      }
+   },
+   
+   createSAMLRequestPostForm : function(actionurl, samlrequest, relaystate) {
+      if(!actionurl)
+         throw new SAML2Error("createSAMLRequestPostForm: IDP URL can not be null.");
+      
+      var output = '&lt;html lang="en"&gt;';
+      output += '&lt;body onload="document.forms[0].submit()"&gt;';
+      output += '&lt;form method="POST" action="' + actionurl +'"&gt;';
+      output += '&lt;input type="HIDDEN" name="SAMLRequest" value="' + samlrequest +'" /&gt;';
+      output += '&lt;input type="HIDDEN" name="RelayState" value="'+  relaystate  +'" /&gt;';
+      output += '&lt;/form&gt;';
+      output += '&lt;/body&gt;';
+      output += '&lt;/html&gt;';
+      
+      this.logDebug("html post: "+output);
+      return output;
+   },
+   
+   /*
+    * Validate validity of the stored certificate. Then, validate
+    * Signature with stored certificate and SignatureProfile.
+    */
+   validateSignature : function(cert) {
+      var BasicX509Credential = Packages.org.opensaml.xml.security.x509.BasicX509Credential;
+      var SignatureValidator = Packages.org.opensaml.xml.signature.SignatureValidator;
+      var SignatureProfileValidator = Packages.org.opensaml.security.SAMLSignatureProfileValidator;
+      var Document = Packages.org.w3c.dom.Document;
+      var Element = Packages.org.w3c.dom.Element;
+      var Node = Packages.org.w3c.dom.Node;
+      var StringReader = Packages.java.io.StringReader;
+      var QName = Packages.javax.xml.namespace.QName;
+      var X509Certificate = Packages.javax.security.cert.X509Certificate;
+      var XMLUtil = GlideXMLUtil;
+      var Date = Packages.java.util.Date;
+      
+      var certificate = null;
+      if (cert != null) {
+         var bytes;
+         var str = cert.pem_certificate.toString();
+         str = str.substring(28, str.indexOf('-----END CERTIFICATE-----')).trim();
+         bytes = GlideStringUtil.base64DecodeAsBytes(str);
+         certificate = X509Certificate.getInstance(bytes);
+      } else {
+         var errorMessage = gs.getMessage("Unable to locate SAML 2.0 certificate.");
+         throw new SAML2ValidationError(errorMessage);
+      }
+      
+      this.logDebug("certificate Issuer DN: " + certificate.getIssuerDN().getName());
+      this.logDebug("certificate valid date from: " + certificate.getNotBefore().toString());
+      this.logDebug("certificate valid date to: " + certificate.getNotAfter().toString());
+      this.logDebug("Current timestamp: " + (new Date()).toString());
+      
+      try {
+         certificate.checkValidity();
+      } catch (ve) {
+         this.logError("Failed to check the validity of the certificate.");
+         throw new SAML2ValidationError(ve.getMessage());
+      }
+      
+      // generate public key to validate signatures
+      var publicKey = certificate.getPublicKey();
+      
+      if (publicKey != null)
+         // we have the public key
+        this.logDebug("Public key created");
+      else{
+         throw new SAML2ValidationError("Public key not found in certificate");
+      }
+      // create credentials
+      var publicCredential = new BasicX509Credential();
+      
+      // add public key value
+      publicCredential.setPublicKey(publicKey);
+      
+      // create SAMLProfileSignatureValidator
+      var signatureProfileValidator = new SignatureProfileValidator();
+      
+      // create SignatureValidator
+      var signatureValidator = new SignatureValidator(publicCredential);
+      
+      // get the signature to validate from the response object
+      var signature = this.SAMLResponseObject.getSignature();
+      if (!signature) {
+         this.logDebug("Signature not in response, attempting to get signature from assertion");
+         signature = this.SAMLAssertion.getSignature(); // get signature from assertion as 2nd attempt
+         if (!signature){
+            var errorMessage = gs.getMessage("Signature not found in response.");
+            throw new SAML2ValidationError(errorMessage);
+         }
+         else
+            this.logDebug("Got signature");
+      }
+      
+      this.logDebug(XMLUtil.toString(signature.getDOM()));
+      
+      // validate signature profile and signature
+      try {
+         signatureProfileValidator.validate(signature);
+         signatureValidator.validate(signature);
+      } catch (ve) {
+         this.logError("Failed to validate signature profile.");
+         throw new SAML2ValidationError(ve.getMessage());
+      }
+      this.logDebug("Signature validated.");
+   },
+
+   validateSignatureAndCertificateSAML20: function() {
+       var certs = new GlideRecord("sys_certificate");
+       certs.addQuery("name", "STARTSWITH", "SAML 2.0");
+	   certs.addQuery("type", "trust_store");
+       certs.addActiveQuery();
+       certs.orderBy('name');
+       certs.query();
+
+       while (certs.next() &amp;&amp; !this.certValidated) {
+           this.logDebug("Validating SAML response against the certificate : " + certs.getValue('name'));
+           try {
+               this.validateSignature(certs);
+               this.logDebug("Step 1/5: Signature validation is successful");
+               this.validateCertificate(certs);
+               this.logDebug("Step 2/5: Certificate validation is successful");
+               this.certValidated = true;
+               errorMessage = null;
+           } catch (e) {
+               if (e instanceof Packages.java.lang.Throwable) {
+                  var stackTrace = GlideLog.getStackTrace(e);
+                  this.logError(stackTrace);
+                  if(e.getMessage().indexOf("CertificateException") &gt; -1)
+                      errorMessage = "Certificate Validation failed";
+               } else
+                  errorMessage = e.message;
+
+               this.logDebug(errorMessage);
+               continue;
+           }
+       }
+	   if(!this.certValidated) {
+		 gs.logError("SAML2.0 signature/certificate validation failed");
+         throw new SAML2ValidationError(errorMessage);
+	   }
+   },
+
+   /*
+    * Validate against all certificates under this IDP.
+    * Store the last encountered Signature/Certificate Validation error. Log all validation errors for all certs.
+    * For test connection summary, show the validation error encountered for the last certificate against which the response was validated.
+    */
+   validateSignatureAndCertificate : function() {
+      var certSysIDs = new Array();
+      var errorMessage = null;
+      var idpCert = new GlideRecord("idp_certificate");
+      idpCert.initialize();
+      idpCert.addQuery("idp", this.propertiesGR.getUniqueValue());
+      idpCert.query();
+      
+      if(idpCert.getRowCount() == 0)
+        errorMessage = gs.getMessage("Unable to locate the SAML 2.0 Certificate.");
+      
+      while(idpCert.next())
+        certSysIDs.push(new String(idpCert.x509_certificate));
+      
+      var certs = new GlideRecord("sys_certificate");
+      certs.addQuery("sys_id", "IN", certSysIDs);
+      certs.orderByDesc("expires");
+      certs.query();
+      
+      if(certs.getRowCount() == 0)
+         errorMessage = gs.getMessage("Unable to locate the SAML 2.0 Certificate.");
+      
+      while(certs.next() &amp;&amp; !this.certValidated){
+         SAML2_update1.logDebug("Validating SAML response against the certificate : " + certs.getValue('name'));
+         if(!certs.active) {
+            errorMessage = "Certificate " + certs.getValue('name') + " is inactive";
+            SAML2_update1.logDebug(errorMessage);
+            continue;
+         }
+         try {
+            this.validateSignature(certs);
+            SAML2_update1.logDebug("Step 1/5: Signature validation is successful");
+            SNC.SSOUtils.writeLogSummary(true, gs.getMessage('Signature Validated'), null);
+            this.validateCertificate(certs);
+            this.certValidated = true;
+            errorMessage = null;
+            SAML2_update1.logDebug("Step 2/5: Certificate validation is successful");
+            SNC.SSOUtils.writeLogSummary(true, gs.getMessage('Certificate Validated'), null);
+         } catch(e) {
+            if (e instanceof Packages.java.lang.Throwable) {
+                var stackTrace = GlideLog.getStackTrace(e);
+                SAML2_update1.logError(stackTrace);
+                if(e.getMessage().indexOf("CertificateException") &gt; -1)
+                    errorMessage = "Certificate Validation failed";
+            } else
+                errorMessage = e.message;
+                    
+            SAML2_update1.logDebug(errorMessage);
+            continue;
+         }
+      }
+      
+      if(!this.certValidated){
+         SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorMessage, 'certificate');
+         throw new SAML2ValidationError(errorMessage);
+      }
+   },
+   
+   /*
+    * Validate &lt;Issuer&gt; element within Assertion
+    * see SAML2 core specification, section 2.3.3
+    * http://www.oasis-open.org/specs/index.php#samlv2.0
+    *
+    * Further, SNC requires following:
+    * 1) OneTimeUse condition must not present. It is currently not supported.
+    * 2) ProxyRestriction condition must not present. It is currently not supported.
+    */
+   validateIssuer : function() {
+      var issuer = this.SAMLAssertion.getIssuer().getValue();
+      var idp = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp", "idp");
+      if (issuer.equals(idp) == false){
+         var errorDescr = gs.getMessage("Assertion issuer is invalid. Expected: {0}, Actual: {1}", [idp, issuer]);
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Assertion issuer is invalid"), errorDescr, 'issuer');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      this.logDebug("Issuer validated.");
+   },
+   
+   /*
+    * Validate &lt;Conditions&gt; element.
+    * see SAML2 core specification, section 2.5.
+    * http://www.oasis-open.org/specs/index.php#samlv2.0
+    */
+   validateConditions : function() {
+      var conditions = this.SAMLAssertion.getConditions();
+      if (!conditions){
+         var errorDescr = gs.getMessage("Assertion/Conditions must be present.");
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Conditions not found in the SAML Response"), errorDescr, 'conditions');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      var DateTime = Packages.org.joda.time.DateTime;
+      var List = Packages.java.util.List;
+      var AudienceRestriction = Packages.org.opensaml.saml2.core.AudienceRestriction;
+      var OneTimeUse = Packages.org.opensaml.saml2.core.OneTimeUse;
+      var ProxyRestriction = Packages.org.opensaml.saml2.core.ProxyRestriction;
+      
+      var now = new DateTime();
+      var notBefore = conditions.getNotBefore();
+      var notOnOrAfter = conditions.getNotOnOrAfter();
+      
+      if (notBefore &amp;&amp; !now.isAfter(notBefore.minusSeconds(this.clockskew))){
+         var errorDescr = gs.getMessage("Assertion is valid in the future, {0}, notBefore: {1}", [now, notBefore]);
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Assertion is invalid"), errorDescr, 'conditions');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      if (notOnOrAfter &amp;&amp; !now.isBefore(notOnOrAfter.plusSeconds(this.clockskew))){
+         var errorDescr = gs.getMessage("Assertion is expired, now: {0}, notOnOrAfter: {1}", [now, notOnOrAfter]);
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Assertion is invalid"), errorDescr, 'conditions');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      // Validate each of AudienceRestriction condition.
+      // There can be more than one &lt;AudienceRestriciton&gt; element, every one of those must be valid.
+      var list = conditions.getConditions();
+      var condition = null;
+      var size = list.size();
+      if (size &lt;= 0){
+         var errorDescr = gs.getMessage("No Condition or AudienceRestriction is found in Assertion/Conditions.");
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Condition or AudienceRestriction not found in Assertion/Conditions"), errorDescr, 'conditions');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      for ( var i = 0; i &lt; size; i++) {
+         condition = list.get(i);
+         if (condition instanceof AudienceRestriction)
+            this._validateAudienceRestriction(condition);
+         
+         else if (condition instanceof OneTimeUse){
+            var errorMessage = gs.getMessage("OneTimeUse condition is not supported.");
+            SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorMessage, 'conditions');
+            throw new SAML2ValidationError(errorMessage);
+         }
+         
+         else if (condition instanceof ProxyRestriction){
+            var errorMessage = gs.getMessage("ProxyRestriction condition is not supported");
+            SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorMessage,'conditions');
+            throw new SAML2ValidationError(errorMessage);
+         }
+         
+         else {
+            var errorMessage = gs.getMessage("Could not understand the Condition found");
+            SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorMessage, 'conditions');
+            throw new SAML2ValidationError(errorMessage);
+         }
+      }
+      
+      this.logDebug("Conditions validated.");
+   },
+   
+   /*
+    * Validate &lt;AudienceRestriction&gt; element.
+    * see SAML2 core specification, section 2.5.1.
+    * http://www.oasis-open.org/specs/index.php#samlv2.0
+    */
+   _validateAudienceRestriction : function(audienceRestriction) {
+      if (!audienceRestriction){
+         var errorMessage = gs.getMessage("Condition audienceRestriction is null");
+         SNC.SSOUtils.writeMultipleLogSummary(false, errorMessage, errorMessage, 'conditions');
+         throw new SAML2ValidationError(errorMessage);
+      }
+      
+      var propAudience = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.audience", "audience");
+      var audienceList = audienceRestriction.getAudiences();
+      var audience = null;
+      var audienceUri = null;
+      var size = audienceList.size();
+      for ( var i = 0; i &lt; size; i++) {
+         audience = audienceList.get(i);
+         audienceUri = audience.getAudienceURI();
+         if (audience &amp;&amp; audienceUri.equals(propAudience) == true) {
+            this.logDebug("Found matching audience.");
+            return;
+         }
+         else
+            this.logError("Assertion audience mismatch. Expected: " + propAudience + ", Actual: " + audienceUri);
+      }
+      var audienceRestrictionErrorDescr = gs.getMessage("AudienceRestriction validation failed. No matching audience found."); 
+      SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("AudienceRestriction validation failed"), gs.getMessage("Ensure that the 'Audience URI' field is set correctly."), '');
+      throw new SAML2ValidationError(audienceRestrictionErrorDescr);
+   },
+   
+   /*
+    * Validate &lt;SubjectConfirmation&gt; element.
+    * see SAML2 core specification, section 2.4.1
+    * http://www.oasis-open.org/specs/index.php#samlv2.0
+    *
+    * Further, SNC requires following:
+    * 1) At least one valid &lt;SubjectConfirmation&gt; must present.
+    */
+   validateSubjectConfirmations : function() {
+      var subject = this.SAMLAssertion.getSubject();
+      if (!subject){
+         var errorDescr = gs.getMessage("Subject must be present.");
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Subject validation failed"), errorDescr, 'subject');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      var subjectConfirmationList = subject.getSubjectConfirmations();
+      if (!subjectConfirmationList){
+         var errorDescr = gs.getMessage("SubjectConfirmation must be present.");
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SubjectConfirmation validation failed"), errorDescr, 'subject');
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      var subjectConfirmation = null;
+      var size = subjectConfirmationList.size();
+      for ( var i = 0; i &lt; size; i++) {
+         subjectConfirmation = subjectConfirmationList.get(i);
+         try {
+            this._validateSubjectConfirmation(subjectConfirmation);
+            this.logDebug("SubjectConfirmations validated.");
+            return; // any valid subjectConfirmation is sufficient to confirm the subject.
+         } catch (e) {
+            if (e instanceof SAML2ValidationError){
+               SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Subject Confirmation validation failed"), e.message, 'subject');
+               this.logError(e.name + ": " + e.message);
+            }
+            else{
+               //Write the exception to test connection log summary.            
+               throw e;
+            }
+         }
+      }
+      
+      var subjConfirmationErrorMessage = gs.getMessage("No valid SubjectConfirmation found."); 
+      SNC.SSOUtils.writeMultipleLogSummary(false, subjConfirmationErrorMessage, subjConfirmationErrorMessage, 'subject');
+      throw new SAML2ValidationError(subjConfirmationErrorMessage);
+   },
+   
+   /*
+    * Validate &lt;SubjectConfirmation&gt; element.
+    * see SAML2 core specification, section 2.4.1.1.
+    * http://www.oasis-open.org/specs/index.php#samlv2.0
+    *
+    * Further, SNC requires following:
+    * 1) Method attribute in &lt;SubjectConfirmation&gt; must be urn:oasis:names:tc:SAML:2.0:cm:bearer
+    * see: SAML2 profile specification, section 3.3
+    * http://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf
+    * 2) Recipient attribute in &lt;SubjectConfirmationData&gt; must present.
+    * 3) Address attribute in &lt;SubjectConfirmationData&gt; is ignored. It is currently not supported.
+    * 4) "Any" attributes is not supported.
+    *
+    */
+   _validateSubjectConfirmation : function(subjectConfirmation) {
+      var method = subjectConfirmation.getMethod();
+      if (!method || method.equals("urn:oasis:names:tc:SAML:2.0:cm:bearer") == false)
+         throw new SAML2ValidationError("SubjectConfirmation method: " + method + " is not supported.");
+      
+      var DateTime = Packages.org.joda.time.DateTime;
+      var subjectConfirmationData = subjectConfirmation.getSubjectConfirmationData();
+      var now = new DateTime();
+      var notBefore = subjectConfirmationData.getNotBefore();
+      var notOnOrAfter = subjectConfirmationData.getNotOnOrAfter();
+      var inResponseTo = subjectConfirmationData.getInResponseTo();
+      var recipient = subjectConfirmationData.getRecipient();
+      var address = subjectConfirmationData.getAddress();
+      var unknownAttributeMap = subjectConfirmationData.getUnknownAttributes();
+      
+      // Optional attributes.
+      if (notBefore &amp;&amp; !now.isAfter(notBefore.minusSeconds(this.clockskew)))
+         throw new SAML2ValidationError("Subject is valid in the future. Now: "
+      + now.toString() + ", NotBefore: " + notBefore.toString());
+      
+      if (notOnOrAfter &amp;&amp; !now.isBefore(notOnOrAfter.plusSeconds(this.clockskew)))
+         throw new SAML2ValidationError("Subject is expired. Now: "
+      + now.toString() + ", NotOnOrAfter: " + notOnOrAfter.toString());
+        
+       //Validating against inResponseTo is for e-sginature as we do not store the request id in the in the request id array
+       //Request id validation against the array is for login requests 
+        if (inResponseTo &amp;&amp; ! (this.inResponseTo.equals(inResponseTo) || 
+                (this.requestIDArr &amp;&amp;  this.requestIDArr.indexOf(inResponseTo)&gt;=0 ) ) ){
+			SNC.SSOUtils.setRequestAttribute("snc_auth_saml_error_code", "-200");   //retry login 
+			throw new SAML2ValidationError("InResponseTo attribute in SubjectConfirmationData mismatch. Expected one of the values : " 
+                                        + this.inResponseTo + " , " + this.requestIDArr.toString() + ", Actual: " + inResponseTo);
+		}
+      
+      this.validateRecipientAttribute(recipient);
+      
+      // We don't support "Any" attribute extension.
+      if (unknownAttributeMap &amp;&amp; unknownAttributeMap.size() &gt; 0)
+         throw new SAML2ValidationError("Unknown attribute in SubjectConfirmationData is not supported.");
+   },
+   
+   validateRecipientAttribute : function(recipient) {
+		if(!recipient)
+   	  		return;
+   	  	
+   	  	var httpSession = gs.getSession().getHttpSession();
+      	var consumerServiceURL = httpSession.getAttribute("glide.saml2.assertion_consumer_service_url");
+      
+      	// IdP initiatd login. We'll have to validate the recipient attribute against all the possible ACS URLs
+      	if(!consumerServiceURL) {
+      		var possibleRecipientURLs = SNC.SSOUtils.getEndpointsForAllCustomURLs(this.serviceUrl);
+     	 	var matched = false;
+     	 	for (i = 0; i &lt; possibleRecipientURLs.size(); i++) {	
+     	 		if(recipient.equals(possibleRecipientURLs.get(i).trim())) {
+     	 			matched = true;
+     	 			break;
+     	 		}
+     	 	}	
+     	 	if(!matched)
+     	 		throw new SAML2ValidationError("Recipient attribute in SubjectConfirmationData mismatch. Actual: " + recipient + ". Expected it to be one of the following: " + GlideStringUtil.join(possibleRecipientURLs));
+     	  } else {
+     	 	if (!recipient.equals(consumerServiceURL))
+        		throw new SAML2ValidationError("Recipient attribute in SubjectConfirmationData mismatch. Expected: " + consumerServiceURL + ", Actual: " + recipient);
+     	 }
+   },
+   
+   /*
+    * Verify the certificates matches what is stored in the database. 
+    * KeyInfo is an optional element in the signature. So, the comparison is skipped if there is no keyInfo.
+    */
+   validateCertificate : function(cert) {
+      // Verify that assertion is authorized by comparing the installed certificate
+      // with the one posted in the SAMLResponse
+      
+      if (!cert){
+         throw new SAML2ValidationError("Could not find a digital signature stored in Service Now instance.");
+      }
+      
+      var certStr = cert.pem_certificate.toString();
+      certStr = certStr.substring(28, certStr.indexOf('-----END CERTIFICATE-----')).trim();
+      certStr = Packages.org.apache.commons.lang.StringUtils.deleteWhitespace(certStr);
+      
+      var signature = this.SAMLResponseObject.getSignature();
+      if (!signature) {
+         this.logDebug("Signature not in response, attempting to get signature from assertion");
+         signature = this.SAMLAssertion.getSignature(); // get signature from assertion as 2nd attempt
+         if (!signature){
+            var errorDescr = gs.getMessage("Signature not found in response.");
+            throw new SAML2ValidationError(errorDescr);
+         }
+      }
+      
+      var keyInfo = signature.getKeyInfo();
+      if (!keyInfo) {
+          var errorDescr = gs.getMessage("The optional keyInfo field is missing. Skipping the certificate validation."); 
+          SAML2_update1.logDebug(errorDescr);
+          return;
+      }
+
+      var inboundCert = keyInfo.getX509Datas().get(0).getX509Certificates().get(0).getValue();
+      inboundCert = Packages.org.apache.commons.lang.StringUtils.deleteWhitespace(inboundCert);
+      if (!inboundCert){
+          var errorDescr = gs.getMessage("Could not find X509Certificate in the inbound SAMLResponse.");
+          throw new SAML2ValidationError(errorDescr);
+      }
+       
+      if (certStr.equals(inboundCert) == false){
+         var errorDescr = gs.getMessage("Certificates don't match. Expected: {0}, Actual: {1}", [certStr, inboundCert]);
+         throw new SAML2ValidationError(errorDescr);
+      }
+      
+      this.logDebug("Certificate validated.");
+   },
+   
+   getSubjectNameID : function() {
+      var nameId = null;
+      try {
+         nameId = this.SAMLAssertion.getSubject().getNameID().getValue();
+      } catch (e) {
+         var errorDescr = gs.getMessage("Subject NameID value not found: {0}", e.getMessage());
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("Subject NameID could not be validated"), errorDescr, 'subject');
+         this.logError(errorDescr);
+      }
+      
+      this.logDebug("Subject NameID:" + nameId);
+      return nameId;
+   },
+   
+   getSessionIndex : function() {
+      var sessionIndex = null;
+      try {
+         sessionIndex = this.SAMLAssertion.getAuthnStatements().get(0).getSessionIndex();
+      } catch (e) {
+         SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SessionIndex value not found"), e.getMessage(), '');
+         this.logError("SessionIndex value not found:" + e.getMessage());
+      }
+      
+      this.logDebug("SessionIndex: " + sessionIndex);
+      return sessionIndex;
+   },
+   
+   createSAMLResponseObject : function(SAMLResponseXML) {
+      return SAML2_update1.createSAMLResponseObject(SAMLResponseXML);
+   },
+   
+   getSAMLObjectFromRequest : function (request) {
+      return SAML2_update1.getSAMLObjectFromRequest(request);
+   },
+   
+   getEncodedSAMLRequest : function(element, needDeflate, needUrlEncode) {
+      return SAML2_update1.getEncodedSAMLRequest(element, needDeflate, needUrlEncode);
+   },
+   
+   getDecodedSAMLResponse : function (request) {
+      return SAML2_update1.getDecodedSAMLResponse(request);
+   },
+    
+   isLogoutResponse : function(samlResponseObject) {
+      return (samlResponseObject instanceof Packages.org.opensaml.saml2.core.LogoutResponse );
+   },
+   
+   createLogoutRequest : function(request, isTestConn) {
+      var LogoutRequestBuilder = Packages.org.opensaml.saml2.core.impl.LogoutRequestBuilder;
+      var DateTime = Packages.org.joda.time.DateTime;
+      var SAMLVersion = Packages.org.opensaml.common.SAMLVersion;
+      
+      var b = new LogoutRequestBuilder();
+      var r = b.buildObject();
+      r.setID(this.generateRequestID());
+      r.setVersion(SAMLVersion.VERSION_20);
+      r.setIssueInstant(new DateTime());
+      r.setIssuer(this.createIssuer());
+      r.setNameID(this.createNameID(request, isTestConn));
+      var idpLogoutURL = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp_logout_url", "idp_logout_url"); 
+      r.setDestination(idpLogoutURL); 
+      r.getSessionIndexes().add(this.createSessionIndex(request, isTestConn));
+      return r;
+   },
+   
+   createSessionIndex : function(request, isTestConn) {
+      var SessionIndexBuilder = Packages.org.opensaml.saml2.core.impl.SessionIndexBuilder;
+      var sessionIndex = isTestConn ? request.getSession().getAttribute( this.getTestConnSessionVariableName("glide.saml2.test.session_index") )
+                              : request.getSession().getAttribute("glide.saml2.session_index");
+      
+      var sib = new SessionIndexBuilder();
+      var si = sib.buildObject();
+      si.setSessionIndex(sessionIndex);
+      return si;
+   },
+   
+   createNameID : function(request, isTestConn) {
+      var NameIDBuilder = Packages.org.opensaml.saml2.core.impl.NameIDBuilder;
+      var nameIdPolicy = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.nameid_policy", "nameid_policy");
+      var serviceURL = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.service_url", "service_url");
+      var nameId = isTestConn? request.getSession().getAttribute(this.getTestConnSessionVariableName("glide.saml2.test.session_id"))
+                             :request.getSession().getAttribute("glide.saml2.session_id");
+      
+      if (!nameIdPolicy || nameIdPolicy.equals("")) {
+         throw new SAML2Error("No name ID policy configured, skipping optional specification");
+      }
+      
+      var nb = new NameIDBuilder();
+      var nid = nb.buildObject();
+      nid.setValue(nameId);
+      nid.setFormat(nameIdPolicy);
+      return nid;
+   },
+    
+   fixURLEncode: function(url) {
+      if (url) {
+         var javaStr = new Packages.java.lang.String(url);
+         return javaStr.replaceAll("%26", "&amp;");
+      }
+      return null;
+   },
+    
+   /*
+    * Generate proper RelayState parameter value.
+    * This should mostly preserve original user request URL so that we can land on
+    * the right page after authentication.
+    */
+   generateRelayState : function(request, isTestConn) {
+      // Set up base url
+      var urlTokens = /^(http(s?)\:\/\/.*)\/\S+$/(this.serviceUrl);
+      var baseUrl = this.serviceUrl;
+      if (urlTokens &amp;&amp; urlTokens.length &gt; 1)
+         baseUrl = urlTokens[1];
+      this.logDebug("Stripping down the serviceURL: " + this.serviceUrl + " to a base URL of: " + baseUrl);
+      
+      if (isTestConn) {
+          var relayState = this.serviceUrl + SNC.SSOUtils.RELAYSTATESEPARATOR() + 
+              "sysparm_saml_tc=true&amp;glide_sso_id=" + this.propertiesGR.getUniqueValue() + 
+              "&amp;exit_name=MultiSSO";
+          this.logDebug("Generating a Test Connection Relay State of: " + relayState);
+          return relayState; 
+      }
+
+      /**
+        * grab the request URI and query string from the request if start page is nil.
+        * we don't want to go back to the landing page. Must fix the URI here as the value
+        * was encoded in GlideServletUITransaction.
+        */
+      var glideSession = gs.getSession();
+      var loginRedirectURL = glideSession.getProperty("login_redirect_url");
+      glideSession.clearProperty("login_redirect_url");
+      this.logDebug("loginRedirectURL: " + loginRedirectURL);
+      var origStartPage = glideSession.getProperty("starting_page");
+      this.logDebug("original starting_page: " + origStartPage);
+      var startPage = GlideStringUtil.nil(loginRedirectURL) ? this.fixURLEncode(origStartPage) : this.fixURLEncode(loginRedirectURL);
+      var requestURI = GlideStringUtil.nil(startPage) ? request.getRequestURI() : startPage;
+      this.logDebug("requestURI: " + requestURI);
+      
+      // if it has start page, we should just use it 
+      var qs = GlideStringUtil.nil(startPage) ? request.getQueryString() : "";
+      this.logDebug("Query String (qs): " + qs);
+      
+      if (!requestURI ||requestURI.equals("") || requestURI.equals("/") || requestURI.indexOf("login_with_sso")&gt;=0) {
+         // No deep linking
+         this.logDebug("No Deep Linking for this SAML request");
+         relayState = this.serviceUrl;
+      } else if (this.needNavFrame(requestURI, request)) {
+         this.logDebug("There may be Deep Linking involved with this SAML request");
+         //use saml_redirector to make sure we bust out of the current frame before loading another NavFrame.
+         if (qs &amp;&amp; !qs.equals(""))
+             requestURI = requestURI + '?' + qs;
+         
+          this.logDebug("RequestURI :" +  requestURI);
+         relayState = baseUrl + "/saml_redirector.do?sysparm_nostack=true&amp;sysparm_uri="+ encodeURIComponent("/nav_to.do?uri=" + encodeURIComponent(requestURI));
+      } else {
+         if (requestURI &amp;&amp; !requestURI.startsWith('/')) {
+             requestURI = '/' + requestURI;
+             this.logDebug("requestURI: " + requestURI);
+		 }
+		 relayState = baseUrl + requestURI; 
+         if (qs &amp;&amp; !qs.equals(""))
+             relayState = relayState + '?' + qs;           
+      }
+             
+      this.logDebug("Generating a Relay State of: " + relayState);
+      return relayState;
+   },
+   
+   /*
+    * Determine if we need to bust frame and add "nav_to.do" in front of the user request URI.
+    */
+   needNavFrame : function(requestURI, request) {
+ 
+      if (requestURI.indexOf("login_with_sso")&gt;=0)
+          return false;
+       
+      // request already loading NavFrame.
+      if(requestURI.startsWith("/nav_to.do"))
+         return false;
+      
+      // this request should only come from top window.
+      if(requestURI.startsWith("/navpage.do"))
+         return false;
+      
+      // already bustin frames.
+      if(requestURI.startsWith("/saml_redirector.do"))
+         return false;
+
+      if(this.isCMSRequest(request))
+         return false;
+	  
+      if(this.isSPRequest()) 
+		 return false; 
+      
+      if(requestURI.equals("") || requestURI.equals("/"))
+         return false;
+      
+      return true;
+   },
+   
+   isCMSRequest : function(request) {
+      var cmsSiteName = request.getSiteName();
+      this.logDebug("CMS site name: " + cmsSiteName);
+      if(cmsSiteName &amp;&amp; !cmsSiteName.equals(""))
+         return true;
+      
+      return false;
+   },
+	
+   isSPRequest : function() { 
+	   var isDirectRedirect = gs.getSession().getProperty("is_direct_redirect"); 
+	   this.logDebug("Is this a request to access a service portal ?  -  " + isDirectRedirect); 
+	   if(isDirectRedirect != null &amp;&amp; isDirectRedirect == "true") 
+		   return true;
+	   
+	   return false; 
+   }, 
+   
+   /*
+    * Create AuthnRequestObject with attributes based on options
+    * samlOptions = {
+    *   providerName: sets ProviderName attribute
+    *   forceAuthn: sets ForceAuthn attribute
+    *   isPassive: sets IsPassive attribute
+    *   assertionConsumerServiceURL: sets AssertionConsumerServiceURL attribute
+    * }
+    *
+    * If samlOptions is null, default value will be retrieved from sys_properties.
+    */
+   createAuthnRequestWithOptions : function(samlOptions) {
+      var DateTime = Packages.org.joda.time.DateTime;
+      var SAMLVersion = Packages.org.opensaml.common.SAMLVersion;
+      var AuthnRequestBuilder = Packages.org.opensaml.saml2.core.impl.AuthnRequestBuilder;
+      var AuthnRequestMarshaller = Packages.org.opensaml.saml2.core.impl.AuthnRequestMarshaller;
+      var Boolean = Packages.java.lang.Boolean;
+     
+      //update with ServiceNow instance URL or custom URL
+      var serviceURL = this.serviceUrl;
+      var providerName = serviceURL;
+      var forceAuthn = this.isTrue(this.ssoHelper.getProperty("glide.authenticate.sso.saml2.defaults.force_authn", "force_authn", false));
+      var isPassive = this.isTrue(this.ssoHelper.getProperty("glide.authenticate.sso.saml2.defaults.is_passive", "is_passive", false));
+      var assertionConsumerServiceURL = serviceURL
+      var protocolBinding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST";
+     
+      if (samlOptions &amp;&amp; samlOptions.providerName)
+         providerName = samlOptions.providerName;
+     
+      if (samlOptions &amp;&amp; samlOptions.forceAuthn)
+         forceAuthn = new Boolean(samlOptions.forceAuthn);
+        
+      if (samlOptions &amp;&amp; samlOptions.isPassive)
+         isPassive = new Boolean(samlOptions.isPassive);
+     
+      if (samlOptions &amp;&amp; samlOptions.assertionConsumerServiceURL)
+         assertionConsumerServiceURL = samlOptions.assertionConsumerServiceURL;
+      
+      //update SAML callback URL with URL ServiceNow instance is accessed (ServiceNow instance URL or custom URL)
+      assertionConsumerServiceURL = SNC.SSOUtils.updateSAMLCallbackURL(assertionConsumerServiceURL);
+     
+      //for later validation
+      gs.getSession().getHttpSession().setAttribute("glide.saml2.assertion_consumer_service_url", assertionConsumerServiceURL);
+     
+      var builder = new AuthnRequestBuilder();
+      var authnRequest = builder.buildObject();
+      authnRequest.setProviderName(providerName);
+      authnRequest.setID(this.generateRequestID());
+      authnRequest.setVersion(SAMLVersion.VERSION_20);
+      authnRequest.setIssueInstant(new DateTime());
+      authnRequest.setForceAuthn(forceAuthn);
+      authnRequest.setIsPassive(isPassive);
+      authnRequest.setAssertionConsumerServiceURL(assertionConsumerServiceURL);
+      authnRequest.setProtocolBinding(protocolBinding);
+     
+      authnRequest.setIssuer(this.createIssuer());
+      authnRequest.setNameIDPolicy(this.createNameIDPolicy());
+      authnRequest.setDestination(this.ssoHelper.getProperty("glide.authenticate.sso.saml2.idp_authnrequest_url", "idp_authnrequest_url"));
+     
+      var createAuthnContextClassRef = this.isTrue(this.ssoHelper.getProperty(
+      "glide.authenticate.sso.saml2.createrequestedauthncontext", "createrequestedauthncontext", true));
+      if (createAuthnContextClassRef) {
+         authnRequest.setRequestedAuthnContext(this.createRequestedAuthnContext());
+      }
+     
+      return authnRequest;
+   },
+  
+   generateRequestID : function() {
+      var requestID = SNC.SSOUtils.generateRequestId(); 
+      if (requestID == ''){
+        this.logError("Failed generating request id: request id is empty");
+      	throw new SAML2Error("Failed generating request id: request id is empty");
+      }    
+      this.lastGeneratedRequestID = requestID;
+      return requestID;
+   },
+  
+   getLastGeneratedRequestID : function() {
+      return this.lastGeneratedRequestID;
+   },
+  
+   createAuthnContextClassRef : function() {
+      var AuthnContextClassRefBuilder = Packages.org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
+      var authnContextClassRefBuilder = new AuthnContextClassRefBuilder();
+      var authnContextClassRef = authnContextClassRefBuilder.buildObject();
+      var authnContextClassRefPropertyValue = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.authncontextclassref", "authncontextcassref_method",
+                                                 "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport");
+      authnContextClassRef.setAuthnContextClassRef(authnContextClassRefPropertyValue);
+      return authnContextClassRef;
+   },
+  
+   createRequestedAuthnContext : function() {
+      var RequestedAuthnContextBuilder = Packages.org.opensaml.saml2.core.impl.RequestedAuthnContextBuilder;
+      var AuthnContextComparisonTypeEnumeration = Packages.org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
+     
+      var requestedAuthnContextBuilder = new RequestedAuthnContextBuilder();
+      var requestedAuthnContext = requestedAuthnContextBuilder.buildObject();
+      requestedAuthnContext.setComparison(AuthnContextComparisonTypeEnumeration.EXACT);
+      requestedAuthnContext.getAuthnContextClassRefs().add(this.createAuthnContextClassRef());
+     
+      return requestedAuthnContext;
+   },
+  
+   createNameIDPolicy : function() {
+      var NameIDPolicyBuilder = Packages.org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
+      var nameIdPolicyStr = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.nameid_policy", "nameid_policy");
+      var serviceURLStr = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.service_url", "service_url");
+     
+      if (nameIdPolicyStr == null || nameIdPolicyStr == "") {
+         throw new SAML2Error("No name ID policy configured, skipping optional specification");
+      }
+     
+      // Create NameIDPolicy
+      var nameIdPolicyBuilder = new NameIDPolicyBuilder();
+      var nameIdPolicy = nameIdPolicyBuilder.buildObject();
+      // insist on the emailAddress format to match with our user's email address
+      nameIdPolicy.setFormat(nameIdPolicyStr);
+      nameIdPolicy.setAllowCreate(true);
+      return nameIdPolicy;
+   },
+  
+   createIssuer : function() {
+      var IssuerBuilder = Packages.org.opensaml.saml2.core.impl.IssuerBuilder;
+      var issuerStr = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.issuer", "issuer");
+      
+      var issuerBuilder = new IssuerBuilder();
+      var issuer = issuerBuilder.buildObject();
+      issuer.setValue(issuerStr);
+      return issuer;
+   },
+  
+   /*
+    * Sign a signable saml object
+    */
+   signSAMLObject : function(samlobject) {
+      try {
+          var Configuration = Packages.org.opensaml.Configuration;
+          var Signer = Packages.org.opensaml.xml.signature.Signer;
+          var credential = this.generateCredential();
+          var signature = this.generateSignature(credential);
+          samlobject.setSignature(signature);
+          var marshaller = Configuration.getMarshallerFactory().getMarshaller(samlobject);
+          marshaller.marshall(samlobject);
+          Signer.signObject(signature);
+       } catch (ex) {
+          this.logError("signSAMLObject : SAML Object could not be signed. Ensure Singning Key Alias and Password values are set correctly to Extract the certificate for signing.");
+          throw ex;
+       }
+   },
+  
+   /*
+    * Generate Signature object from the SP credentails stored in sys_certificate
+    */
+   generateSignature : function(credential) {
+      if(!credential)
+         throw new SAML2Error("Failed generating signature: credential is null");
+     
+      var SignatureBuilder = Packages.org.opensaml.xml.signature.impl.SignatureBuilder;
+      var SignatureConstants = Packages.org.opensaml.xml.signature.SignatureConstants;
+      var signatureAlgorithm = this.ssoHelper.getProperty('glide.authenticate.sso.saml2.sign_algorithmURI', 'sign_algorithmuri',  SignatureConstants.ALGO_ID_SIGNATURE_RSA);
+     
+      var keyInfo = this.generateKeyInfo();
+      var signatureBuilder = new SignatureBuilder();
+      var signature = signatureBuilder.buildObject();
+      signature.setSigningCredential(credential);
+      signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
+      signature.setSignatureAlgorithm(signatureAlgorithm);
+      signature.setKeyInfo(keyInfo);
+     
+      this.logDebug("Signature generated for SAML request.");
+     
+      return signature;
+   },
+  
+   /*
+    * Generate KeyInfo object from SP credentials stored in sys_certificate
+    */
+   generateKeyInfo : function() {
+      var X509KeyInfoGeneratorFactory = Packages.org.opensaml.xml.security.x509.X509KeyInfoGeneratorFactory;
+      var credential = this.generateCredential();
+      var factory = new X509KeyInfoGeneratorFactory();
+      factory.setEmitEntityCertificate(true);
+      var keyInfoGenerator = factory.newInstance();
+      this.logDebug("Credential: "+ credential);
+      var keyInfo = keyInfoGenerator.generate(credential);
+      this.logDebug("KeyInfo: "+keyInfo);
+      return keyInfo;
+   },
+  
+   /*
+    * Retrieve SP private credentials from sys_certificate with alias and password
+    * provided in the sys_properties.
+    *
+    * Returns BasicX509Credential
+    */
+   generateCredential : function() {
+      var DBKeyStoreFactory = GlideDBKeyStoreFactory;
+      var BasicX509Credential = Packages.org.opensaml.xml.security.x509.BasicX509Credential;
+      var Configuration = Packages.org.opensaml.Configuration;
+      var JavaString = Packages.java.lang.String;
+      var alias = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.signing_key_alias", "signing_key_alias");
+      var pw = this.ssoHelper.getProperty("glide.authenticate.sso.saml2.signing_key_password", "signing_key_password");
+      var defaultKeyStore = GlidePropertiesDB.get("glide.authenticate.sso.saml2.keystore");
+       
+      if(!alias)
+         throw new SAML2Error("generateCredential:" + gs.getMessage("Service Provider key alias is null."));
+      
+      if(!pw)
+         throw new SAML2Error("generateCredential:" + gs.getMessage("Service Provider key password is null."));
+     
+      var ksFactory = new DBKeyStoreFactory();
+      var ks = ksFactory.createKeyStore(defaultKeyStore);
+      var jpw = new JavaString(pw);
+      var credential = new BasicX509Credential();
+      var certificate = ks.getCertificate(alias);
+      if (certificate == null) {
+          throw new SAML2Error("generateCredential:" + gs.getMessage("Certificate for signing is null. Check if signing key alias is set correctly."));
+      }        
+      credential.setEntityCertificate(certificate);
+      var privKey = null;
+      try {
+          privKey = ks.getKey(alias, jpw.toCharArray());
+      } catch(ex) {
+          var stackTrace = GlideLog.getStackTrace(ex);
+          gs.logError(stackTrace);
+      }
+      
+      if (privKey == null) {
+          throw new SAML2Error("generateCredential:" + gs.getMessage("Private key for signing is null. Check if signing key alias is set correctly or the key password is set correctly."));
+      }
+      credential.setPrivateKey(privKey);
+      return credential;
+   },
+  
+   /*
+    * construct KeyInfo from sys_certificate and returns KeyInfo xml string.
+    */
+   generateKeyInfoXML : function() {
+      var XMLUtil = GlideXMLUtil;
+      var KeyInfoMarshaller = Packages.org.opensaml.xml.signature.impl.KeyInfoMarshaller;
+      var km = new KeyInfoMarshaller();
+      var keyInfo = this.generateKeyInfo();
+      var elem = km.marshall(keyInfo);
+     
+      return XMLUtil.toFragmentString(elem.getOwnerDocument());
+   },
+  
+   isHttpPostBinding : function(property) {
+      var binding = gs.getProperty(property);
+      if (binding &amp;&amp; binding.equals("urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"))
+         return true;
+     
+      return false;
+   },
+  
+   logDebug : function(msg) {
+       SAML2_update1.logDebug(msg);
+   },
+  
+   logError : function(msg) {
+       SAML2_update1.logError(msg);
+   },
+  
+   logWarning : function(msg) {
+       SAML2_update1.logWarning(msg);
+   },
+  
+   generateRandomId : function() {
+      var id = "";
+      for ( var i = 0; i &lt; 32; i++) {
+         id += ((Math.random() * 16 | 0).toString(16));
+      }
+      return id;
+   },
+  
+   isTrue : function(s) {
+      if (s == true || s.toLowerCase() == "true") {
+             return true;
+      }
+      return false;
+   }
+};
+
+SAML2_update1.createSAMLResponseObject = function(SAMLResponseXML) {
+    if(!SAMLResponseXML || SAMLResponseXML.equals(""))
+        return null;
+       
+    SAML2_update1.logDebug("SAML Response xml: " + SAMLResponseXML);
+      
+    var Configuration = Packages.org.opensaml.xml.Configuration;
+    var XMLUtil = GlideXMLUtil;
+      
+    var document = XMLUtil.parse(SAMLResponseXML, true);
+    document.normalizeDocument();
+    var metadataRoot = document.getDocumentElement();
+    // get an unmarshaller
+    var unmarshaller = Configuration.getUnmarshallerFactory().getUnmarshaller(metadataRoot);
+    // unmarshall using the document root element
+    var SAMLResponseObject = unmarshaller.unmarshall(metadataRoot);
+    if (!SAMLResponseObject){
+        SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SAML Response Validation failed"), gs.getMessage("Unable to unmarshall response. SAML Response is invalid."), 'samlResponse');
+        throw new SAML2Error("Unable to unmarshall response");
+    }
+      
+    // we have the xml unmarshalled to a response object
+    SAML2_update1.logDebug("Response object created");
+    SAML2_update1.logDebug("Issue Instant: " + SAMLResponseObject.getIssueInstant().toString());
+      
+    return SAMLResponseObject;
+},
+
+/*
+ * Return Base64 encoded xml string from given xml element.
+ * needDeflate: if true, this will deflate xml string before base64 encode.
+ */
+SAML2_update1.getEncodedSAMLRequest = function(element, needDeflate, needUrlEncode) {
+    var XMLUtil = GlideXMLUtil;
+    var ByteArrayOutputStream = Packages.java.io.ByteArrayOutputStream;
+    var Deflater = Packages.java.util.zip.Deflater;
+    var DeflaterOutputStream = Packages.java.util.zip.DeflaterOutputStream;
+    var Base64 = Packages.org.opensaml.xml.util.Base64;
+    var StringUtil = GlideStringUtil;
+      
+    var samlRequest = XMLUtil.toFragmentString(element.getOwnerDocument());
+    var requestBytes = samlRequest.getBytes("UTF-8");
+    SAML2_update1.logDebug("SAML Request xml: " + samlRequest);
+      
+    if (!needDeflate) {
+       return Base64.encodeBytes(requestBytes, Base64.DONT_BREAK_LINES);
+    }
+      
+    var bytesOut = new ByteArrayOutputStream();
+    var deflater = new Deflater(Deflater.DEFLATED, true);
+    try {
+    	var deflaterStream = new DeflaterOutputStream(bytesOut, deflater);
+    	deflaterStream.write(requestBytes, 0, requestBytes.length);
+    	deflaterStream.finish();
+    }finally{
+		deflater.end();
+	}
+      
+    var base64EncodedSamlRequest = Base64.encodeBytes(bytesOut.toByteArray(), Base64.DONT_BREAK_LINES);
+    if (needUrlEncode)
+       base64EncodedSamlRequest = StringUtil.urlEncode(base64EncodedSamlRequest);
+      
+    return base64EncodedSamlRequest;
+};
+   
+/*
+ * Take SAMLResponse out of HttpRequest parameter and decoded.
+ * Returns response xml string.
+ */
+SAML2_update1.getDecodedSAMLResponse = function(request) {
+    var ByteArrayOutputStream = Packages.java.io.ByteArrayOutputStream;
+    var Inflater = Packages.java.util.zip.Inflater;
+    var InflaterOutputStream = Packages.java.util.zip.InflaterOutputStream;
+    var StringUtil = GlideStringUtil;
+    var String = Packages.java.lang.String;
+  
+    var encodedResponse = request.getParameter("SAMLResponse"); //already url-decoded.
+    if(!encodedResponse || encodedResponse.equals(""))
+        return null;
+  
+    var requestBytes = StringUtil.base64DecodeAsBytes(encodedResponse);
+    if (request.getMethod().equals("POST"))
+        return new String(requestBytes, "UTF-8");
+  
+    // else, it's coming from HTTP-Redirect which was deflated and we need to
+    // inflate it back.
+    var inflater = new Inflater(true);
+    var bos = new ByteArrayOutputStream();
+    var ios = new InflaterOutputStream(bos, inflater);
+    try {
+        ios.write(requestBytes, 0, requestBytes.length);
+        var outputString = bos.toString("UTF-8");
+        ios.close();
+        return outputString;
+    } catch (e) {
+        SNC.SSOUtils.writeMultipleLogSummary(false, gs.getMessage("SAML Response validation failed"), gs.getMessage("The Inflated SAML Respnse coming from HTTP-Redirect could not be deflated."), 'samlResponse');
+        ios.close();
+        throw e;
+    } finally{
+    		inflater.end();
+    }
+};
+   
+SAML2_update1.getSAMLObjectFromRequest = function (request) {
+    try{
+       SAML2_update1.bootstrapSAML();
+       var samlXML = SAML2_update1.getDecodedSAMLResponse(request);
+       var samlObject = SAML2_update1.createSAMLResponseObject(samlXML);
+       return samlObject;
+    } catch (e) {
+       if (e instanceof Packages.java.lang.Throwable)
+           SAML2_update1.logError(e.getMessage());
+       else
+           SAML2_update1.logError(e.name + ": " + e.message);
+    }
+    return null;
+};
+
+SAML2_update1.logDebug = function(msg) {
+    SSO_Helper.debug(msg);
+};
+
+SAML2_update1.logError = function(msg) {
+    if (SSO_Helper.isTestSAMLConnection())
+        SNC.SSOUtils.writeToLogStream(0, msg);
+    
+    gs.logError(msg, "SAML2");
+};
+
+SAML2_update1.logWarning = function(msg) {
+    if (SSO_Helper.isTestSAMLConnection())
+       SNC.SSOUtils.writeToLogStream(0, msg);
+    
+    gs.logWarning(msg, "SAML2");
+};
+
+SAML2_update1.bootstrapSAML = function() {
+    // Initialize OpenSAML library.
+    if (! SNC.SSOUtils.isSAMLBootstrapped()) {
+        var DefaultBootstrap = Packages.org.opensaml.DefaultBootstrap;
+        DefaultBootstrap.bootstrap();
+        SNC.SSOUtils.setSAMLBootstrapped();
+        SAML2_update1.logDebug("SAML2 Library initialized!");
+    }
+};
+ 
+       ]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-02-13 17:47:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5cfc38231b00200000009141be0713ef&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;266&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SAML2_update1&lt;/sys_name&gt;
+        &lt;sys_package display_value="SAML 2.0 Single Sign-On - Update 1: security enhancements(do not activate...use 'Integration - Multi" source="com.snc.integration.sso.saml20.update1"&gt;c762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5cfc38231b00200000009141be0713ef&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-06-07 02:28:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;72696&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:48</sys_created_on>
+        <sys_id>3cac45fa2f331110d8a4d5f62799b685</sys_id>
+        <sys_name>SAML2_update1</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3cac45fa2f331110d8a4d5f62799b685</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

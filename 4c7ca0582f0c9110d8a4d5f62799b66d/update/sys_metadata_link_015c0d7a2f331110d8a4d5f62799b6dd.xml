@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>245873d173181010491d235f04f6a755</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeSuccessScoreGlobalUtilsSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides functions for the Change success score feature that interact with global objects or functions.&amp;#13;
+&amp;#13;
+To modify behavior, use the provided ChangeSuccessScoreGlobalUtils extension to override functions defined within this script include.&lt;/description&gt;
+        &lt;name&gt;ChangeSuccessScoreGlobalUtilsSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeSuccessScoreGlobalUtilsSNC = Class.create();
+ChangeSuccessScoreGlobalUtilsSNC.prototype = {
+    initialize: function() {
+		
+    },
+
+	executePAChangeSuccessScoreJobs: function() {
+		var paChangeSuccessScoresJobGr = new sn_chg_score.ChangeSuccessScoreUtils().getPAChangeSuccessScoresJobs();
+		while (paChangeSuccessScoresJobGr.next())
+			SncTriggerSynchronizer.executeNow(paChangeSuccessScoresJobGr);
+	},
+
+	executePAChangeSuccessScoreHistoricalJobs: function() {
+		var paChangeSuccessScoresHistoricalJobGr = new sn_chg_score.ChangeSuccessScoreUtils().getPAChangeSuccessScoresHistoricalJobs();
+		while (paChangeSuccessScoresHistoricalJobGr.next())
+			SncTriggerSynchronizer.executeNow(paChangeSuccessScoresHistoricalJobGr);
+	},
+
+	getIndicatorScoresDomain: function() {
+		if (!SNC.PADomainUtils.isPADomainSupportEnabled())
+			return null;
+		
+		var domainId = SNC.PADomainUtils.getCurrentUserDomain();
+		if (!domainId || domainId === "global")
+			return null;
+		
+		return new sn_chg_score.ChangeSuccessScoreUtils().getAggregateDomain();
+	},
+
+	getUsersTimezone: function(userId) {
+		var sysTimeZone = gs.getSysTimeZone();
+		if (!userId)
+			return sysTimeZone;
+		var user = GlideUser.getUserByID(userId);
+		if (!user)
+			return sysTimeZone;
+		return user.getTZ();
+	},
+
+	isValidTimeZone: function(tzId) {
+		if (!tzId)
+			return false;
+
+		var gdt = new GlideDateTime();
+
+		return gdt.setTimeZone(tzId + "");
+	},
+
+	convertDateToTz: function(gdt, tzId) {
+		if (!gdt)
+			return new GlideDateTime();
+	
+		var gdtInTz = new GlideDateTime(gdt);
+		if (tzId)
+			gdtInTz.setTimeZone(tzId + "");
+
+		return gdtInTz;
+	},
+
+	getStartOfDayInTz: function(gdt, tzId) {
+		var gdtInTz = this.convertDateToTz(gdt, tzId);
+		gdtInTz.setDisplayValueInternal(gdtInTz.getLocalDate().getValue() + " 00:00:00");
+	
+		return gdtInTz;
+	},
+
+	getEndOfDayInTz: function(gdt, tzId) {
+		var gdtInTz = this.convertDateToTz(gdt, tzId);
+		gdtInTz.setDisplayValueInternal(gdtInTz.getLocalDate().getValue() + " 23:59:59");
+	
+		return gdtInTz;
+	},
+	
+	getDateStrInTz: function(gdt, tzId) {
+		var gdtInTz = this.convertDateToTz(gdt, tzId);
+
+		return gdtInTz.getLocalDate().getValue();
+	},
+
+	generateDateTimeInTz: function(aDate, aTime, tzId) {
+		var timeOfDayInTz;
+
+		if (!aDate)
+			aDate = new GlideDateTime().getDate().getValue();
+
+		if (!aTime)
+			aTime = new GlideDateTime().getTime().getByFormat("");
+
+		timeOfDayInTz = new GlideDateTime(aDate + " " + aTime);
+		if (!timeOfDayInTz.isValid())
+			timeOfDayInTz = new GlideDateTime();
+		
+		timeOfDayInTz = this.convertDateToTz(timeOfDayInTz, tzId);
+		
+		timeOfDayInTz.setDisplayValueInternal(aDate + " " + aTime);
+		
+		return timeOfDayInTz;
+	},
+
+	type: 'ChangeSuccessScoreGlobalUtilsSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-20 08:47:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;245873d173181010491d235f04f6a755&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeSuccessScoreGlobalUtilsSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Change Success Score Foundation" source="com.snc.change_management.change_success_score.foundation"&gt;b8af473e2f810110d8a4d5f62799b61c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_245873d173181010491d235f04f6a755&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-11 13:31:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2699&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:27</sys_created_on>
+        <sys_id>015c0d7a2f331110d8a4d5f62799b6dd</sys_id>
+        <sys_name>ChangeSuccessScoreGlobalUtilsSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_015c0d7a2f331110d8a4d5f62799b6dd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7d8f32c3c0a8016400e609be97b96d89</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SysList&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Locates the list that should be used for a table and view
+			and parent (related list).&amp;#13;
+			1. Search for this table, this view, this related list&amp;#13;
+			2. Search for parents of this table, this view, this related list&amp;#13;
+			3. Search for this table, this view&amp;#13;
+			4. Search for parents of this table, this view&amp;#13;
+			5. Search for this table, default view&amp;#13;
+			6. Search for parents of this table, default view&amp;#13;
+			7. Construct and return the default list&amp;#13; &lt;/description&gt;
+        &lt;name&gt;SysList&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("AbstractList");
+
+var SysList = Class.create();
+
+SysList.prototype = Object.extendsObject(AbstractList, {
+	
+	get : function() {
+		var answer = this.getList();
+		if (answer != null)
+			return answer;
+		
+		if (this.parentName != '') {
+			this.parentName = '';
+			this.relationshipID = '';
+			answer = this.getList();
+		}
+		
+		if (answer != null)
+			return answer;
+		
+		return this.defaultList();
+	},
+	
+	defaultList : function() {
+		var list = new GlideSysList(this.tableName);
+		list.setViewName(new GlideScriptViewManager(this.view, true).getViewName());
+		var fields = list.getSuggestedFields();
+		// PRB585017: The dynamically generated list view - a list that has been accessed for the very first time - must
+		// be associated with the table's scope and not to the currently selected scope in the Application select list.
+		list.setTablePackageID();
+		list.setTableScopeID();
+		list.InsertListElements(fields);
+		list.createDefaultBaseline();
+		return this.getList();
+	},
+	
+	getList : function() {
+		var answer = this.getSet(this.domainID, this.view, this.parentName);
+		if (answer != null)
+			return answer;
+		
+		if (this.domainID != 'global') {
+			answer = this.getSet(null, this.view, this.parentName);
+			if (answer != null)
+				return answer;
+		}
+		
+		if (this.view != this.defaultViewID) {
+			answer = this.getSet(null, this.defaultViewID, this.parentName);
+			if (answer != null)
+				return answer;
+		}
+		
+		return null;
+	},
+	
+	getSet : function(domainID, viewID, parentName) {
+		var answer = this.getDB(this.tableName, domainID, viewID, parentName);
+		if (answer != null)
+			return answer;
+		
+		var list = this.getParents();
+		if (list == null)
+			return null;
+		
+		for (var i = 0; i &lt; list.length; i++) {
+			if (list[i] == 'sys_metadata')
+				continue; // Special case.  Never inherit a list from abstract sys_metadata table
+			
+			answer = this.getDB(list[i], domainID, viewID, parentName);
+			if (answer != null)
+				return answer;
+		}
+		
+		return null;
+	},
+	
+	getDB : function(tableName, domainID, viewID, parentName) {
+		var gr = new GlideRecord(this.SYS_UI_LIST);
+		gr.addNullQuery(this.SYS_USER);
+		gr.addQuery(this.NAME, tableName);
+		gr.addQuery(this.VIEW, viewID);
+		this.addParentQuery(gr);
+		this.addRelationshipQuery(gr);
+		this.domainQuery(gr, domainID);
+		if (!gr.next())
+			return null;
+		
+		return gr.sys_id.toString();
+	},
+	
+	z : function() {
+	}
+	
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-12-28 12:51:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7d8f32c3c0a8016400e609be97b96d89&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SysList&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7d8f32c3c0a8016400e609be97b96d89&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-01-12 23:44:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2422&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:49</sys_created_on>
+        <sys_id>73dc0d3e2f331110d8a4d5f62799b61a</sys_id>
+        <sys_name>SysList</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_73dc0d3e2f331110d8a4d5f62799b61a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>65eb69f18f13200072a89cfde0f9234f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXTestProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AJAXTestProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AJAXTestProcessor = Class.create();
+
+
+AJAXTestProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+   MAX_RECURSION: 5,	
+   
+   /* A whitelist of test definitions, mapping name to scriptable object, 
+    * because eval-ing a param from the client exposes a vulnerability  */
+   TEST_DEFINITIONS: {
+      "SncGatewayConnectionTest": SncGatewayConnectionTest,
+      "GlideDBPoolTest": GlideDBPoolTest
+   },
+   		   
+   startTest: function() {
+      var test_subject = this.getParameter('sysparm_test_subject');
+	  var test_definition = this.getParameter('sysparm_test_definition');
+	  
+	  if (typeof test_definition === "undefined")
+	     return;
+	  
+	  var def = this.TEST_DEFINITIONS[test_definition+''];
+	  if (def &amp;&amp; typeof def.runTest === 'function')
+	     return def.runTest(test_subject)
+	  
+	  gs.logWarning("An unhandled test_definition was passed to AJAXTestProcessor: [" + test_definition + "]");
+	  return "";
+   },
+   
+   getStatus: function() {
+      var hct = new GlideRecord("test_execution");
+      hct.get(this.getParameter('sysparm_execution_id'));
+	  var status = this.getStatusLayer(hct, 1);
+      return new JSON().encode(status);
+   },
+   
+   getStatusLayer: function(gr, rec) {
+	  if (rec &gt; this.MAX_RECURSION)
+		 return;
+	  
+      var obj = {};
+	  obj.name = gr.name.toString();
+	  obj.state = gr.state.toString();
+	  obj.message = gr.message.toString();
+	  obj.sys_id = gr.sys_id.toString();
+	  if (gr.isValidField('percent_complete'))
+	      obj.percent_complete = gr.percent_complete.toString();
+	  obj.results = [];
+      var hctrs = new GlideRecord("test_execution");
+      hctrs.addQuery("parent", gr.sys_id);
+      hctrs.orderBy("order");
+      hctrs.query();
+      while (hctrs.next()) {
+         obj.results.push(this.getStatusLayer(hctrs));
+      }
+	  
+	  return obj;
+   }
+   
+   
+});
+
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-07-19 00:09:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;65eb69f18f13200072a89cfde0f9234f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;37&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXTestProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Test status viewer" source="com.glide.ui.test_status_viewer"&gt;4ead780b6d2220100acb70b353433007&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_65eb69f18f13200072a89cfde0f9234f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-02-04 23:26:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1839&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:05</sys_created_on>
+        <sys_id>f0bcc9fa2f331110d8a4d5f62799b6eb</sys_id>
+        <sys_name>AJAXTestProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f0bcc9fa2f331110d8a4d5f62799b6eb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

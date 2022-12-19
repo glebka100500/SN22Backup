@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>311472c06701020045c114db37415a5f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NotifyOnTaskAjaxProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;NotifyOnTaskAjaxProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NotifyOnTaskAjaxProcessor = Class.create();
+NotifyOnTaskAjaxProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    notify          : new SNC.Notify(),
+    notifyUtils     : new NotifyUtils(),
+    arrayUtil       : new ArrayUtil(),
+    source_table    : null,
+    task_id         : null,
+    numbers         : [],
+    _errorMessages  : [],
+    _successMessages: [],
+    _warnMessages   : [],
+    _addToWorkNotes : false,
+    _result         : {status: 1, errorMessages: [], warnMessages:[], successMessages: []},
+
+	process: function () {
+		if (!gs.getUser().hasRoles())
+			return;
+
+		if (this.notifyUtils.isConferenceLeader &amp;&amp; this.source_table &amp;&amp; this.task_id) {
+			var isConfLeader = false;
+			var sourceGr = new GlideRecord(this.source_table);
+			if (sourceGr.get(this.task_id))
+				isConfLeader = this.notifyUtils.isConferenceLeader(sourceGr);
+			if (!isConfLeader)
+				return;	
+		}
+
+		return global.AbstractAjaxProcessor.prototype.process.apply(this, arguments);
+	},
+
+    /**
+     * Check if a phone number is E.164 compliant
+     *
+     * @returns {boolean}
+     */
+    isValidE164CompliantPhoneNumber: function() {
+        try {
+            var jsonData = this.getParameter("sysparm_data");
+            var dataObj = new JSON().decode(jsonData);
+            var number = dataObj.phone_number;
+
+            if (!this.notifyUtils.isDefined(number))
+                return false;
+
+            // fix number
+            number = number.replace(/^([0]{2})/, '');   // remove trailing 00
+            number = number.replace(/^([^\+])/, '+$1'); // prefix with + if needed
+
+            // get GlideElementPhoneNumber instance (if possible)
+            var gep = new GlideElementPhoneNumber();
+            if (gep.setPhoneNumber(number, true))
+                return true;
+        } catch (e) {
+			gs.error('Error while checking E164 compliance ' + e);
+		}
+
+        return false;
+    },
+
+    sendSmsAjax: function() {
+        try {
+            var jsonData = this.getParameter("sysparm_data");
+            var dataObj = new JSON().decode(jsonData);
+            this._initFields(dataObj);
+            try {
+                this.processSMS(dataObj.notify, dataObj.form);
+            } catch(e) {
+                this._getResult().status = 1;
+                this._getResult().errorMessage = e.toString();
+                this._addErrorMessage("An error occurred sending the SMS.  Please verify your messages sent or contact your administrator.");
+            }
+        } catch(e) {
+            this._getResult().status = 1;
+            this._getResult().errorMessage = e.toString();
+        }
+
+        return this._getResultJson();
+    },
+
+    initConferenceCallAjax: function() {
+        try {
+            var jsonData = this.getParameter("sysparm_data");
+            var dataObj = new JSON().decode(jsonData);
+            this._initFields(dataObj);
+
+            try {
+                var conference = this.processConference(dataObj.form);
+                if (conference != null &amp;&amp; conference.isValidRecord())
+                    this._addSuccessMessage(gs.getMessage("The conference call {0} has been started.", conference.number));
+            } catch(e) {
+                this._getResult().status = 1;
+                this._getResult().errorMessage = e.toString();
+            }
+        } catch(e) {
+            this._getResult().status = 1;
+            this._getResult().errorMessage = e.toString();
+        }
+        return this._getResultJson();
+    },
+
+    _getResultJson: function() {
+        var result = this._getResult();
+        if (this._errorMessages.length &gt; 0) {
+            result.errorMessages = this._errorMessages;
+        }
+
+        if (this._successMessages.length &gt; 0) {
+            result.successMessages = this._successMessages;
+        }
+
+        if (this._warnMessages.length &gt; 0) {
+            result.warnMessages = this._warnMessages;
+        }
+
+
+        var resultJson = new JSON().encode(result);
+        return resultJson;
+    },
+
+    _getResult: function() {
+        return this._result;
+    },
+
+    _initFields: function(data) {
+        this.source_table = data.form.source_table;
+        this.task_id = data.form.task_id;
+        this._addToWorkNotes = data.notify.addToWorkNotes;
+    },
+
+    processSMS: function(notifyData, formData) {
+        var task = new GlideRecord(this.source_table);
+        task.get(this.task_id);
+        var sentMessages = 0;
+        var participants = this._getParticipants(formData, this.notifyUtils.numberType.sms);
+        var numbers = participants.numbers;
+        var smsed = []; // make sure we send only one sms per number
+
+        // get notify number
+        var notifyNumber = null;
+        try {
+            notifyNumber = this.notifyUtils.getNotifyOnTaskOutboundPhoneNumber();
+			this.notifyUtils.validateOutboundNotifyPhoneNumber_throws(notifyNumber);
+        } catch (e) {
+            this._addErrorMessage(gs.getMessage('Could not send SMS message(s) ({0})', [e]));
+            numbers = [];
+        }
+
+        for (var i = 0; i &lt; numbers.length; i++) {
+            var p = numbers[i];
+            // check if the user has a valid number
+            if (p.valid &amp;&amp; !this.arrayUtil.contains(smsed, p.number)) {
+            // try to send a SMS
+                sentMessages++;
+            } else {
+                // could not sent the SMS due to errors
+                p.valid = false;
+                this._addErrorMessage(gs.getMessage("Skipped invalid number {0} while sending SMS", p.number));
+            }
+			smsed.push(p.number);
+        }
+        this.notify.sendBulkSMS(notifyNumber, smsed, formData.message_text, task);
+
+        if (sentMessages &gt; 0) {
+            this._addSuccessMessage(gs.getMessage("Message was sent to {0} recipient(s)", sentMessages + ''));
+
+            if (this._addToWorkNotes) {
+                this._addWorkNoteMessage("sms", task, participants.numbers, formData.message_text);
+            }
+        }
+    },
+
+    _getParticipants: function(formData, type) {
+        var participants = [];
+        var adHocNumbers = [];
+
+        try {
+            var fields = new JSON().decode(formData.available_users);
+
+            for (var field in fields) {
+                if (!JSUtil.nil(formData[field]) &amp;&amp; formData[field] === "true") {
+                    if (fields.hasOwnProperty(field))
+                        participants.push(fields[field].value);
+                }
+            }
+
+            if (formData.other === "true" &amp;&amp; formData.custom_users !== "") {
+                var customUserList = formData.custom_users.split(",");
+                for (var i = 0; i &lt; customUserList.length; i++) {
+                    var gr = new GlideRecord("sys_user");
+                    if (gr.get(customUserList[i])) {
+                        participants.push(customUserList[i]);
+                    } else {
+                        adHocNumbers.push(customUserList[i]);
+                    }
+                }
+            }
+
+            this.numbers = this.getNumbers(participants, adHocNumbers, type);
+        } catch(e) {
+            gs.error(e);
+            throw e;
+        }
+
+        return {numbers: this.numbers, participants: participants, adHocNumbers: adHocNumbers};
+    },
+
+    processConference: function(formData) {
+        var task = new GlideRecord(this.source_table);
+        task.get(this.task_id);
+
+        var participants = this._getParticipants(formData, this.notifyUtils.numberType.voice);
+        var cleanedParticipants = participants.numbers;
+        var conferenceCallRecord = cleanedParticipants.length ? this.notify.conferenceCall(task) : [];
+        var called = []; // make sure we call only once
+
+        // get notify number
+        var notifyNumber = null;
+        try {
+            notifyNumber = this.notifyUtils.getNotifyOnTaskOutboundPhoneNumber();
+			this.notifyUtils.validateOutboundNotifyPhoneNumber_throws(notifyNumber);
+        } catch (e) {
+            this._addErrorMessage(gs.getMessage('Could not call conference call participants ({0})', [e]));
+            cleanedParticipants = [];
+        }
+
+        for (var i = 0; i &lt; cleanedParticipants.length; i++) {
+            var p = cleanedParticipants[i];
+            if (p.valid &amp;&amp; !this.arrayUtil.contains(called, p.number)) {
+                this.notify.call(notifyNumber, p.number, conferenceCallRecord, (JSUtil.nil(p.sysId) ? null : p.sysId), null, task);
+                called.push(p.number);
+            }
+        }
+        if (cleanedParticipants.length &gt; 0 &amp;&amp; this._addToWorkNotes) {
+            this._addWorkNoteMessage("conference", task, participants.numbers, "");
+        }
+        return conferenceCallRecord;
+    },
+
+    getNumbers: function(participants, adHocNumbers, type) {
+        this.notifyUtils.resetErrors();
+
+        var toSend = [];
+        for (var j = 0; j &lt; adHocNumbers.length; j++) {
+            toSend.push({type: "n", number: adHocNumbers[j], valid: true});
+        }
+
+        var data = this.notifyUtils.getUniquePhoneNumbersForUsersAndGroups([], participants, [], type, true);
+        toSend = toSend.concat(data.result);
+
+        var errors = this.notifyUtils.getErrors();
+        for (var i = 0; i &lt; errors.length; i++) {
+            this._addErrorMessage(errors[i]);
+        }
+
+        return toSend;
+    },
+
+    _addWorkNoteMessage: function(type, task, recipients, message) {
+        var userRecs = [];
+        var adHoc = [];
+        for (var i=0; i &lt; recipients.length; i++) {
+            if (recipients[i].valid) {
+                if (recipients[i].type == "u" ) {
+                    userRecs.push(recipients[i].sysId);
+                }else if (recipients[i].type == "n") {
+                    adHoc.push(recipients[i]);
+                }
+            }
+        }
+
+        var friendlyUserNames = "";
+        var users = new GlideRecord("sys_user");
+        users.addQuery("sys_id", "IN", userRecs.toString());
+        users.query();
+
+        while (users.next()) {
+            friendlyUserNames += users.name;
+            if (users.hasNext())
+                friendlyUserNames += ", ";
+        }
+
+        for (i=0; i &lt; adHoc.length; i++) {
+            if (friendlyUserNames !== "") {
+                friendlyUserNames += ", ";
+            }
+
+            friendlyUserNames += 'Entered Number: ' + adHoc[i].number;
+        }
+
+        var worknotes = "";
+
+        if (type == "sms") {
+            worknotes = gs.getMessage("Notify SMS was sent.");
+			worknotes += "\n";
+            worknotes += gs.getMessage("Recipients: {0}", friendlyUserNames);
+        } else if (type == "conference") {
+            worknotes = gs.getMessage("Notify conference call was started.");
+			worknotes += "\n";
+            worknotes += gs.getMessage("Participants: {0}", friendlyUserNames);
+        }
+
+        if (message !== "") {
+			worknotes += "\n";
+            worknotes += gs.getMessage("Message: {0}", message);
+		}
+
+        task.work_notes = worknotes;
+        task.update();
+    },
+
+    _addErrorMessage: function(message) {
+        this._errorMessages.push(message);
+    },
+
+    _addWarnMessage: function(message) {
+        this._warnMessages.push(message);
+    },
+
+    _addSuccessMessage: function(message) {
+        this._successMessages.push(message);
+    },
+
+    type: 'NotifyOnTaskAjaxProcessor'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-29 23:39:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;311472c06701020045c114db37415a5f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;139&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NotifyOnTaskAjaxProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Notify" source="com.snc.notify"&gt;b567f9452f140110d8a4d5f62799b6e4&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_311472c06701020045c114db37415a5f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-23 11:31:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;11251&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:44</sys_created_on>
+        <sys_id>096c41ba2f331110d8a4d5f62799b6a3</sys_id>
+        <sys_name>NotifyOnTaskAjaxProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_096c41ba2f331110d8a4d5f62799b6a3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

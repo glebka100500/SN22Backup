@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4e23fe59b3403300f224a72256a8dc26</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SPMUtilsFactory&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Factory object that encapsulates the instantiation of the SPMUtil extension point.&lt;/description&gt;
+        &lt;name&gt;SPMUtilsFactory&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SPMUtilsFactory = Class.create();
+SPMUtilsFactory.prototype = {
+	initialize: function() {
+		
+	},
+	
+	getUtils: function() {
+		if (typeof GlideScriptedExtensionPoint == "undefined") {
+			gs.info(gs.getMessage("Scripted extension points are not enabled", epName));
+			return false;
+		}
+		try {
+			var ep = new GlideScriptedExtensionPoint().getExtensions('SPMUtils');
+			if (ep.length &gt; 0) {
+				ep[0].initialize();
+				return ep[0];
+			}
+		} catch (ex) {
+			gs.error("global.SPMUtilsFactory: Error fetching extension point - "+ex);
+		}
+
+		return false;
+	},
+	type: 'SPMUtilsFactory'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-03-07 01:04:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4e23fe59b3403300f224a72256a8dc26&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SPMUtilsFactory&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Portfolio Management Core" source="com.snc.service_portfolio_core"&gt;cf704d836d2620100acb70b353433066&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4e23fe59b3403300f224a72256a8dc26&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-07 05:56:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;585&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:23</sys_created_on>
+        <sys_id>be8c4dba2f331110d8a4d5f62799b6c2</sys_id>
+        <sys_name>SPMUtilsFactory</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_be8c4dba2f331110d8a4d5f62799b6c2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

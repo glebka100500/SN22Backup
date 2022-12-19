@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>50451b2f73802300cbb654eb7df6a769</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OnCallWorkbenchUtilsSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;On Call Workbench Utils SNC version&lt;/description&gt;
+        &lt;name&gt;OnCallWorkbenchUtilsSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var OnCallWorkbenchUtilsSNC = Class.create();
+OnCallWorkbenchUtilsSNC.prototype = {
+	
+	SYS_USER_GROUP: "sys_user_group",
+	SYS_USER_GRMEMBER: "sys_user_grmember",
+	CMN_ROTA: "cmn_rota",
+	CMN_ROTA_MEMBER: "cmn_rota_member",
+	
+	getGroupDetails: function(groupSysId) {
+		if (this.groupHasActiveShifts(groupSysId)) {
+			var gr = new GlideRecord(this.SYS_USER_GROUP);
+			if (gr.get(groupSysId)) {
+				var obj = {};
+				obj.canRead = gr.canRead();
+				if (obj.canRead) {
+					var requiredFields = ["name", "description", "manager"];
+					obj.groupJs = OnCallWorkbenchUtilsSNC.onCallCommon.toJS(gr, requiredFields);
+				}
+				return obj;
+			}
+		}
+	},
+	
+	getAccessDetails: function(groupSysId) {
+		var access = {};
+		var ocsNg = new OnCallSecurityNG();
+		access.isRotaAdmin = ocsNg.rotaAdminAccess();
+		access.isManager = ocsNg.rotaMgrAccess(groupSysId);
+		access.isMember = this._isCurrentUserGrpMember(groupSysId) &amp;&amp; gs.getUser().isMemberOf(groupSysId);
+		return access;
+	},
+	
+	_isCurrentUserGrpMember: function(groupSysId) {
+		var todayDate = new GlideDateTime().getDate().getValue(); // returns internal formatted date
+		var memberGr = new GlideRecord('cmn_rota_member');
+		memberGr.addQuery("member", "=", gs.getUserID());
+		memberGr.addQuery("roster.rota.group", "=", groupSysId);
+		memberGr.addEncodedQuery("from=NULL^ORfrom&lt;=" + todayDate);
+		memberGr.addEncodedQuery("to=NULL^ORto&gt;=" + todayDate);
+		memberGr.setLimit(1);
+		memberGr.query();
+		return memberGr.hasNext();
+	},
+	
+	/*
+	 * Get groups that user belongs to or manages
+	 */
+	getGroups: function() {
+		var groups = {}, filterGroups = [];
+		var userSysId = gs.getUserID();
+		var isRotaAdmin = new OnCallSecurityNG().rotaAdminAccess();
+		this._populateManagedGroups(groups, userSysId, isRotaAdmin);
+		if(!isRotaAdmin) {// All on-call groups are already populated for admin, so skiping below step
+			this._populateMemberGroups(groups, userSysId);
+		}
+		Object.keys(groups).forEach(function(groupId) {
+			filterGroups.push(groups[groupId]);
+		});
+		return filterGroups;
+	},
+
+	/*
+	 * Get groups that user manages. 
+	 * No explicit computation of groups managed through delegation and on-call group preferences, as same are being included as part of member groups.
+	 */
+	_populateManagedGroups: function(groups, userSysId, isRotaAdmin) {
+		var managerGroupGr = new GlideRecord(this.SYS_USER_GROUP);
+		OnCallWorkbenchUtilsSNC.onCallCommon.addManagedGroupsQuery(managerGroupGr, userSysId, isRotaAdmin);
+		managerGroupGr.query();
+		while(managerGroupGr.next())
+			if (!groups[managerGroupGr.sys_id + ""])
+				groups[managerGroupGr.sys_id + ""] = OnCallWorkbenchUtilsSNC.onCallCommon.toJS(managerGroupGr, OnCallWorkbenchUtilsSNC.FILTER_GROUP_FIELDS);
+	},
+
+	/*
+	 * Get groups that user belongs to.
+	 */
+	_populateMemberGroups: function(groups, userSysId) {
+		var userMemberGr = new GlideRecord(this.SYS_USER_GRMEMBER);
+		userMemberGr.addQuery('user', userSysId);
+		userMemberGr.addQuery('group.active', 'true');
+		userMemberGr.addEncodedQuery('JOINsys_user_grmember.group=cmn_rota.group!active=true');
+		userMemberGr.query();
+		var memberGroupGr = new GlideRecord(this.SYS_USER_GROUP);
+		while(userMemberGr.next())
+			if (!groups[userMemberGr.group + ""] &amp;&amp; memberGroupGr.get(userMemberGr.group + "")) {
+				groups[userMemberGr.group + ""] =  OnCallWorkbenchUtilsSNC.onCallCommon.toJS(memberGroupGr, OnCallWorkbenchUtilsSNC.FILTER_GROUP_FIELDS);
+			}	
+	},
+	
+	/*
+	 * Returns count of users how are active members of any roster from the given group
+	 */
+	getGroupMemberCount: function (groupId) {
+		return new OnCallCommon().getGroupMemberCount(groupId);
+	},
+	
+	getActiveRotas: function (groupId) {
+		var rotaGr = new GlideRecord(this.CMN_ROTA);
+		rotaGr.addActiveQuery();
+		rotaGr.addQuery("group", groupId);
+		rotaGr.query();
+		var rotas = [], requiredFields = ["name"];
+		while(rotaGr.next())
+			rotas.push(OnCallWorkbenchUtilsSNC.onCallCommon.toJS(rotaGr, requiredFields));
+		return rotas;
+	},
+	
+	overrideEscalation: function(rotaSysId) {
+		var rotaGr = new GlideRecord(this.CMN_ROTA);
+		if (rotaGr.get(rotaSysId)) {
+			rotaGr.setValue("use_custom_escalation", true);
+			rotaGr.update();
+			
+			var escalationSetGr = new GlideRecord("cmn_rota_escalation_set");
+			escalationSetGr.addQuery("cmn_rota", rotaSysId);
+			escalationSetGr.addActiveQuery();
+			escalationSetGr.addQuery("default", true);
+			escalationSetGr.query();
+			if (!escalationSetGr.hasNext()) {
+				new OCEscalationDesigner().createDefaultEscalationSet(rotaSysId);
+			}
+		}
+	},
+	
+	resetEscalation: function(rotaSysId) {
+		var rotaGr = new GlideRecord(this.CMN_ROTA);
+		if (rotaGr.get(rotaSysId)) {
+			rotaGr.setValue("use_custom_escalation", false);
+			rotaGr.update();
+		}
+	},
+	
+	_hasEscalationSteps: function (rotaSysId) {
+		var ocRotation = new OnCallRotation();
+		var isGroupEscalation = ocRotation.isGroupEscalationApplied(rotaSysId);
+
+		var escalationStepsGr = new GlideRecord('cmn_rota_esc_step_def');
+
+		if (isGroupEscalation) {
+			var groupEscalationGr = ocRotation.getGroupEscalationGr(rotaSysId);
+			if (groupEscalationGr) {
+				escalationStepsGr.addQuery('escalation_set.group_escalation', groupEscalationGr.getUniqueValue());
+			}
+		}
+		else {
+			escalationStepsGr.addQuery('escalation_set.cmn_rota', rotaSysId);
+		}
+
+		escalationStepsGr.addQuery('escalation_set.default', true);
+		escalationStepsGr.query();
+		return escalationStepsGr.hasNext();
+	},
+	
+	getGroupRotas: function(groupId) {
+		var rotas = [];
+		var onCallRotation = new OnCallRotation();
+		var onCallCommon = new OnCallCommon();
+		if (!groupId) {
+			throw {
+				message: "invalid group sys_id"
+			};
+		}
+		var rotaGr = new GlideRecord('cmn_rota');
+		rotaGr.addQuery('group', groupId);
+		rotaGr.addActiveQuery();
+		rotaGr.query();
+		while(rotaGr.next()) {
+			var rotaJs = onCallCommon.toJS(rotaGr, ["sys_id", "name", "schedule", "use_custom_escalation"]);
+			rotaJs.escalation_type = {};
+			rotaJs.rota_members = [];
+			rotaJs.escalation_type.value = onCallRotation.getEscalationType(rotaGr.getUniqueValue());
+			rotaJs.isGroupEscalation = onCallRotation.isGroupEscalationApplied(rotaGr.getUniqueValue());
+			if (rotaJs.escalation_type.value == 'roster'){
+				rotaJs.escalation_type.display_value = gs.getMessage('Rotate through rosters');
+			}
+			else if (rotaJs.escalation_type.value == 'member'){
+				rotaJs.escalation_type.display_value = gs.getMessage('Rotate through members');
+			}
+			else if (rotaJs.escalation_type.value == 'custom') {
+				rotaJs.escalation_type.display_value = gs.getMessage('Custom');
+			}
+			else {
+				rotaJs.escalation_type.value = 'none';
+				rotaJs.escalation_type.display_value = gs.getMessage('None (no active rosters defined)');
+			}
+			
+			if (rotaJs.use_custom_escalation.value == "true" || rotaJs.isGroupEscalation) {
+				rotaJs.use_custom_escalation.has_steps = this._hasEscalationSteps(rotaGr.getUniqueValue());
+			}
+			
+			var todayDate = new GlideDateTime().getDate().getValue(); // returns internal formatted date
+			var memberGr = new GlideRecord(this.CMN_ROTA_MEMBER);
+			memberGr.addQuery("member.active", "=", true);
+			memberGr.addQuery("roster.rota", "=", rotaGr.getUniqueValue());
+			memberGr.addEncodedQuery("from=NULL^ORfrom&lt;=" + todayDate);
+			memberGr.addEncodedQuery("to=NULL^ORto&gt;=" + todayDate);
+			memberGr.query();
+
+			var memberIds = [];
+			while (memberGr.next())
+				memberIds.push(memberGr.member + "");
+			if(memberIds.length){
+				var userMemberGr = new GlideAggregate(this.SYS_USER_GRMEMBER);
+				userMemberGr.addQuery("group", groupId);
+				userMemberGr.addQuery("user", "IN", memberIds.join(","));
+				userMemberGr.addQuery("group.active", "true");
+				userMemberGr.addEncodedQuery("JOINsys_user_grmember.group=cmn_rota.group!active=true");
+				userMemberGr.query();
+				while(userMemberGr.next()) {
+					var rotaMemberJs = {
+						value: userMemberGr.user + '',
+						display_value: userMemberGr.getDisplayValue('user')
+					};
+					rotaJs.rota_members.push(rotaMemberJs);
+				}
+			}
+			rotas.push(rotaJs);
+		}
+		return rotas;
+	},
+
+	getGroupPreferenceIdByGroup: function(groupSysId) {
+		var groupPrefGr = new OnCallRotation().getGroupPreferenceByGroup(groupSysId);
+		if(groupPrefGr)
+			return groupPrefGr.sys_id + "";
+		return "-1";
+	},
+
+	groupHasActiveShifts: function(groupSysId) {
+		var rotaGr = new GlideAggregate(this.CMN_ROTA);
+		rotaGr.addQuery('group', groupSysId);
+		rotaGr.addQuery('active', true);
+		rotaGr.query();
+		return rotaGr.hasNext();
+	},
+
+    type: 'OnCallWorkbenchUtilsSNC'
+};
+OnCallWorkbenchUtilsSNC.FILTER_GROUP_FIELDS = ["name"];
+OnCallWorkbenchUtilsSNC.onCallCommon = new OnCallCommon();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-27 07:14:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;50451b2f73802300cbb654eb7df6a769&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;86&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OnCallWorkbenchUtilsSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="On-Call Scheduling" source="com.snc.on_call_rotation"&gt;37d4c9836de620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_50451b2f73802300cbb654eb7df6a769&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-18 06:51:47&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8573&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:28</sys_created_on>
+        <sys_id>738c8dba2f331110d8a4d5f62799b64e</sys_id>
+        <sys_name>OnCallWorkbenchUtilsSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_738c8dba2f331110d8a4d5f62799b64e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

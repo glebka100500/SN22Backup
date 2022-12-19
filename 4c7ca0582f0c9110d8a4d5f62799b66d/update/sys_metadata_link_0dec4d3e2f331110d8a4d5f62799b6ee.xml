@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8022dab353131010bca8ddeeff7b12c6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisNLUUsage&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AisNLUUsage&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisNLUUsage = Class.create();
+AisNLUUsage.prototype = {
+	initialize: function() {},
+
+	/**
+        Returns all the mapped intents count for each model
+        Supports optional filter 'models' in format: 
+        {
+            &lt;model1&gt;: [&lt;intent11&gt;, &lt;intent12&gt;, ...],
+            &lt;model2&gt;: [&lt;intent21&gt;, &lt;intent22&gt;, ...],
+            ...
+        }
+        Result: 
+        {
+            &lt;model&gt;: &lt;intent count&gt;
+            ...
+        }
+	 */
+	getAllMappedIntentsCount: function(models) {
+		if (models) {
+			var result = {};
+			for (var model in models) {
+				result[model] = this.getMappedIntentCount(model, models[model])[model] || 0;
+			}
+			return result;
+		} else {
+			return this.getMappedIntentCount();
+		}
+	},
+
+	/**
+        Returns all mapped intent details for given model
+        Optionally we can provide list of intents to filter the result. 
+        Result: 
+        {
+            application: &lt;Consumer application name: VA or Search&gt;,
+            mappings: {
+                &lt;intent name&gt;: {
+                    id: &lt;Unique ID - topic sys_id or template id&gt;,
+                    name: &lt;Type of the mapping (VA Topic or Genius Template): Topic name or genius template name&gt;,
+                    link: &lt;Direct link to the topic or template&gt;
+                }
+                ...
+            }
+        }
+	 */
+	getMappedIntents: function(model, intents) {
+		var mappings = {};
+		var grM2M = new GlideRecord('ais_genius_result_configuration_sys_nlu_model_m2m');
+		if (!grM2M.isValid())
+			return {};
+		grM2M.addNotNullQuery('genius_result_configuration');
+		grM2M.addQuery('genius_result_configuration.active', true);
+		grM2M.addQuery('genius_result_configuration.trigger_condition', 'intent');
+		var modelSysId = this.getModelSysId(model);
+		grM2M.addQuery('nlu_model', modelSysId);
+		grM2M.query();
+		while (grM2M.next()) {
+			var intentList = [];
+			if (grM2M.getValue('intent')) {
+				intentList = grM2M.getValue('intent').split(',');
+			} else {
+				intentList = this.getAllIntents(modelSysId);
+			}
+			for (var i = 0; i &lt; intentList.length; i++) {
+				if (!intents || intents.indexOf(intentList[i]) &gt;= 0) {
+					if (!mappings[intentList[i]])
+						mappings[intentList[i]] = [];
+					mappings[intentList[i]].push({
+						id: grM2M.getValue('genius_result_configuration'),
+						name: gs.getMessage("AI Search: {0}", [grM2M.genius_result_configuration.name + '']),
+						link: "/ais_genius_result_configuration.do?sys_id=" + grM2M.getValue('genius_result_configuration') + ''
+					});
+				}
+			}
+		}
+
+		return {
+			application: "Search",
+			mappings: mappings
+		};
+	},
+
+	/**** helper function ****/
+
+	getMappedIntentCount: function(model, intents) {
+		var result = {};
+
+		var modelToIntent = {};
+		var intentList = [];
+		var grM2M = new GlideRecord('ais_genius_result_configuration_sys_nlu_model_m2m');
+		if (!grM2M.isValid())
+			return {};
+		grM2M.addNotNullQuery('genius_result_configuration');
+		grM2M.addQuery('genius_result_configuration.active', true);
+		grM2M.addQuery('genius_result_configuration.trigger_condition', 'intent');
+		if (model) {
+			var modelSysId = this.getModelSysId(model);
+			grM2M.addQuery('nlu_model', modelSysId);
+		} else {
+			grM2M.addNotNullQuery('nlu_model');
+		}
+		grM2M.query();
+		while (grM2M.next()) {
+			var modelName = model || grM2M.nlu_model.name + '';
+			if (modelName in modelToIntent)
+				intentList = modelToIntent[modelName];
+			else
+				intentList = [];
+
+			if (grM2M.getValue('intent')) {
+				intentList = intentList.concat(grM2M.getValue('intent').split(','));
+			} else {
+				intentList = intentList.concat(this.getAllIntents(this.getModelSysId(modelName)));
+			}
+
+			modelToIntent[modelName] = intentList;
+		}
+
+		if (intents) {
+			intentList = modelToIntent[model];
+			intentList = intentList.filter(function(elem, pos, arr) {
+				return intents.indexOf(elem) &gt;= 0;
+			});
+			modelToIntent[model] = intentList;
+		}
+
+		for (var key in modelToIntent) {
+			result[key] = modelToIntent[key].length;
+		}
+
+		return result;
+	},
+
+	getModelSysId: function(modelName) {
+		var grModel = new GlideRecord('sys_nlu_model');
+		grModel.addQuery('name', modelName);
+		grModel.query();
+		if (grModel.next()) {
+			if (grModel.getValue('primary_model')) {
+				return grModel.getValue('primary_model');
+			} else {
+				return grModel.getUniqueValue();
+			}
+		}
+
+		return null;
+	},
+
+	getAllIntents: function(modelSysId) {
+		var intents = [];
+		var grIntent = new GlideRecord('sys_nlu_intent');
+		grIntent.addQuery('model', modelSysId);
+		grIntent.query();
+		while (grIntent.next()) {
+			intents.push(grIntent.getValue('name'));
+		}
+
+		return intents;
+	},
+
+	type: 'AisNLUUsage'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-23 23:06:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8022dab353131010bca8ddeeff7b12c6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisNLUUsage&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8022dab353131010bca8ddeeff7b12c6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-23 23:35:51&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4622&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:55</sys_created_on>
+        <sys_id>0dec4d3e2f331110d8a4d5f62799b6ee</sys_id>
+        <sys_name>AisNLUUsage</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0dec4d3e2f331110d8a4d5f62799b6ee</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

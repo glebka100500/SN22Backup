@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4d0046e49f2020008f88ed93ee4bccff</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScheduleValidation&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Schedule Validation Utilities [for cmn_schedule]&lt;/description&gt;
+        &lt;name&gt;ScheduleValidation&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScheduleValidation = Class.create();
+
+// Test for recursion: A parent schedule can't loop back to itself.  Schedule A can't be a parent of Schedule A.
+// Called from: Prevent Recursion in Schedules (business rule)
+// -- sets field error and Error Message
+// -- returns true if there is a loop (caller can choose to abort transaction)
+ScheduleValidation.isRecursive = function(cmn_schedule) {
+   var rt = new RecursionTester('cmn_schedule', 'parent');
+   if (rt.isRecursive(cmn_schedule)) {
+      cmn_schedule.parent.setError('Invalid Parent');
+      gs.addErrorMessage(gs.getMessage('The selected parent loops back to this record (recursive schedule loop)'));
+      return true;
+   }
+   return false;
+};
+
+// Warn if Schedules do not contain any active Schedule Entries
+// Called from: Warn on Empty Schedules (business rule)
+ScheduleValidation.warnEmptySchedules = function(cmn_schedule) {
+	var considerExcludes = true;
+	var msg = gs.getMessage('There are no Schedule Entries in this Schedule. Create Schedule Entries to complete the Schedule.');
+	var sv = new ScheduleValidation(cmn_schedule);
+	if (!sv.isEmptySchedule(considerExcludes))
+		return;
+	if (sv.hasChildSchedule())
+		msg = gs.getMessage('There are no Schedule Entries in this Schedule, or its Child Schedule. Create Schedule Entries to complete the Schedule.');
+	// add msg if it hasn't already been added
+	if (!new ArrayUtil().contains(j2js(gs.getInfoMessages()), msg))
+		gs.addInfoMessage(msg);
+};
+
+ScheduleValidation.prototype = {
+   initialize : function(cmn_schedule) {
+      this.cmn_schedule = cmn_schedule;
+      this._hasChild = undefined;
+   },
+   // a Schedule is empty iff it has no active (non exclude) spans
+   // and none of its child Schedules have active spans
+   isEmptySchedule: function(considerExcludes) {
+      var activeSpans = new ScheduleValidation(this.cmn_schedule.sys_id).countActiveSpans(considerExcludes);
+      // also check any child schedules
+      this._hasChild = false;
+      gr = new GlideRecord('cmn_other_schedule');
+      gr.addQuery('schedule', this.cmn_schedule.sys_id);
+      gr.query();
+      while (gr.next() &amp;&amp; activeSpans === 0) {
+         this._hasChild = true;
+         // only 'include' types should be checked if not considering the 'Excludes' type
+         // but we are interested to know whether there are any child schedules at all
+         if (considerExcludes || gr.type == 'include')
+            activeSpans += new ScheduleValidation(gr.child_schedule).countActiveSpans(considerExcludes);
+      }
+      return (activeSpans === 0);
+   },
+   hasChildSchedule: function() {
+      if (this._hasChild !== undefined)
+         return this._hasChild; 
+      this._hasChild = false;
+      gr = new GlideRecord('cmn_other_schedule');
+      gr.addQuery('schedule', this.cmn_schedule.sys_id);
+      gr.query();
+      this._hasChild = gr.next();
+      return this._hasChild;
+   },
+   countActiveSpans: function(considerExcludes) {
+	   var gr = new GlideRecord('cmn_schedule_span');
+	   gr.addQuery('schedule', this.cmn_schedule);
+      if(!considerExcludes)
+         // everything that isn't type==exclude
+         gr.addQuery('type', '!=', 'exclude').addOrCondition('type', '');
+	   gr.query();
+	   return gr.getRowCount();
+   },
+   type: 'ScheduleValidation'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-02-29 12:22:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4d0046e49f2020008f88ed93ee4bccff&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScheduleValidation&lt;/sys_name&gt;
+        &lt;sys_package display_value="Advanced Schedules Support" source="com.glide.schedules"&gt;92a009c76d2620100acb70b353433070&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4d0046e49f2020008f88ed93ee4bccff&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-07-10 09:16:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3274&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:22</sys_created_on>
+        <sys_id>968c4dba2f331110d8a4d5f62799b6a2</sys_id>
+        <sys_name>ScheduleValidation</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_968c4dba2f331110d8a4d5f62799b6a2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

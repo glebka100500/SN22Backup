@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>44469fa80710201028ef0a701ad30034</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NLUWorkbenchGlobalScript&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Script contains cross-scope utilties which will be executed from scoped apps like NLU Workbench - Advanced Features&lt;/description&gt;
+        &lt;name&gt;NLUWorkbenchGlobalScript&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NLUWorkbenchGlobalScript = Class.create();
+
+(function() {
+
+    var tables = NLUConstants.tables;
+
+    NLUWorkbenchGlobalScript.createTransformMapScript = function(mapSysId, when, script, scope) {
+        var mapScriptGr = new GlideRecord(tables.SYS_TRANSFORM_SCRIPT);
+        mapScriptGr.initialize();
+        mapScriptGr.setValue('map', mapSysId);
+        mapScriptGr.setValue('when', when);
+        mapScriptGr.setValue('script', script);
+        mapScriptGr.setValue('active', true);
+        if (scope) mapScriptGr.setValue('sys_scope', NLUSystemUtil.getScope(scope) || 'global');
+        return mapScriptGr.insert();
+    };
+
+    NLUWorkbenchGlobalScript.scheduleScript = function(script, tableName, recordSysId, label) {
+        var so = new global.ScheduleOnce();
+        so.script = script;
+        so.document = tableName;
+        so.document_key = recordSysId;
+        so.label = label || recordSysId;
+        return so.schedule();
+    };
+
+    NLUWorkbenchGlobalScript.cancelSchedule = function(tableName, recordSysId, label) {
+        var so = new global.ScheduleOnce();
+        so.document = tableName;
+        so.document_key = recordSysId;
+        so.label = label || recordSysId;
+        so.cancel();
+    };
+
+    NLUWorkbenchGlobalScript.getDateFormat = function() {
+        return gs.getSession().getDateFormat();
+    };
+
+    NLUWorkbenchGlobalScript.getDateTimeFormat = function() {
+        return gs.getSession().getDateTimeFormat();
+    };
+
+    NLUWorkbenchGlobalScript.prototype = {
+        initialize: function() {},
+        type: 'NLUWorkbenchGlobalScript'
+    };
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-11-02 18:34:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;44469fa80710201028ef0a701ad30034&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NLUWorkbenchGlobalScript&lt;/sys_name&gt;
+        &lt;sys_package display_value="NLU Workbench - Core" source="com.glide.nlu"&gt;04dd388b6d2220100acb70b35343302f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_44469fa80710201028ef0a701ad30034&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-05-13 07:46:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1593&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:09</sys_created_on>
+        <sys_id>db7cc9ba2f331110d8a4d5f62799b60e</sys_id>
+        <sys_name>NLUWorkbenchGlobalScript</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_db7cc9ba2f331110d8a4d5f62799b60e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

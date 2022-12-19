@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5754ff8387390300cfab6dd207cb0bda</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdResetStageBaseBL&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base class for password reset businses logic to extend from&lt;/description&gt;
+        &lt;name&gt;PwdResetStageBaseBL&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdResetStageBaseBL = Class.create();
+PwdResetStageBaseBL.prototype = {
+	
+	STAGE: '',
+	
+	trackingMgr : new SNC.PwdTrackingManager(),
+		
+	/** 
+		Check that a given request exists in the password reset request table. Logs a failure if it does not exist
+		@param {String} requestId - sys id
+		@return {boolean} whether it exists or not
+	*/
+	requestExists: function(requestId) {
+		if (this.trackingMgr.requestExists(requestId)) 
+			return true;
+		else {
+			var reqFailureMsg = "Request does not exist (request_id = " + requestId + ")";
+			this.logError(reqFailureMsg, requestId);
+			return false;
+		}
+	},
+	
+	// refTable and refSysId are optional
+	logInfo: function(message, requestId, refTable, refSysId) {
+		this.trackingMgr.createActivity(PwdConstants.TYPE_INFO, this.STAGE, message, requestId, refTable, refSysId);
+	},
+	
+	logWarning: function(message, requestId, refTable, refSysId) {
+		this.trackingMgr.createActivity(PwdConstants.TYPE_WARNING, this.STAGE, message, requestId, refTable, refSysId);
+	},
+	
+	logError: function(message, requestId, refTable, refSysId) {
+		this.trackingMgr.createActivity(PwdConstants.TYPE_ERROR, this.STAGE, message, requestId, refTable, refSysId);
+	},
+	
+    type: 'PwdResetStageBaseBL'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-10-19 05:32:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5754ff8387390300cfab6dd207cb0bda&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;8&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdResetStageBaseBL&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5754ff8387390300cfab6dd207cb0bda&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-10-23 06:54:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1222&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:38</sys_created_on>
+        <sys_id>529c41fa2f331110d8a4d5f62799b6ac</sys_id>
+        <sys_name>PwdResetStageBaseBL</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_529c41fa2f331110d8a4d5f62799b6ac</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

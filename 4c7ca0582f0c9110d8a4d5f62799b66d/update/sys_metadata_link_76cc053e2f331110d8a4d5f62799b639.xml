@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>72d289b30a0a2c35138146b54443d9b3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DocumentManagementApprovalMatcher&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This class helps get the user and group approvers for a document that matcher approval rules.&lt;/description&gt;
+        &lt;name&gt;DocumentManagementApprovalMatcher&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DocumentManagementApprovalMatcher = Class.create();
+
+DocumentManagementApprovalMatcher.prototype = {
+	initialize : function(documentId) {
+		this.firstMatchingRule = false;
+		this.db = new DocumentManagementDB();
+		this.documentGR = this.db.getDocumentById(documentId, true);
+		this.approvalRules = this.db.getAll(this.db.approval_rule_table);
+		this.matchingApprovalRules = new Array();
+		this._initMatchingApprovalRules();
+	},
+
+	_initMatchingApprovalRules: function() {
+		var filter = GlideFilter;
+		for(var i=0; i&lt;this.approvalRules.length; i++) {
+			var match = filter.checkRecord(this.documentGR,this.approvalRules[i].condition);
+			if(match &amp;&amp; this.approvalRules[i].active=="1")
+				this.matchingApprovalRules.push(this.approvalRules[i]);
+		}
+	},
+	
+	_getMatchingApprovalRuleIds: function(){
+		var matchingApprovalRuleIds = new Array();
+		for(var i=0; i&lt;this.matchingApprovalRules.length; i++) {
+			matchingApprovalRuleIds.push(this.matchingApprovalRules[i].sys_id);
+		}
+		return matchingApprovalRuleIds;
+	},
+
+	getUserApprovers : function() {
+		
+		var matchingUserApprovers = new Array();
+		var matchingApprovalRuleIds = this._getMatchingApprovalRuleIds();
+		
+		if(matchingApprovalRuleIds.length==0) 
+			return matchingUserApprovers;
+		
+		var userApprovers = this.db.getUserByApprovalRuleIds(matchingApprovalRuleIds);
+		var attributes = ["user","sequnce"];
+		for(var i=0; i&lt;userApprovers.length; i++) {
+			if(!this._isInArray(userApprovers[i],matchingUserApprovers,attributes))
+				matchingUserApprovers.push(userApprovers[i]);
+		}
+		
+		return matchingUserApprovers;
+	},
+	
+	getGroupApprovers: function() {
+		
+		var matchingGroupApprovers = new Array();
+		var matchingApprovalRuleIds = this._getMatchingApprovalRuleIds();
+		
+		if(matchingApprovalRuleIds.length==0) 
+			return matchingGroupApprovers;
+		
+		var groupApprovers = this.db.getGroupByApprovalRuleIds(matchingApprovalRuleIds);
+		var attributes = ["group","sequence"];
+		for(var i=0; i&lt;groupApprovers.length; i++) {
+			if(!this._isInArray(groupApprovers[i],matchingGroupApprovers,attributes))
+				matchingGroupApprovers.push(groupApprovers[i]);
+		}
+		
+		return matchingGroupApprovers;
+	},
+	
+	_isInArray: function(newApprover,array, attributesToCheck) {
+		for(var i=0; i&lt;array.length; i++){
+			var existingApprover = array[i];
+			if(DocumentManagementUtils.areObjectAttributesEqual(newApprover,existingApprover,attributesToCheck))
+				return true;
+		}
+		return false;
+	}
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;felix.bait&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-04-20 12:18:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;72d289b30a0a2c35138146b54443d9b3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;44&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DocumentManagementApprovalMatcher&lt;/sys_name&gt;
+        &lt;sys_package display_value="Managed documents" source="com.snc.document_management"&gt;85c6b5412f140110d8a4d5f62799b64b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_72d289b30a0a2c35138146b54443d9b3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-08-22 21:16:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2437&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:29</sys_created_on>
+        <sys_id>76cc053e2f331110d8a4d5f62799b639</sys_id>
+        <sys_name>DocumentManagementApprovalMatcher</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_76cc053e2f331110d8a4d5f62799b639</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

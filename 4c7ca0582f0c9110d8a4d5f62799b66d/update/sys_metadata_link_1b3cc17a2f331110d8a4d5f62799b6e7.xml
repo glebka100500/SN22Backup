@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>11f2ef1a77000010bef6d0adda1061fd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlatformEncryptedFields&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Available fields based on encryption configurations states and user session.&lt;/description&gt;
+        &lt;name&gt;PlatformEncryptedFields&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlatformEncryptedFields = Class.create();
+PlatformEncryptedFields.prototype = {
+
+	process: function(dependent_value) {
+		var columnData = new SNC.MassEncryptionJob().getSupportedFieldChoicesForTable(dependent_value);
+		var columnJson = JSON.parse(columnData);
+		var choiceList = new GlideChoiceList();
+		for (var columnValue in columnJson)
+			choiceList.add(columnValue, columnJson[columnValue]);
+
+		return choiceList;
+	},
+
+    type: 'PlatformEncryptedFields'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-25 03:19:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;11f2ef1a77000010bef6d0adda1061fd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlatformEncryptedFields&lt;/sys_name&gt;
+        &lt;sys_package display_value="Encryption Core" source="com.glide.encryption.core"&gt;2f854d4b6de620100acb70b3534330ed&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_11f2ef1a77000010bef6d0adda1061fd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-10-01 07:36:42&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;466&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:04</sys_created_on>
+        <sys_id>1b3cc17a2f331110d8a4d5f62799b6e7</sys_id>
+        <sys_name>PlatformEncryptedFields</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1b3cc17a2f331110d8a4d5f62799b6e7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

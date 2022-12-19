@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3c9025a0c33002001c845cb981d3ae91</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UserTaskStatsUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;UserTaskStatsUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UserTaskStatsUtil = Class.create();
+UserTaskStatsUtil.prototype = {
+    initialize: function() {
+    },
+	
+	conditionCheck : function(current,previous){
+		//1. if insert, check if assigned_to is not nil and update the num_tasks.
+		//2. if update, and assigned_to not nil, update num_tasks for current and decrement for previous user.
+		//3. on delete decrement for count for user.
+		//4. state becomes closed, decrement for user.
+		
+		if(current.operation() == "delete"){
+			if(!current.assigned_to.nil()){
+				this.decrementTaskAssigned(current.assigned_to);
+			}
+			return false;
+		}
+		if(current.assigned_to.changes() &amp;&amp; previous &amp;&amp; !previous.assigned_to.nil()){
+			this.decrementTaskAssigned(previous.assigned_to);
+		}
+		if(current.assigned_to.changes() || current.active.changes())
+			return true;
+		
+		return false;
+	},
+	
+	incrementTaskAssigned: function(user){
+		var result = false;
+		if(!user.nil()){
+			var userTaskStats = new GlideRecord("user_task_stats");
+			userTaskStats.addQuery("user",user);
+			userTaskStats.query();
+			if(userTaskStats.next()){
+				userTaskStats.work_load = userTaskStats.work_load + 1;
+				userTaskStats.last_work_assigned = new GlideDateTime();
+				result = userTaskStats.update();
+			}
+			else{
+				userTaskStats.initialize();
+				userTaskStats.user = current.assigned_to;
+				userTaskStats.work_load = 1;
+				userTaskStats.last_work_assigned = new GlideDateTime();
+				result = userTaskStats.insert();
+			}
+		}
+		return result;
+	},
+	
+	decrementTaskAssigned: function(user){
+		var result = false;
+		if(!user.nil()){
+			var userTaskStats = new GlideRecord("user_task_stats");
+			userTaskStats.addQuery("user",user);
+			userTaskStats.query();
+			if(userTaskStats.next()){
+				var currentLoad = userTaskStats.work_load;
+				if(currentLoad &gt; 0)
+				{
+					userTaskStats.work_load = userTaskStats.work_load - 1;
+					result = userTaskStats.update();
+				}
+			}
+		}
+		return result;
+	},
+
+    type: 'UserTaskStatsUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-18 20:36:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3c9025a0c33002001c845cb981d3ae91&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UserTaskStatsUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3c9025a0c33002001c845cb981d3ae91&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-06-25 19:03:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1955&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:58</sys_created_on>
+        <sys_id>ac7cc5ba2f331110d8a4d5f62799b6d4</sys_id>
+        <sys_name>UserTaskStatsUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ac7cc5ba2f331110d8a4d5f62799b6d4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

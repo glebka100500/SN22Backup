@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>36e314e4b7033300249a6d97ee11a993</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AssetJobLogUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AssetJobLogUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AssetJobLogUtil = Class.create();
+AssetJobLogUtil.prototype = (function() {
+	var JOB_LOG_TABLE = 'asset_job_log';
+	var JOB_LOG_DETAIL_TABLE = 'asset_job_log_detail';
+	var JOB_DELETE_PROPERTY = 'com.snc.asset_management.asset_job_log.deletionDays';
+
+	function _getGrBySysID(tableName, sysId) {
+		var gr = new GlideRecord(tableName);
+		gr.get(sysId);
+		return gr;
+	}
+
+	function _getJobLogGrBySysID(sysId) {
+		return _getGrBySysID(JOB_LOG_TABLE, sysId);
+	}
+
+	function _getJobStepGrBySysID(sysId) {
+		return _getGrBySysID(JOB_LOG_DETAIL_TABLE, sysId);
+	}
+
+	function _getDeletionDate(property, defaultDays, minimumDays, maximunmDays) {
+		var C_DEFAULT_DAYS = defaultDays || 60;
+		var C_MINIMUM_DAYS = minimumDays || 30;
+		var C_MAXIMUM_DAYS = maximunmDays || 180;
+		var days = C_DEFAULT_DAYS;
+		var propertyValue;
+		var assetProperty = new GlideRecord(AssetandCI.ASSET_PROPERTY);
+		if (assetProperty.get('key', property)) {
+			propertyValue = Number(assetProperty.getValue('value'));
+			if (propertyValue &gt;= C_MINIMUM_DAYS &amp;&amp; propertyValue &lt;= C_MAXIMUM_DAYS) {
+				days = propertyValue;
+			}
+		}
+		var oldDate = new GlideDateTime();
+		oldDate.addDaysUTC(-days);
+		return oldDate.getDate();
+	}
+
+	return {
+		initialize: function() {
+			this.resetJobStep();
+		},
+
+		IN_PROGRESS_STATUS: 'in_progress',
+
+		COMPLETED_STATUS: 'completed',
+
+		FAILED_STATUS: 'failed',
+
+		resetJobStep: function() {
+			this.stepNumber = 1;
+			this.jobStepNumberMap = {};
+			this.jobStepStartInMillis = {};
+		},
+
+		startJobLog: function(logName) {
+			this.resetJobStep();
+			var gr = new GlideRecord(JOB_LOG_TABLE);
+			var startedAt = new GlideDateTime();
+			gr.initialize();
+			gr.setValue('name', logName);
+			gr.setValue('started_at', startedAt);
+			gr.setValue('status', this.IN_PROGRESS_STATUS);
+			gr.insert();
+			// Assign jobLogId instance variable for future updates.
+			this.jobLogId = gr.getValue('sys_id');
+			this.jobLogStartInMillis = startedAt.getNumericValue();
+		},
+
+		stopJobLog: function(jobStatus, comments) {
+			var resolvedJobStatus = jobStatus || this.COMPLETED_STATUS;
+
+			var endedAt = new GlideDateTime();
+			var jobLog = _getJobLogGrBySysID(this.jobLogId);
+			var duration = endedAt.getNumericValue() - this.jobLogStartInMillis;
+			jobLog.setValue('ended_at', endedAt);
+			jobLog.setValue('duration', duration / 1000);
+			jobLog.setValue('comments', comments || '');
+			jobLog.setValue('status', resolvedJobStatus);
+			jobLog.update();
+		},
+
+		startJobStep: function(stepName) {
+			if (this.jobStepNumberMap[stepName]) {
+				// Step with this stepName already exists.
+				return;
+			}
+
+			if (!this.jobLogId) {
+				// ifstartJobLog function not initiated, return.
+				return;
+			}
+
+			this.jobStepStartInMillis[stepName] = new GlideDateTime().getNumericValue();
+
+			var gr = new GlideRecord(JOB_LOG_DETAIL_TABLE);
+			gr.initialize();
+			gr.setValue('step', this.stepNumber);
+			gr.setValue('name', stepName);
+			gr.setValue('asset_job_log', this.jobLogId);
+			gr.insert();
+
+			// Adding each job into map for easy lookup.
+			this.jobStepNumberMap[stepName] = gr.getValue('sys_id');
+			this.stepNumber += 1;
+		},
+
+		stopJobStep: function(stepName, comments) {
+			if (this.jobStepNumberMap[stepName] === undefined) {
+				return;
+			}
+
+			var jobDetailId = this.jobStepNumberMap[stepName];
+			var jobDetailGr = _getJobStepGrBySysID(jobDetailId);
+
+			var duration = new GlideDateTime().getNumericValue() - this.jobStepStartInMillis[stepName];
+			jobDetailGr.setValue('duration', duration / 1000);
+			jobDetailGr.setValue('comments', comments || '');
+			jobDetailGr.update();
+			// delete this.jobStepNumberMap[jobDetailGr.getValue('name')];
+		},
+
+		deleteJobLogs: function() {
+			var tableGr = new GlideRecord(JOB_LOG_TABLE);
+			var oldDate = _getDeletionDate(JOB_DELETE_PROPERTY);
+			tableGr.addQuery('sys_created_on', '&lt;', oldDate);
+			tableGr.query();
+			if (tableGr.hasNext()) {
+				tableGr.deleteMultiple();
+			}
+			return oldDate;
+		},
+
+		type: 'AssetJobLogUtil',
+	};
+}());]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-07-31 08:39:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;36e314e4b7033300249a6d97ee11a993&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AssetJobLogUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_36e314e4b7033300249a6d97ee11a993&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-07-31 08:39:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3974&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:52</sys_created_on>
+        <sys_id>836c45ba2f331110d8a4d5f62799b60b</sys_id>
+        <sys_name>AssetJobLogUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_836c45ba2f331110d8a4d5f62799b60b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

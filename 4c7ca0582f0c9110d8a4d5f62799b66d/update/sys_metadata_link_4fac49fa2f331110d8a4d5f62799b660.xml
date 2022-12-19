@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6224a1430a0a0bb900f4be5b076151bf</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.QueryParseAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Called by GlideFilter.js for parsing the query&lt;/description&gt;
+        &lt;name&gt;QueryParseAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var QueryParseAjax = Class.create();
+
+QueryParseAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+  process: function() {
+      var tableName = this.getName();
+
+      if (gs.nil(tableName)) {
+          gs.log("QueryParseAjax.process() called with null table name");
+          return;
+      }
+
+      var parts = tableName.split("\\.");
+      var qs = new GlideQueryString(parts[0], this.getChars());
+      qs.toXML(this.getRootElement());
+  },
+
+  type: "QueryParseAjax"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-02-10 21:43:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6224a1430a0a0bb900f4be5b076151bf&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;QueryParseAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6224a1430a0a0bb900f4be5b076151bf&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;pat.casey&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2009-11-11 16:49:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;502&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:57</sys_created_on>
+        <sys_id>4fac49fa2f331110d8a4d5f62799b660</sys_id>
+        <sys_name>QueryParseAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4fac49fa2f331110d8a4d5f62799b660</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

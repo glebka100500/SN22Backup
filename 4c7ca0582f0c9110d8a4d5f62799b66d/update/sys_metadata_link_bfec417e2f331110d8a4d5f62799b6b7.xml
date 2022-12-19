@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>84ac9152ff022010582aa06e253bf153</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ApprovalEntitlementUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;The purpose of this script includes is to work with the Business Rule on sysapproval_approvers table to check entitlement. &lt;/description&gt;
+        &lt;name&gt;ApprovalEntitlementUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ApprovalEntitlementUtil = Class.create();
+ApprovalEntitlementUtil.prototype = {
+    initialize: function () { },
+
+    //on create approval, return the entitlement status returned by licensing API here
+    onCreateApproval: function (usersysid, tablename) {
+        try {
+            var isEntitled = new sn_lef.GlideLicenseAPI().canUserApproveOnTable(usersysid, tablename);
+            return isEntitled;
+        }
+        catch (e) {
+            gs.log("Error with onCreateApproval: GlideLicenseAPI failure.");
+        }
+    },
+
+    //on adjudicate approval, return the entitlement status returned by licensing API here
+    onAdjudicateApproval: function (usersysid, tablename) {
+        try {
+            var isEntitled = new sn_lef.GlideLicenseAPI().enableEntitlementLogging().canUserApproveOnTable(usersysid, tablename);
+            return isEntitled;
+        }
+        catch (e) {
+            gs.log("Error with onAdjudicateApproval: GlideLicenseAPI failure.");
+        }
+    },
+    type: 'ApprovalEntitlementUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-02-02 19:57:55&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;84ac9152ff022010582aa06e253bf153&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ApprovalEntitlementUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_84ac9152ff022010582aa06e253bf153&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-17 02:17:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1026&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:06</sys_created_on>
+        <sys_id>bfec417e2f331110d8a4d5f62799b6b7</sys_id>
+        <sys_name>ApprovalEntitlementUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bfec417e2f331110d8a4d5f62799b6b7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>69c1c0b453211010bca8ddeeff7b123e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisAttributeTableColumnUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AisAttributeTableColumnUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisAttributeTableColumnUtil = Class.create();
+AisAttributeTableColumnUtil.prototype = {
+    initialize: function() {
+    },
+	
+	/*
+     * Returns an array of table names to show in "table" column
+	 * for: ais_datasource_attribute and ais_datasource_field_attribute
+     */
+	process: function() {
+		var tables = [];
+		if (current.datasource &amp;&amp; current.datasource.source)
+			tables = new AisConfigurationUtil().getChildTablesInDatasource(current.datasource, current.datasource.source, current.datasource.type);
+		
+		return tables;
+	},
+	
+	// filters applies to attribute list when new attributes
+    getAttributeFilter: function(table, column, type) {
+        var returnFilter = "applies_to=0^ORapplies_to=2";
+        var excludeDotWalkAttribute = "^attribute!=dot_walk_fields";
+        var excludeUpdatableAttribute = "^attribute!=updatable_field";
+        var excludeRootOnlyAttribute = "^root_table_only=false";
+        var elementDescriptor = GlideTableDescriptor.get(table).getElementDescriptor(column);
+        // only include dot-walk attribute when column is reference
+        if (!elementDescriptor.isReference()) {
+            returnFilter = returnFilter + excludeDotWalkAttribute;
+        }
+
+        // only include updatable_field Property if table is external source schema table
+        if (type == 0) {
+            returnFilter = returnFilter + excludeUpdatableAttribute;
+        }
+        // exclude root_only attributes if table is child table
+        if (new AisConfigurationUtil().getIndexedSource(table) == null) {
+            returnFilter = returnFilter + excludeRootOnlyAttribute;
+        }
+        return returnFilter + "^EQ";
+    },
+
+    type: 'AisAttributeTableColumnUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-06-19 04:55:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;69c1c0b453211010bca8ddeeff7b123e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisAttributeTableColumnUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_69c1c0b453211010bca8ddeeff7b123e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-31 23:50:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1700&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:13</sys_created_on>
+        <sys_id>7abc8dfa2f331110d8a4d5f62799b6f6</sys_id>
+        <sys_name>AisAttributeTableColumnUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7abc8dfa2f331110d8a4d5f62799b6f6</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

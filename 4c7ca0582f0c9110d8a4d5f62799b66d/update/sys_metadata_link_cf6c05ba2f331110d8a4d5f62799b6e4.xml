@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>365eca63c0a8016600069528aee5affb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WFActivityHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Activity handler for workflow activity defintions&lt;/description&gt;
+        &lt;name&gt;WFActivityHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include('PrototypeServer');
+
+var WFActivityHandler = Class.create();
+WFActivityHandler.prototype = {
+   
+   ANYEVENT_HANDLER: 'onAnyEvent',
+   UNHANDLEDEVENT_HANDLER: 'onUnhandledEvent',
+   
+   initialize: function() {
+      
+   },
+   
+   run: function(eventName, eventParms) {
+      // execute?
+      if (activity.state == 'executing' &amp;&amp; eventName != 'cancel')
+         this.execute();
+      else
+         this.handleEvent(eventName, eventParms);
+
+	  // tests Workflow.java to see if there was an error in executing the javascript
+      // if there is an error and logging is on, the exception will go to workflow log
+      // automatically. This call will place the detail string into the failure of the 
+	  // wf_executing record
+      if (workflow.hasFailed()) 
+          this.setResultFaulted(workflow.getExceptionDetail());
+   },
+   
+   // Override onExecute to change the execute handling
+   execute: function(eventParms) {
+      try {
+         workflow.debug("executing activity {0}", [activity.name]);
+         this.onExecute(eventParms);
+      } catch (ex) {
+		 workflow.fault('Execption in Activity Handler:' + JSUtil.describeObject(ex));
+         activity.state = 'faulted';
+         activity.result = 'error';
+         this.handlerError('onExecute', ex);
+      }
+   },
+
+   setResultFaulted: function(reason) {
+       activity.result = 'error';
+       activity.state  = 'faulted';
+
+       if (reason) 
+           activity.fault_description = reason;
+   },
+   
+   setResultFailed: function(reason) {
+       activity.result = 'failure';
+
+       if (reason) {
+           activity.fault_description = reason;
+           this.debug('Error: ' + reason);
+       }
+   },
+
+   setResultSuccessful: function() {
+       activity.result = 'success';
+   },
+
+   setActivityOutput: function(output) {
+       activity.output = output;
+   },
+
+   // Handle an event for this activity
+   //
+   // If onAnyEvent is defined, it is called first
+   // If on&lt;eventName&gt;Event is defined, it is called
+   // If on&lt;eventName&gt;Event is not defined and onUnhandledEvent is defined, onUnhandledEvent is called
+   //
+   handleEvent: function(eventName, eventParms) {
+      try {
+         if (!eventName)
+            return;
+         
+         var eventHandlerName = 'on' + eventName.substring(0, 1).toUpperCase() + eventName.substring(1);
+         
+         // Is the any event handler defined? (called before handling ANY event)
+         if (this[this.ANYEVENT_HANDLER])
+            this[this.ANYEVENT_HANDLER](eventName);
+         
+         // Handler for the event specified?
+         if (this[eventHandlerName])
+            this[eventHandlerName](eventName, eventParms);
+         else if (this[this.UNHANDLEDEVENT_HANDLER])
+            this[this.UNHANDLEDEVENT_HANDLER](eventName, eventParms);
+         else
+            this.debug('Event {0} has no handler and is being ignored', [eventName]);
+         
+      } catch (ex) {
+		 workflow.fault('Execption in Activity Handler:' + JSUtil.describeObject(ex));
+         activity.state = 'faulted';
+         activity.result = 'error';
+         this.handlerError(eventHandlerName, ex);
+      }
+   },
+   
+   onExecute: function(eventParms) {
+      // the concrete Activity implementation should override this
+   },
+   
+   onCancel: function(eventName, eventParms) {
+      activity.state = 'cancelled';
+      activity.result = 'cancelled';
+      return;
+   },
+   
+   runScript: function(script, identifierKey) {
+      if (!script)
+         return null;
+	  // the variable answer is set within interpretString and
+	  // defaulted to null inside the workflow.interpretString
+	  // answer returns with the script result or and error that could/should be
+	  // tested for and dispositioned in the calling function.
+	  // interpret will not cache/compile the script
+	  var answer = workflow.interpretString(script, identifierKey); 
+      return answer;
+   },
+   
+   // If a string starts with javascript: eval it
+   js: function(str) {
+	   return workflow.strEval(str);
+   },
+   
+   info: function(msg, args) {
+      args = this._convertArgsToArray(args);
+      workflow.info(msg, args);
+   },
+   
+   warn: function(msg, args) {
+      args = this._convertArgsToArray(args);
+      workflow.warn(msg, args);
+   },
+   
+   debug: function(msg, args) {
+      args = this._convertArgsToArray(args);
+      workflow.debug(msg, args);
+   },
+   
+   error: function(msg, args, ex) {
+      args = this._convertArgsToArray(args);
+      workflow.error(msg, args);
+
+      if (ex)
+         workflow.fault(ex);
+   },
+   
+   handlerError: function(handlerName, ex) {
+      var table = "undefined";
+      var value = "undefined";
+
+      if (current) {
+          table = current.getTableName();
+          value = current.getDisplayValue();
+      }
+
+      this.error('Javascript error in: {0}, handler {1}, for {2}:{3}', [activity.name, handlerName, table, value], ex);
+   },
+   
+   _convertArgsToArray: function(args) {
+      if (typeof(args) == "undefined")
+         return [];
+      
+      if (typeof(args) == "string")
+         return [args];
+      
+      return args;
+   },
+
+   generate: function(activityId, order, startAtDspValue, noCreateFlag) {
+      var actObj = workflow.generate(activityId, order, startAtDspValue, noCreateFlag);
+      this._saveGenerateObj(activityId, actObj);
+      if (!actObj) {
+      	//some activities don't pre-generate - so we can't return any duration
+      	return null;
+      } else {
+       return actObj.duration;
+      }
+      
+   },
+
+   // activity definitions override this method to implement pre-generation of tasks and approvals
+   _generate: function(order) {
+      // default action is to ignore this request
+      return null;
+   },
+   
+   // return the pre-generation object for an activity
+   _getGenerateObj: function(activityId) {
+      var genObj = workflow.scratchpad.generate;
+      if (!genObj)
+         return null;
+      
+      return genObj[activityId];
+   },
+   
+   // save the pre-generation object for an activity (the object is returned by the activity's _generate method)
+   _saveGenerateObj: function(activityId, actObj) {
+      var genObj = workflow.scratchpad.generate;
+      if (!genObj)
+         genObj = {};
+      
+      genObj[activityId] = actObj;
+      workflow.scratchpad.generate = genObj;
+   },
+   
+   // remove the pre-generation object
+   _removeGenerateObj: function(activityId) {
+      var genObj = workflow.scratchpad.generate;
+      if (genObj) {
+         delete genObj[activityId];
+         workflow.scratchpad.generate = genObj;
+      }
+   },
+   
+   type: 'WFActivityHandler'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-05-29 20:29:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;365eca63c0a8016600069528aee5affb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;143&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WFActivityHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_365eca63c0a8016600069528aee5affb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;russ.sarbora&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-11-10 19:17:20&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6566&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:51</sys_created_on>
+        <sys_id>cf6c05ba2f331110d8a4d5f62799b6e4</sys_id>
+        <sys_name>WFActivityHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cf6c05ba2f331110d8a4d5f62799b6e4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

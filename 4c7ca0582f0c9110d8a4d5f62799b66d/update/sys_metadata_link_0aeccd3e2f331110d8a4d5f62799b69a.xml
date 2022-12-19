@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>82369df7871221003706db5eb2e3ec6d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ppm_int_TeamProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Ajax Processor to handle Team in SDLC&lt;/description&gt;
+        &lt;name&gt;ppm_int_TeamProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ppm_int_TeamProcessor = Class.create();
+ppm_int_TeamProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    createSprints: function () {
+        var result = this.newItem("result");
+        var startDateStr = this.getParameter('sysparm_start_date');
+        var sprintCount = parseInt(this.getParameter('sysparm_count')) || 1;
+        var sysId = this.getParameter('sysparm_sysid');
+        var sprintName = this.getParameter('sysparm_sprint_name');
+        var startingAt = this.getParameter('sysparm_start_count');
+        var durationInDays = parseInt(this.getParameter('sysparm_duration'));
+        var teamarr = sysId.split(","); //Multiple groups case
+        var hasOverlappingSprints;
+        for (var j = 0; j &lt; teamarr.length; j++) {
+            if(this.createSprintForGroup(teamarr[j], sprintCount, startDateStr, durationInDays, sprintName, startingAt))
+                hasOverlappingSprints = true;
+        }
+        if (hasOverlappingSprints)
+            result.setAttribute('status', 'hasOverlappingSprints');
+        else
+            result.setAttribute('status', 'success');
+        return "true";
+    },
+    createSprintForGroup: function(groupId, sprintCount, startDateStr, durationInDays, sprintName, startingAt){
+        var teamPoints = this._pointsForTeam(groupId);
+        var hasOverlappingSprints = false;
+		var startDateTime = new GlideDateTime();
+		startDateTime.setDisplayValue(startDateStr);
+
+        for (var i = 0; i &lt; sprintCount; i++) {
+			var startDate = this._calculateNextStartDate(startDateTime, durationInDays, i);
+            if(!this._createSprint(startDate.getLocalDate().getDisplayValue(), durationInDays, groupId, sprintName, startingAt, i, teamPoints)){
+                hasOverlappingSprints = true;
+                return hasOverlappingSprints;
+            }
+        }
+        return hasOverlappingSprints;
+    },
+	_calculateNextStartDate: function (startDate, durationInDays, index) {
+		var nextStartDate = new GlideDateTime(startDate);
+		nextStartDate.addDaysLocalTime(durationInDays * index);
+		return nextStartDate;
+    },
+    /* Created sprint records with team reference */
+    _createSprint: function (start, durationInDays, team, sprintName, startingAt, count, teamPoints) {
+        var shortDesc = this._getSprintShortDescription(sprintName, startingAt, count);
+		var startDateTime = new GlideDateTime();
+        startDateTime.setDisplayValue(start);
+        var endDateTime = new GlideDateTime();
+        endDateTime.setDisplayValue(startDateTime.getLocalDate());
+        endDateTime.addDaysLocalTime(durationInDays);
+        endDateTime.addSeconds(-1);
+
+        var sprint = new GlideRecordSecure('rm_sprint');
+        sprint.initialize();
+		sprint.setValue('start_date', startDateTime.getValue());
+        sprint.setValue('end_date', endDateTime.getValue());
+        sprint.assignment_group = team;
+        sprint.short_description = shortDesc;
+        sprint.team_points = teamPoints;
+        sprint.sys_domain = this.getGroupsDomain(team);
+		return sprint.insert();
+    },
+   getGroupsDomain: function (strGroupSysId) {
+      var recGroup = new GlideRecordSecure("sys_user_group");
+      recGroup.get(strGroupSysId);
+      return recGroup.getValue('sys_domain');
+   },
+    /* Get increamental Sprint short description */
+    _getSprintShortDescription: function (sprintName, startingAt, count) {
+        return sprintName + ' ' + (parseInt(startingAt) + parseInt(count));
+    },
+
+    _pointsForTeam: function(teamId) {
+        var gr = new GlideRecordSecure('sys_user_group');
+        gr.get(teamId);
+        return gr.getValue('points');
+    },
+    calculateSprintDefaults: function () {
+        var result = this.newItem("result");
+        var sysId = this.getParameter('sysparm_sysid');
+        /* Find duration and Sprint number */
+        var ls = new GlideRecordSecure('rm_sprint'); //last Sprint
+        ls.addQuery('sys_class_name', 'rm_sprint');
+        ls.addQuery('assignment_group', 'IN', sysId);//Multiple groups case
+        ls.orderByDesc('end_date');
+        ls.query();
+        if (ls.next()) {
+            var lastEndDate = ls.end_date;
+            var date = new GlideDateTime(lastEndDate);
+            date.addDays(1);
+            //Set default start date
+            result.setAttribute('next_start_date', date.getLocalDate().getDisplayValue());
+            var lastSprintName = ls.short_description;
+            result.setAttribute('count', this._extractCount(lastSprintName));
+            result.setAttribute('name', this._extractName(lastSprintName));
+            result.setAttribute('duration', this._findDuration(ls.start_date, ls.end_date));
+            return "true";
+        }
+        return "false";
+    },
+
+    calculateSprintDefaultsForScrumView: function () {
+        var result = this.newItem("result");
+        var sysId = this.getParameter('sysparm_sysid');
+        var ls = new GlideRecordSecure('rm_sprint');
+
+        ls.addQuery('sys_class_name', 'rm_sprint');
+        ls.addQuery('assignment_group', '=', sysId);//Only one group case
+        ls.orderByDesc('end_date');
+        ls.query();
+        if (ls.next()) {
+            var lastSprintName = ls.short_description;
+            var count = this._extractCount(lastSprintName);
+            var sprintName = this._extractName(lastSprintName).trim() + ' ' + count;
+            result.setAttribute('name', sprintName);
+
+            var lastStartDate = ls.start_date.getGlideObject();
+            var lastEndDate = ls.end_date.getGlideObject();
+			var dur = this._findDuration(lastStartDate, lastEndDate);
+
+            var startDate = this._calculateNextStartDate(lastEndDate, 0, 0);
+            startDate.addSeconds(1);
+            var endDate = this._calculateNextStartDate(lastEndDate, dur, 1);
+            result.setAttribute('startDate', startDate.getDisplayValue());
+            result.setAttribute('endDate', endDate.getDisplayValue());
+            return "true";
+        }
+        return "false";
+    },
+    _extractCount: function (name) {
+        var pattern = /(\d+)$/g; // Matching last degit of Sprint name
+        var count = name.match(pattern) ? name.match(pattern)[0] : 0;
+        return ++count;
+    },
+    _extractName: function (name) {
+        var pattern = /(\d+)$/g; // Matching last degit of Sprint name
+        return name.match(pattern) ? name.substring(0, name.lastIndexOf(name.match(pattern)[0])) : name;
+    },
+    _findDuration: function (st, ed) {
+        var startDate = new GlideDateTime(st);
+        var endDate = new GlideDateTime(ed);
+        var dur = GlideDateTime.subtract(startDate, endDate); //the difference between start date and end date
+        return dur.getRoundedDayPart();
+    }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-08-09 19:22:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;82369df7871221003706db5eb2e3ec6d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;243&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ppm_int_TeamProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="SDLC Scrum PPM Integration" source="com.snc.sdlc.scrum.ppm_int"&gt;0a159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_82369df7871221003706db5eb2e3ec6d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-10-11 11:08:51&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6698&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:58</sys_created_on>
+        <sys_id>0aeccd3e2f331110d8a4d5f62799b69a</sys_id>
+        <sys_name>ppm_int_TeamProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0aeccd3e2f331110d8a4d5f62799b69a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>63774b479c3d3010f877672f33c2b0cf</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UXBannerAnnouncementGetFields&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Returns the banner announcement record as an object&lt;/description&gt;
+        &lt;name&gt;UXBannerAnnouncementGetFields&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UXBannerAnnouncementGetFields = Class.create();
+UXBannerAnnouncementGetFields.prototype = {
+    initialize: function() {},
+	getFields: function(param) {
+		return ({
+			"heading": param.getValue('heading'),
+			"summary": param.getValue('summary'),
+			"start": param.getValue('start'),
+			"end": param.getValue('end'),
+			"add_link": param.getValue('add_link'),
+			"link_label": param.getValue('link_label'),
+			"link_url": param.getValue('link_url'),
+			"link_click_behavior": param.getValue('link_click_behavior'),
+			"icon": param.getValue('icon'),
+			"icon_tooltip": param.getValue('icon_tooltip'),
+			"color": param.getValue('color'),
+			"order": param.getValue('order'),
+			"experience": param.getValue('experience'),
+			"show_for": param.getValue('show_for'),
+			"roles": param.getValue('roles'),
+			"group": param.getValue('group'),
+			"sysId": param.sys_id
+		});
+	},
+	getReferences: function (param) {
+		return ({
+			"heading": param.heading,
+			"summary": param.summary,
+			"start": param.start,
+			"end": param.end,
+			"add_link": param.add_link,
+			"link_label": param.link_label,
+			"link_url": param.link_url,
+			"link_click_behavior": param.link_click_behavior,
+			"icon": param.icon,
+			"icon_tooltip": param.icon_tooltip,
+			"color": param.color,
+			"order": param.order,
+			"experience": param.experience,
+			"show_for": param.show_for,
+			"roles": param.roles,
+			"group": param.group,
+			"sysId": param.sys_id
+		});
+	},
+    type: 'UXBannerAnnouncementGetFields'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-08-10 21:36:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;63774b479c3d3010f877672f33c2b0cf&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UXBannerAnnouncementGetFields&lt;/sys_name&gt;
+        &lt;sys_package display_value="Banner Announcements - NOW Experiences" source="com.snc.banner_announcements"&gt;84aeeda12f120110d8a4d5f62799b64e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_63774b479c3d3010f877672f33c2b0cf&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-26 22:49:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1486&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:00</sys_created_on>
+        <sys_id>ebac89fa2f331110d8a4d5f62799b661</sys_id>
+        <sys_name>UXBannerAnnouncementGetFields</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ebac89fa2f331110d8a4d5f62799b661</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

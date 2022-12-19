@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8447847dcb11230021741a2df8076dfe</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KMFeedbackObjectBaseImpl&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implements extension point global.KMFeedbackObject
+KM UI extension point for updating Feedback object that is being used for the notification email. This extension point is called from script action "Activity Fanout Manager for KM" sending glide record, feedback object and version id as parameters.&amp;#13;
+&amp;#13;
+Additional parameters can also be updated to feedback object using the gRecord object, for example, &amp;#13;
+feedback_obj.short_description = gRecord.article.short_description+'';&amp;#13;
+&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;KMFeedbackObjectBaseImpl&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KMFeedbackObjectBaseImpl = Class.create();
+KMFeedbackObjectBaseImpl.prototype = {
+    initialize: function() {
+    },
+
+    getFeedbackObject: function(gRecord, feedback_obj, version) {
+		feedback_obj.article_number = gRecord.article.number+'';
+		feedback_obj.short_desc = gRecord.article.short_description+'';
+		feedback_obj.ownership_group = gRecord.article.ownership_group+'';
+		feedback_obj.ownership_group_name = gRecord.article.ownership_group.getDisplayValue();
+		feedback_obj.article_id = gRecord.article.sys_id+'';
+		feedback_obj.comment = gRecord.comments+'';
+		feedback_obj.commented_by = gRecord.user.getDisplayValue();
+		feedback_obj.commented_on = gRecord.sys_created_on.getDisplayValue();
+		feedback_obj.latest_version_id = version;
+		feedback_obj.subject = "Reg: Article "+gRecord.article.number+ " has been commented on "+feedback_obj.commented_on;
+    },
+
+    type: 'KMFeedbackObjectBaseImpl'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-10-22 08:55:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8447847dcb11230021741a2df8076dfe&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KMFeedbackObjectBaseImpl&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Advanced" source="com.snc.knowledge_advanced"&gt;e36e64192f201110d8a4d5f62799b6e9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8447847dcb11230021741a2df8076dfe&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-21 10:37:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;916&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:04</sys_created_on>
+        <sys_id>53ec417e2f331110d8a4d5f62799b634</sys_id>
+        <sys_name>KMFeedbackObjectBaseImpl</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_53ec417e2f331110d8a4d5f62799b634</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5ff88ba30b3112005a33061437673a07</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScheduleNodesLogsDownload&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Schedule a new log download job.&lt;/description&gt;
+        &lt;name&gt;ScheduleNodesLogsDownload&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScheduleNodesLogsDownload = Class.create();
+ScheduleNodesLogsDownload.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    schedule: function() {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        var dateArray = this.getDateArray();
+        if (dateArray === undefined)
+            return;
+
+        var parentTrackerSysID = NodeLogDownloadWorker.createParentTrackerId();
+        var tableSysID = this.createNodeLogRecord(parentTrackerSysID);
+        this.scheduleJob(tableSysID, parentTrackerSysID);
+        return tableSysID;
+    },
+
+    cancell: function() {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        new NodeLogDownloadWorker(this.getParameter("sysparm_tableSysID"), this.getParameter("sysparm_executionTrackerID")).cancelExecutionTracker();
+    },
+
+    getDateArray: function() {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        var dateRange = this.getParameter("sysparm_date_range");
+        if (dateRange === undefined || dateRange === null) {
+            gs.info("Date not parse correctly");
+            return;
+        }
+        var dateArray = dateRange.split(";");
+        if (dateArray.length === 0) {
+            gs.info("Date not parse correctly");
+            return;
+        }
+        return dateArray;
+    },
+
+    getSelectedSysIDs: function() {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        var selectedSysIDsElement = this.getParameter("sysparm_selected_sys_ids");
+        var selectedSysIDs = [];
+        if (selectedSysIDsElement)
+            selectedSysIDs = selectedSysIDsElement.split(";");
+
+        return selectedSysIDs;
+    },
+
+    createNodeLogRecord: function(parentTrackerSysID) {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        if (!GlideStringUtil.isEligibleSysID(parentTrackerSysID)) {
+            gs.print(parentTrackerSysID + " is not a valid sys_id");
+            return;
+        }
+
+        var dateArray = this.getDateArray();
+        var grn = new GlideRecord('node_log_download_info');
+        grn.initialize();
+        grn.setValue("execution_tracker", parentTrackerSysID);
+        grn.setValue('selected_node_number', this.getSelectedSysIDs().length);
+        grn.setValue("log_start_date", dateArray[0]);
+        grn.setValue("log_end_date", dateArray[dateArray.length - 1]);
+        grn.setValue("requested_by", gs.getUserDisplayName());
+        var tableSysID = grn.insert();
+        return tableSysID;
+    },
+
+    scheduleJob: function(tableSysID, parentTrackerSysID) {
+        if (!this._isAdmin()) {
+            gs.print("User: " + gs.getUserID() + " doesn't have access to ScheduleNodesLogsDownload");
+            return;
+        }
+
+        if (!GlideStringUtil.isEligibleSysID(tableSysID)) {
+            gs.print(tableSysID + " is not a valid sys_id");
+            return;
+        }
+
+        if (!GlideStringUtil.isEligibleSysID(parentTrackerSysID)) {
+            gs.print(parentTrackerSysID + " is not a valid sys_id");
+            return;
+        }
+
+        var email = this.getParameter("sysparm_email");
+        var downloadUrl = this.getParameter('sysparm_protocol') + "//" + this.getParameter('sysparm_host') + "/download_logs.do?sysparm_sys_id=" + tableSysID;
+        var childScript = "new AJAXLogDownloadWorker().downloadNow(" + "'" + tableSysID + "', '" + parentTrackerSysID + "', '" + email + "', '" + this.getParameter("sysparm_date_range") + "', '" + downloadUrl + "');";
+        var rootScript = "new AJAXLogDownloadWorker().cancellParentTracker('" + tableSysID + "', '" + parentTrackerSysID + "', '" + email + "', '" + this.getParameter("sysparm_date_range") + "', '" + downloadUrl + "');";
+        // Set log download time out, can change it in glide.util.logdownloadtimeout
+        var time = new GlideDateTime();
+        var timeOut = GlideProperties.getInt('glide.util.logdownloadtimeout', 10);
+        time.addSeconds(timeOut * 60);
+        GlideRunScriptJob.scheduleScript(rootScript, 'Check Node Log Download Parent Progress', time);
+
+        var selectedSysIds = this.getSelectedSysIDs();
+        for (var i = 0; i &lt; selectedSysIds.length; i++)
+            GlideRunScriptJob.scheduleScriptWithSystemID(childScript, 'Selected Node Log Download', 25, selectedSysIds[i]);
+
+    },
+
+    _isAdmin: function() {
+        return gs.hasRole("admin");
+    }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-03-03 01:12:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5ff88ba30b3112005a33061437673a07&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;199&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScheduleNodesLogsDownload&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5ff88ba30b3112005a33061437673a07&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-07-11 20:26:56&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4870&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:54</sys_created_on>
+        <sys_id>16acc5fa2f331110d8a4d5f62799b6ae</sys_id>
+        <sys_name>ScheduleNodesLogsDownload</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_16acc5fa2f331110d8a4d5f62799b6ae</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

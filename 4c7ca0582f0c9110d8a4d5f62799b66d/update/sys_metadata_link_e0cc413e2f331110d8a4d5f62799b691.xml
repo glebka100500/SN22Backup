@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6d67f0410a0a0bb900e6df6a66188c2f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DatabaseDiagnostics&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;DatabaseDiagnostics&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DatabaseDiagnostics = Class.create();
+
+DatabaseDiagnostics.prototype = {
+  initialize : function() {
+      this.dbi = null;
+  },
+
+  ping: function(size) {
+      size = (size&gt;0? size : 60);
+      var randomString = GlideStringUtil.getRandomString(size);
+      var gr = new GlideRecord("diagnostics_test");
+      gr.data = randomString;
+      var sw = new GlideStopWatch();
+
+      var sys_id = gr.insert();
+      gr.initialize();
+      gr.addQuery("sys_id", sys_id);
+      gr.query();
+      gr.next();
+      gr.deleteRecord();
+
+      return sw.getTime();
+  },
+
+  pingFriendly: function(count, size) {
+      var results = new Array();
+
+      if (!count)
+          count = 10;
+
+      for(var i = 0; i &lt; count; i++) {
+          results.push(this.ping(size));
+      }
+
+      this._printFriendlyPing(results);
+  },
+
+  getDBI: function() {
+      if (!this.dbi)
+          this.dbi = new GlideDBConfiguration.getDBI('sys_dictionary');
+
+      return this.dbi;
+  },
+
+  isOracle: function() {
+      return this.getDBI().isOracle();
+  },
+
+  getDriver: function() {
+      return this.getDBI().getDriverName();
+  },
+
+  getType: function() {
+      if (this.getDBI().isMySQL())
+		  return "mysql";
+      
+      if (this.getDBI().isOracle())
+		  return "oracle";
+      
+      if (this.getDBI().isSqlServer())
+		  return "sqlserver";
+      
+      return this.getDBI().getRDBMS();
+  },
+
+  getJDBC: function() {
+      return this.getDBI().getDriverVersion();
+  },
+
+  getVersion: function() {
+      return this.getDBI().getDatabaseProductVersion();
+  },
+
+  getConnections: function() {
+      var connections = new Array();
+	  var dbCfgMgr = GlideDBConfigurationManager.get();
+	  var poolNames = dbCfgMgr.getPoolNames();
+
+      for (var i = poolNames.iterator(); i.hasNext();) {
+          var name = i.next();
+          var pool = dbCfgMgr.getPool(name);
+          var pcons = pool.getConnections();
+          for(var p = 0; p &lt; pcons.length; p++) {
+              connections.push(pcons[p]);
+          }
+      }
+
+      return connections;
+  },
+
+  getConnectionsCount: function() {
+      return parseInt(this.getConnections().length);
+  },
+
+  getConnectionDetails: function(connections, i) {
+      var c = connections[i];
+      var details = { status: "free", sql: "*unknown*" };
+
+      if (!c || c == null)
+          return details;
+
+      if (c.getLastSQL())
+          details.sql = c.getLastSQL();
+      
+      if (!c.isAvailable())
+          details.status = "in use (" + c.getUseTime() + " ms)";
+
+      return details;
+  },
+
+  destroy: function() {
+    if (!this.dbi)
+       return;
+
+    this.dbi.close();
+    this.dbi = null;
+  },
+
+  _printFriendlyPing: function(results) {
+      var low = 99999, high = 0, avg = 0;
+
+      for(var i = 0; i &lt; results.length; i++) {
+          var result = results[i];
+          if (result &lt; low)
+              low = result;
+          if (result &gt; high)
+              high = result
+
+          avg += result;
+          gs.log("ping db: " + result + "ms");
+      }
+
+      gs.log("ping low: " + low + "ms, high: " + high + "ms, avg: " + parseInt(avg/results.length) + "ms");
+  },
+
+  type: "DatabaseDiagnostics"
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-02-13 02:12:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6d67f0410a0a0bb900e6df6a66188c2f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;75&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DatabaseDiagnostics&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6d67f0410a0a0bb900e6df6a66188c2f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-06-16 21:24:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3125&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:19</sys_created_on>
+        <sys_id>e0cc413e2f331110d8a4d5f62799b691</sys_id>
+        <sys_name>DatabaseDiagnostics</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e0cc413e2f331110d8a4d5f62799b691</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

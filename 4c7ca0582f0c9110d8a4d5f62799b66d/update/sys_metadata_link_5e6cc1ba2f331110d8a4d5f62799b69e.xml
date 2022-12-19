@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>34c5622bd70112002ba7b46c015203dc</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeProposed&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Handles when a proposed change can be performed.&lt;/description&gt;
+        &lt;name&gt;ChangeProposed&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeProposed = Class.create();
+ChangeProposed.prototype = {
+    initialize: function(gr) {
+		this._log = new GSLog("com.snc.change_management.log",this.type);
+		this._isChangeTask = false;
+		
+		// If a string has been passed in, assume it's a task_ci sys_id
+		if (typeof gr.getTableName === "undefined") {
+			this._gr = new GlideRecord("task_ci");
+			if (!this._gr.get(gr+"")) {
+				this._log.debug("[init] Unknown taskci sysId: " + gr);
+				return;
+			}
+		} else
+			this._gr = gr;
+		
+		// If it's a change or a task_ci we can do something with it
+		var tn = this._gr.getTableName()+"";
+		if (tn == "task_ci") {
+			this._log.debug("[init] Got task_ci:" + this._gr.getUniqueValue());
+			this._grTaskCI = this._gr;
+			this._grChgReq = this._gr.task.getRefRecord();
+			this._isChangeTask = (this._grChgReq.getTableName()+"" == "change_request");
+		}
+		else if (tn == "change_request") {
+			this._log.debug("[init] Got change_request:" + this._gr.getUniqueValue());
+			this._grChgReq = this._gr;
+			this._isChangeTask = true;
+		}
+		else
+			this._log.debug("[init] Unknown table passed: " + tn);
+		
+		if (this._isChangeTask)
+			this._changeRequest = new ChangeRequest(this._grChgReq);
+    },
+
+	/**
+	 * If affected CIs can be added to the Change Request 
+	 */
+	canAddCI: function() {
+		// If it's not a change task, return true and let other conditions decide
+		// This has to be done as the Add CI action could be used on all types of tasks
+		if (!this._isChangeTask)
+			return true;
+		
+		// If it's a change in the new state, return allow adding of CIs
+		if (this._changeRequest.isNew())
+			return true;
+		
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[canAddCI] Cannot add CIs to Change Request " + this._grChgReq.number + ":" + this._grChgReq.getUniqueValue());
+		
+		// In all other cases, don't allow addition of CIs
+		return false;
+	},
+	
+	/**
+	 * You can only propose a CI change related to a new Change Request.
+	 */
+	canProposeChange: function() {
+		if (!this._isChangeTask)
+			return false;
+		
+		if (this._changeRequest.isNew())
+			return true;
+		
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[canProposeChange] Cannot propose CI change for Change Request " + this._grChgReq.number + ":" + this._grChgReq.getUniqueValue());
+		
+		return false;
+	},
+	
+    type: 'ChangeProposed'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-01-25 16:36:38&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;34c5622bd70112002ba7b46c015203dc&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;32&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeProposed&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Core" source="com.snc.change_management"&gt;a39309476da620100acb70b35343307a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_34c5622bd70112002ba7b46c015203dc&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-01-26 15:21:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2313&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:49</sys_created_on>
+        <sys_id>5e6cc1ba2f331110d8a4d5f62799b69e</sys_id>
+        <sys_name>ChangeProposed</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5e6cc1ba2f331110d8a4d5f62799b69e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

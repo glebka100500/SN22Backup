@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5eab2cf09f3331002920bde8132e7095</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Customer extensible Class of ChangeUtilsSNC . Customers can override the public methods of ChangeUtilsSNC for their own business needs.&lt;/description&gt;
+        &lt;name&gt;ChangeUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeUtils = Class.create();
+ChangeUtils.prototype = Object.extendsObject(ChangeUtilsSNC, {
+
+	initialize: function(request, responseXML, gc) {
+		ChangeUtilsSNC.prototype.initialize.call(this, request, responseXML, gc);
+	},
+
+	/***************************
+	 *
+	 *Add customer changes below
+	 *
+	 ****************************/
+
+
+	type: 'ChangeUtils'
+});
+
+/********************************************************************
+ *The function below is written in this way to provide access via the
+ *signature ChangeUtils.isCopyChangeEnabled() from UI Action -
+ *'Copy Change' &gt; Condition.
+ *
+ *Customers are suggested to override methods inside the body of
+ *ChangeUtils' object definition.
+ ********************************************************************/
+
+ChangeUtils.isCopyChangeEnabled = function(current) {
+
+	var changeUtils = new ChangeUtils();
+
+	if (changeUtils.isCopyFlagValid() &amp;&amp; changeUtils.isCopyRulesValid(current)) {
+		return true;
+	} else {
+		return false;
+	}
+
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-04-30 18:22:47&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5eab2cf09f3331002920bde8132e7095&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5eab2cf09f3331002920bde8132e7095&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-02-14 14:35:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;983&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:51</sys_created_on>
+        <sys_id>21ac85fa2f331110d8a4d5f62799b69a</sys_id>
+        <sys_name>ChangeUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_21ac85fa2f331110d8a4d5f62799b69a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

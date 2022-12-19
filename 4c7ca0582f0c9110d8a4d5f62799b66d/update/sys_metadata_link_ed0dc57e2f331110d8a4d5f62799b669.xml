@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8e43d6abeb2211002b2ea0810206fe35</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TableRotationCleanTime&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;TableRotationCleanTime&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TableRotationCleanTime = Class.create();
+TableRotationCleanTime.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	/*
+	 * The current time, plus the shard duration time, times the number of shards, plus a day.
+	 * For example:
+	 *   now + 5 minutes per shard * 4 shards + 1 day -&gt; 1 day, 20 minutes from now
+	 */
+	getCleanTime: function() {
+		var now = new GlideDateTime();
+		var count = this.getParameter('sysparm_rotation_count');
+		var duration = this.getParameter('sysparm_rotation_duration');
+		for (var i = 0; i &lt; parseInt(count); ++i) {
+			now.add(
+				duration == '' ? 0 : this._calculateTimeDuration(duration)
+			);
+		}
+		now.addDays(1);
+		return now.getDisplayValue();
+	},
+	
+	_calculateTimeDuration : function(duration) {
+		var gd = new GlideDuration();
+		gd.setValue(duration);
+
+		var gdt = new GlideDateTime();
+		gdt.setNumericValue(0);
+		gdt.add(gd);
+		return gdt.getNumericValue();
+	}
+
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-02-03 19:16:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8e43d6abeb2211002b2ea0810206fe35&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;63&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TableRotationCleanTime&lt;/sys_name&gt;
+        &lt;sys_package display_value="Database Replication" source="com.snc.db.replicate"&gt;edadf40b6d2220100acb70b35343303a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8e43d6abeb2211002b2ea0810206fe35&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-02-12 23:42:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;918&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:29</sys_created_on>
+        <sys_id>ed0dc57e2f331110d8a4d5f62799b669</sys_id>
+        <sys_name>TableRotationCleanTime</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ed0dc57e2f331110d8a4d5f62799b669</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1bfc46e273120010616ca9843cf6a751</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSSO_OIDC_internal&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Logic to process OIDC authentication for a multi-tenant single sign-on&lt;/description&gt;
+        &lt;name&gt;MultiSSO_OIDC_internal&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("OIDC_custom");
+gs.include("SSO_Helper");
+var MultiSSO_OIDC_internal = Class.create();
+MultiSSO_OIDC_internal.prototype = Object.extend(new MultiSSO_Abstract_Core(), {
+    initialize: function() {
+        this.OIDC = new OIDC_custom();
+    },
+    process: function() {
+        // Initialize  OauthClient.
+        this.OIDC.initializeOauthClient(this.propertiesGR.oidc_entity_profile);
+        try {
+            // check if request contains AuthCode
+            if (request.getParameter("code") != null) {
+                this.OIDC.logDebug("OIDC Request - getting login user using the Auth Code");
+                var code = request.getParameter("code");
+                // Get the user using the code.
+                return this.loginUser(code);
+            } else if (request.getParameter("error") != null) {
+                this.OIDC.logError("error " + request.getParameter("error") + " error_description  " + request.getParameter("error_description"));
+                return "failed_authentication";
+            } else {
+                // Initial request, Get the Authn URL to get the  Auth Code.
+                this.OIDC.logDebug("OIDC Request - getting the Authn request url");
+                var authURL = this.OIDC.getAuthorizationURL();
+                this.OIDC.logDebug("AuthorizationURL : " + authURL);
+                return authURL;
+            }
+        } finally {
+            action.setRedirect(this.redirectURL);
+        }
+    },
+    loginUser: function(code) {
+        var user = this.OIDC.getUserByAuthorization(code);
+
+        var eventLogParm1 = "user_name=" + user;
+        var eventLogParm2 = "multisso=true,idpsysid=" + this.propertiesGR.sys_id;
+
+        // if not a valid user, return error as "failed_authentication"
+        if (!user) {
+            SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "failure", "", eventLogParm2);
+            this.OIDC.logDebug("OIDC Request - No user found.");
+            return "failed_authentication";
+        }
+        
+		// SSO Source validation
+        if (!this.isAutoRedirectIDP(this.propertiesGR.sys_id)) {
+            var ugr = new GlideRecord("sys_user");
+            ugr.query('user_name', user);
+            if (ugr.next()) {
+                var userSsoSource = ugr.getValue('sso_source');
+                var companySysId = ugr.getValue('company');
+                if (!GlideStringUtil.nil(userSsoSource)) {
+                    var userSso = userSsoSource.split(':');
+                    if (!GlideStringUtil.nil(userSso[1]) &amp;&amp; userSso[1] != this.propertiesGR.sys_id) {
+                        this.OIDC.logError("Ensure that the user you are trying to login is from the correct source, as mentioned in user's sso source field in servicenow instance.");
+                        return "failed_authentication";
+                    }
+                } else if (!GlideStringUtil.nil(companySysId)) {
+                    var cgr = new GlideRecord("core_company");
+                    cgr.get(companySysId);
+                    var companySsoSource = cgr.getValue('sso_source');
+                    if (!GlideStringUtil.nil(companySsoSource)) {
+                        var companySso = companySsoSource.split(':');
+                        if (!GlideStringUtil.nil(companySso[1]) &amp;&amp; companySso[1] != this.propertiesGR.sys_id) {
+                            this.OIDC.logError("Ensure that the user you are trying to login is from the correct source, as mentioned in company's sso source field for user in servicenow instance.");
+                            return "failed_authentication";
+                        }
+                    }
+                }
+            }
+        } else
+            this.OIDC.logDebug("Auto-redirect IDP, Skipping SSO source field validation.");
+
+        if (!this.redirectURL) {
+            this.OIDC.logDebug("Get the RelayStateId from the request.");
+            var stateId = request.getParameter("state");
+
+            // Get the Relay State for the given SysId/StateId, which should be persisted in the DB
+            var relayState = this.OIDC.getRelayStateById(stateId);
+
+            // If relayState is nil, there could be below reasons : 
+            //    1) No record exists for the passed SysId
+            //    2) Relay state is expired
+            //    3) Relay state is already used
+            // In such scenario, failing the User login, as there is no valid Relay Persist.
+            if (GlideStringUtil.nil(relayState)) {
+                eventLogParm2 = eventLogParm2 + ',reason=Relay State is expired or not forund.';
+                SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "failure", eventLogParm1, eventLogParm2);
+                this.OIDC.logDebug("OIDC Request - Relay State is expired or not forund for the given sysId : " + stateId);
+                return "failed_authentication";
+            }
+
+            var customRelayState = GlideTransaction.get().getRequest().getSession().getAttribute("RelayState");
+            if (!GlideStringUtil.nil(customRelayState)) {
+                this.OIDC.logDebug("OIDC Request - Redirecting to custom Relay State : " + customRelayState);
+                this.redirectURL = customRelayState;
+            } else {
+                this.OIDC.logDebug("OIDC Request - Redirecting to Relay State : " + relayState);
+                // If valid, assign the relay state to the redirectURL, to be redirected to post  successful Login.
+                this.redirectURL = relayState;
+            }
+        }
+        // created below method(saveInCookie) in oidc_internal for backword capatibility
+        // once successfully logged in. we need set sso_id cookie
+        this.ssoHelper.saveInCookie(SNC.SSOUtils.SSOID(), this.propertiesGR.sys_id);
+        SNC.SecurityEventSender.sendLoginGCFEvent("OIDC", "success", eventLogParm1, eventLogParm2);
+        this.OIDC.logDebug("OIDC Request - setting the login method as OIDC");
+        request.getSession().setAttribute("glide.authenticate.multisso.login.method", "oidc");
+        return user;
+    },
+    //override parent setSSORecord for multiSSO V2 to set SSO Record
+    setSSORecord: function(gr) {
+        this.propertiesGR = gr;
+        this.OIDC.setSSORecord(this.propertiesGR);
+        // set it to session so the response can find the right idp
+        var request = GlideTransaction.get().getRequest();
+        request.getSession().setAttribute(SNC.SSOUtils.SSOID(), this.propertiesGR.getUniqueValue());
+        //this is added in order to reuse the saveInCookie functionality only for MultiSSO V2.
+        this.ssoHelper = this.OIDC;
+    },
+    // override parent setSSOHelper for multiSSO V1 to set SSO Record
+    setSSOHelper: function(helper) {
+        this.ssoHelper = helper;
+        this.propertiesGR = this.ssoHelper.getProperties();
+        this.OIDC.setSSORecord(this.propertiesGR);
+    },
+
+    isAutoRedirectIDP: function(sysId) {
+        return new SNC.GlideMultiSSO().isAutoRedirectIdp(sysId);
+    },
+
+    type: 'MultiSSO_OIDC_internal'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-01-15 12:01:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1bfc46e273120010616ca9843cf6a751&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;37&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSSO_OIDC_internal&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1bfc46e273120010616ca9843cf6a751&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-01 12:21:39&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7026&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:15</sys_created_on>
+        <sys_id>da4c097a2f331110d8a4d5f62799b686</sys_id>
+        <sys_name>MultiSSO_OIDC_internal</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_da4c097a2f331110d8a4d5f62799b686</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

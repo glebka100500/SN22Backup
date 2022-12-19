@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>45a06e58c33111003d2ae219cdba8f8f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_Question&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper class for Item Creator questions.&amp;#13;
+&amp;#13;
+Subclass to modify and inject using sc_ic_Factory.  See sc_ic_Factory for more information.&lt;/description&gt;
+        &lt;name&gt;sc_ic_Question&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_Question = Class.create();
+sc_ic_Question.prototype = Object.extendsObject(sc_ic_Base, {
+    initialize: function(_gr,_gs) {
+		sc_ic_Base.prototype.initialize.call(this,_gr,_gs);
+		
+		this._defnChgFld = {
+			"sc_ic_item_staging": true,
+			"sc_ic_question_type": true,
+			"question_text": true,
+			"name" :true,
+			"default_value": true,
+			"mandatory": true,
+			"max_length": true,
+			"scale_min": true,
+			"scale_max": true,
+			"cost": true,
+			"recurring_cost": true,
+			"policy_payload": true
+		};
+		
+		this._metaChgFld = {
+			"sc_ic_section": true,
+			"sc_ic_column": true,
+			"help_text": true,
+			"read_only": true,
+			"order": true
+		};
+
+    },
+	
+	setDefinitionChangedOnItem: function() {
+		var iGr = new GlideRecord(sc_ic.ITEM_STAGING);
+		if (iGr.get(this._gr[sc_ic.ITEM_STAGING])) {
+			this._log.debug("[setDefinitionChangedOnItem] Changed Item " + this._gr[sc_ic.ITEM_STAGING]);
+			sc_ic_Factory.wrap(iGr).questionDefinitionChanged();
+		}
+	},
+	
+	setMetaChangedOnItem: function() {
+		var iGr = new GlideRecord(sc_ic.ITEM_STAGING);
+		if (iGr.get(this._gr[sc_ic.ITEM_STAGING])) {
+			this._log.debug("[setMetaChangedOnItem] Changed Item " + this._gr[sc_ic.ITEM_STAGING]);
+			sc_ic_Factory.wrap(iGr).questionMetaChanged();
+		}
+	},
+	
+	definitionChanged: function() {
+		for (var key in this._defnChgFld)
+			if (this._defnChgFld[key] &amp;&amp; this._gr[key].changes()) {
+				this._log.debug("[definitionChanged] Definition has changed");
+				return true;
+			}
+		
+		return false;
+	},
+	
+	metaChanged: function() {
+		for (var key in this._metaChgFld)
+			if (this._metaChgFld[key] &amp;&amp; this._gr[key].changes()) {
+				this._log.debug("[metaChanged] Meta has changed");
+				return true;
+			}
+		
+		return false;
+	},
+	
+	/**
+	 * Sets the question name based on the question text.
+	 */
+	setQuestionName: function() {
+		var name = "";
+		
+		if (this._gr[sc_ic.QUESTION_TYPE].preconfigured+"" == "true" &amp;&amp; JSUtil.nil(this._gr.question_text))
+			name = this._gr[sc_ic.QUESTION_TYPE].question_text+"";
+		else
+			name = this._gr.question_text+"";
+		
+		name = name.toLowerCase();
+		name = name.replace(/\s/g,"_");
+	    name = name.replace(/[^a-z0-9_]/g,"");
+		
+		if (name.match(/^[a-zA-Z]/) == null)
+			name = "q_" + name;
+		
+		name = name.slice(0,36);
+		name = this._suffixVarName(name);
+		
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[setQuestionName] Using name: " + name);
+		
+		this._gr.name = name;
+	},
+	
+	setQuestionMetaFields: function() {
+		this._gr.sc_ic_question_class = this._gr.sc_ic_question_type.sc_ic_question_class.getSysIdFromReferenceKey();
+		this._gr.base_type = this._gr.sc_ic_question_type.sc_ic_question_class;
+	},
+	
+	_suffixVarName: function(varPrefix) {
+		var quest = new GlideRecord(sc_ic.QUESTION);
+		quest.addQuery("sys_id","!=",this._gr.getUniqueValue());
+		quest.addQuery(sc_ic.ITEM_STAGING, this._gr[sc_ic.ITEM_STAGING]);
+		quest.addQuery("name","STARTSWITH",varPrefix);
+		quest.orderByDesc("name");
+		quest.query();
+		
+		this._log.debug("[_suffixVarName] Found " + quest.getRowCount() + " questions with the same name");
+		
+		var counter = 0;
+		
+		while (quest.next()) {
+			this._log.debug("[_suffixVarName] checking" + quest.name);
+			var cnt = parseInt((quest.name+"").slice(-2),10);
+			this._log.debug("[_suffixVarName] Got number: " + cnt);
+			if (!isNaN(cnt)) {
+				counter = cnt + 1;
+				break;
+			}
+		}
+		
+		return varPrefix + "_" + ('00' + counter).slice(-2);
+	},
+	
+    type: 'sc_ic_Question'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-12-18 11:07:09&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;45a06e58c33111003d2ae219cdba8f8f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;49&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_Question&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_45a06e58c33111003d2ae219cdba8f8f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-07-29 11:53:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3435&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:12</sys_created_on>
+        <sys_id>337cc9ba2f331110d8a4d5f62799b6ff</sys_id>
+        <sys_name>sc_ic_Question</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_337cc9ba2f331110d8a4d5f62799b6ff</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>898f2eb9b33233003e5362ff86a8dcdd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PALicensingUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This class provide API to be used in collecting PA fact tables licensing in Performance Analytics&lt;/description&gt;
+        &lt;name&gt;PALicensingUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PALicensingUtils = Class.create();
+PALicensingUtils.prototype = {
+    SYS_DB_OBJECT: 'sys_db_object',
+    SYS_DB_VIEW: 'sys_db_view',
+    SYS_PACKAGE: 'sys_package',
+    SYS_DB_VIEW_TABLE: 'sys_db_view_table',
+    UA_APP_FAMILY: 'ua_app_family',
+
+    // PA tables
+    PA_JOB_INDICATORS: 'pa_job_indicators',
+    PA_INDICATORS: 'pa_indicators',
+    PA_CUBES: 'pa_cubes',
+    PA_SCORES: 'pa_scores',
+    PA_SCORES_L1: 'pa_scores_l1',
+    PA_SCORES_L2: 'pa_scores_l2',
+    SYSAUTO_PA: 'sysauto_pa',
+    PA_DIMENSIONS: 'pa_dimensions',
+    PA_BREAKDOWNS: 'pa_breakdowns',
+    PA_M2M_DASHBOARD_SOURCES: 'pa_m2m_dashboard_sources',
+
+    NEW_SCORE_TABLE: 'com.snc.pa.new_scores_tables',
+    REF_ID_DOT: 'ref_id.',
+    BREAKDOWN: 'breakdown',
+    BREAKDOWNL2: 'breakdown_level2',
+    INDICATOR: 'indicator',
+    STARTED_AT: 'start_at',
+    SYS_CHOICE: 'sys_choice',
+    FACT_TABLE: 'facts_table',
+    CONDITIONS: 'conditions',
+    NAME_EQUALS: 'name=',
+    JAVASCRIPT_PREFIX: 'javascript:',
+    NAME: 'name',
+    VIEW: 'view',
+    TABLE: 'table',
+    GLOBAL: 'global',
+    SYSTEM: 'system',
+    X_PPREFIX: 'x_',
+    U_PREFIX: 'u_',
+    PREFIX_SEPARATOR: '_',
+    APP_ID: 'app_id',
+    LOB_NAME: 'lob_name',
+    LOB_ID: 'lob_id',
+    LINEAGE_NAME: 'lineage_name',
+    LINEAGE_ID: 'lineage_id',
+    SCOPE: 'scope',
+    UNKNOWN_FAMILY: 'Unknown family',
+    CUSTOM: 'Custom',
+
+    initialize: function(eventType) {
+        this.tableCache = {};
+        this.dbOManager = GlideDBObjectManager.get();
+        this.companyCode = gs.getProperty('glide.appcreator.company.code');
+        this.vendorPrefix = this.X_PPREFIX + this.companyCode + this.PREFIX_SEPARATOR;
+        this.log = new GSLog('com.snc.pa.ua.log', 'PA_LUA_' + eventType);
+        this.usageCollector = new PAUsageCollectionWrapper(eventType);
+        this.tableAndViewInfo = {
+            tables: [],
+            views: []
+        };
+        this.isNewScoreTable = GlideProperties.getBoolean(this.NEW_SCORE_TABLE);
+        var tablesExcludedFromLicenceChecksList = gs.getProperty("com.snc.pa.lua.tables.excluded.from.licence.checks", "");
+
+        // There should be a standard function for this, but I couldn't find it
+        this.tablesExcludedFromLicenceChecks = tablesExcludedFromLicenceChecksList.split(",");
+        for (i = 0; i &lt; this.tablesExcludedFromLicenceChecks.length; i++)
+            this.tablesExcludedFromLicenceChecks[i] = this.tablesExcludedFromLicenceChecks[i].trim();
+    },
+
+    /**
+     * return true, if the debug logging is on
+     */
+    isDebugLogOn: function() {
+        return this.log.atLevel(GSLog.DEBUG);
+    },
+
+    /**
+     * Log debug messages
+     */
+    logDebug: function(message) {
+        this.log.debug(message);
+    },
+
+    /**
+     * Log warning messages
+     */
+    logWarning: function(message) {
+        this.log.warn(message);
+    },
+
+    /**
+     * Connect the usage collector
+     */
+    connect: function() {
+        if (!this.usageCollector.canConnect()) {
+            this.logWarning('Usage collection stream is not enabled.');
+            return false;
+        }
+        this.usageCollector.connect();
+        var isConnected = this.usageCollector.isConnected();
+        if (!isConnected)
+            licensingUtil.logWarning('Usage collection stream can not be connected.');
+
+        return isConnected;
+    },
+
+    /**
+     * Disconnect the usage collector
+     */
+    disconnect: function() {
+        if (this.isDebugLogOn())
+            this.logDebug('Tables and database views used: ' + JSON.stringify(this.tableAndViewInfo));
+
+        this.usageCollector.disconnect();
+    },
+
+    /**
+     * Send the usage information per table or database view provided and update the table and database view info, if the debug is on.
+     */
+    sendUsage: function(sendJsonInit, tableName) {
+        var sendJsonList = this.getSendJSONs(sendJsonInit, tableName);
+        for (var i = 0; i &lt; sendJsonList.length; i++) {
+            this.sendUsageJSON(sendJsonList[i]);
+        }
+    },
+
+    /**
+     * Send the sendJson to usage collector, if the debug is off.
+     * If the debug is on, the JSON will only be log and nothing will be send to usage collector
+     */
+    sendUsageJSON: function(sendJson) {
+        if (this.isDebugLogOn())
+            this.logDebug('Usage collection stream sent: ' + JSON.stringify(sendJson));
+        else
+            this.usageCollector.send(sendJson);
+    },
+
+    /**
+     * Create the usage JSON for the table with the family information.
+     * If the tableName is a database view, JSON will be created for each valid table.
+     */
+    getSendJSONs: function(sendJsonInit, tableName) {
+        var sendJsonList = [];
+        var tableList = this.getTableList(tableName);
+
+        if (this.isDebugLogOn()) {
+            //this is for debugging purpose. It is not sent to the central usage instance
+            if (gs.isDatabaseView(tableName)) {
+                var viewInfo = tableName + ' : ' + tableList;
+                if (this.tableAndViewInfo.views.indexOf(viewInfo) == -1)
+                    this.tableAndViewInfo.views.push(viewInfo);
+            }
+        }
+
+        for (var j = 0; j &lt; tableList.length; j++) {
+            var sendJson = JSON.parse(JSON.stringify(sendJsonInit));
+            var tableInfo = this.getTableInfo(tableList[j]);
+            //do not check the family for invalid tables
+            if (GlideStringUtil.nil(tableInfo)) {
+                if (this.isDebugLogOn())
+                    this.logDebug('Invalid table is used: ' + tableList[j]);
+
+                continue;
+            }
+            if (this.tablesExcludedFromLicenceChecks.indexOf(tableList[j]) &gt;= 0)
+                continue;
+
+            sendJson.appl_category_id = tableInfo.familyID;
+            sendJson.appl_category_name = tableInfo.familyName;
+            sendJson.is_licensed = this.isLicensed(tableList[j]);
+            if (this.isDebugLogOn()) {
+                //this is for debugging purpose. It is not sent to the central usage instance
+                var table = tableList[j] + '(Package:' + tableInfo.packageID + ')';
+                sendJson.table = table;
+                if (this.tableAndViewInfo.tables.indexOf(table) == -1)
+                    this.tableAndViewInfo.tables.push(table);
+            }
+            sendJsonList.push(sendJson);
+        }
+        return sendJsonList;
+    },
+
+    /**
+     * Return true, if table/dbview is licensed or failed to get licence information
+     */
+    isLicensed: function(table) {
+        var tableName = table.trim();
+        if (GlideStringUtil.nil(tableName))
+            return false;
+
+        var tableInfo = this.getTableInfo(tableName);
+        if (!tableInfo || GlideStringUtil.nil(tableInfo.packageID))
+            return false;
+
+        if (tableInfo.isCustom) {
+            if (gs.isDatabaseView(tableName))
+                return this.isCustomDBViewLicensed(tableName);
+            else
+                return this.isCustomTableLicensed(tableName);
+        }
+
+        return this.hasLicenseForApp(tableInfo.packageID);
+    },
+
+    /**
+     * Return true, if table/db view is custom
+     */
+    isCustom: function(table, appId) {
+        var tableName = table.trim();
+        if (GlideStringUtil.nil(tableName))
+            return false;
+
+        if (tableName.indexOf(this.U_PREFIX) == 0)
+            return true;
+
+        else if (GlideStringUtil.notNil(this.companyCode) &amp;&amp; tableName.indexOf(this.vendorPrefix) == 0)
+            return true;
+
+        if (appId === this.GLOBAL || appId === null)
+            return true;
+
+        return false;
+    },
+
+    /**
+     * Return true, if appId provided has licence or failed to get licence info.
+     */
+    hasLicenseForApp: function(appId) {
+        if (GlideStringUtil.nil(appId))
+            return false;
+
+        // if package is system or internal or no package for it. For system tables, we do not need to check license
+        if (appId === null || appId.includes(this.SYSTEM) || appId === this.GLOBAL)
+            return true;
+
+        var isLicensed = true;
+        try {
+            isLicensed = sn_lef.GlideEntitlement.hasLicenseForApp(appId);
+        } catch (e) {
+            this.logWarning('Check license for app:' + appId + ' failed - ' + e);
+        }
+        return isLicensed;
+    },
+
+    // Check the custom table license. It might need different license checking
+    isCustomTableLicensed: function(custTable) {
+        return true;
+    },
+
+    /**
+     * Return true, if all the tables in db view has license.
+     */
+    isCustomDBViewLicensed: function(dbView) {
+        var viewTablesArray = this.getTablesDBview(dbView);
+        if (viewTablesArray.length &gt; 0) {
+            for (var i = 0; i &lt; viewTablesArray.length; i++) {
+                if (!this.isLicensed(viewTablesArray[i]))
+                    return false;
+            }
+        }
+        return true;
+    },
+
+    /**
+     * Returns a list of tables if the table is a database view.
+     * Returns a list of single entry if the table pass a real table.
+     */
+    getTableList: function(table) {
+        var tableName = table.trim();
+        if (gs.isDatabaseView(tableName))
+            return this.getTablesDBview(tableName);
+
+        return [tableName];
+    },
+
+    /**
+     * Return all the tables in db view.
+     */
+    getTablesDBview: function(dbViewName) {
+        var dbView = dbViewName.trim();
+        var viewTables = [];
+        var dbViewGr = new GlideRecord(this.SYS_DB_VIEW);
+        dbViewGr.setWorkflow(false);
+        dbViewGr.addQuery(this.NAME, dbView);
+        dbViewGr.query();
+        if (dbViewGr.next()) {
+            var dbViewTable = new GlideRecord(this.SYS_DB_VIEW_TABLE);
+            dbViewTable.addQuery(this.VIEW, dbViewGr.getUniqueValue());
+            dbViewTable.setWorkflow(false);
+            dbViewTable.query();
+            while (dbViewTable.next()) {
+                var viewTable = dbViewTable.getValue(this.TABLE);
+                viewTables.push(viewTable);
+            }
+        }
+
+        return viewTables;
+    },
+
+    /**
+     * Return application/package info, for the real table.
+     */
+    getTableInfo: function(table) {
+        var tableName = table.trim();
+        if (gs.isDatabaseView(tableName))
+            return '';
+
+        if (!this.tableCache[tableName]) {
+            var tableGR = new GlideAggregate(this.SYS_DB_OBJECT);
+            tableGR.addQuery(this.NAME, tableName);
+            tableGR.groupBy(this.SYS_PACKAGE);
+            tableGR.setWorkflow(false);
+            tableGR.query();
+
+            if (tableGR.next()) {
+                var pkgId = tableGR.sys_package.source.toString();
+                var isCustom = this.isCustom(tableName, pkgId);
+                this.tableCache[tableName] = {};
+                this.tableCache[tableName].packageID = pkgId;
+                this.tableCache[tableName].isCustom = isCustom;
+                this._getFamilyID(pkgId, tableName, isCustom);
+            } else {
+                //neither the database view nor table info found
+                this.tableCache[tableName] = '';
+            }
+        }
+        return this.tableCache[tableName];
+    },
+
+    /**
+     * Update family information for the table
+     */
+    _getFamilyID: function(packageID, tableName, isCustom) {
+        if (isCustom) {
+            this.tableCache[tableName].familyID = this.CUSTOM;
+            this.tableCache[tableName].familyName = this.CUSTOM;
+            return;
+        }
+        var appFamilyGR = new GlideRecord(this.UA_APP_FAMILY);
+        // if we have a non-global package, check what app family that is in
+        if (packageID) {
+            if (packageID != this.GLOBAL) {
+                appFamilyGR.addQuery(this.APP_ID, packageID);
+                appFamilyGR.setWorkflow(false);
+                appFamilyGR.query();
+            }
+            if (!appFamilyGR.hasNext()) {
+                appFamilyGR = new GlideRecord(this.UA_APP_FAMILY);
+                appFamilyGR.addQuery(this.SCOPE, packageID);
+                appFamilyGR.setWorkflow(false);
+                appFamilyGR.query();
+            }
+            // if we found an app family, use it
+            if (appFamilyGR.next()) {
+                if (GlideStringUtil.notNil(appFamilyGR.getValue(this.LOB_NAME))) {
+                    this.tableCache[tableName].familyID = appFamilyGR.getValue(this.LOB_ID);
+                    this.tableCache[tableName].familyName = appFamilyGR.getValue(this.LOB_NAME);
+                } else {
+                    this.tableCache[tableName].familyID = appFamilyGR.getValue(this.LINEAGE_ID);
+                    this.tableCache[tableName].familyName = appFamilyGR.getValue(this.LINEAGE_NAME);
+                }
+            }
+        }
+
+        //if no family information found
+        if (!this.tableCache[tableName].familyID) {
+            this.tableCache[tableName].familyID = this.UNKNOWN_FAMILY;
+            this.tableCache[tableName].familyName = this.UNKNOWN_FAMILY;
+        }
+    },
+
+    /**
+     * Are PA Tables Valid
+     **/
+    arePATablesValid: function() {
+        var isValidTable = gs.tableExists(this.PA_DIMENSIONS) &amp;&amp; gs.tableExists(this.PA_M2M_DASHBOARD_SOURCES) &amp;&amp;
+            gs.tableExists(this.PA_BREAKDOWNS) &amp;&amp; gs.tableExists(this.PA_JOB_INDICATORS) &amp;&amp;
+            gs.tableExists(this.PA_INDICATORS) &amp;&amp; gs.tableExists(this.PA_CUBES) &amp;&amp; gs.tableExists(this.SYSAUTO_PA);
+
+        if (this.isNewScoreTable)
+            return isValidTable &amp;&amp; gs.tableExists(this.PA_SCORES_L1) &amp;&amp; gs.tableExists(this.PA_SCORES_L2);
+        else
+            return isValidTable &amp;&amp; gs.tableExists(this.PA_SCORES);
+    },
+
+    /**
+     * Get the table list from fact table of the indicator/breakdown source and conditions
+     * If the fact table is 'sys_choice', the tables in the condition are returned
+     **/
+    getTableFromSource: function(sourceTable, sourceId) {
+        var sourceGr = new GlideRecord(sourceTable);
+        if (sourceGr.get(sourceId))
+            return this.getTableFromCondition(sourceGr.getValue(this.FACT_TABLE), sourceGr.getValue(this.CONDITIONS));
+
+        return [];
+    },
+
+    /**
+     * Get the table list from fact table and conditions
+     * If the fact table is 'sys_choice', the tables in the condition are returned
+     **/
+    getTableFromCondition: function(factTable, conditions) {
+        var tableNames = [];
+        if (GlideStringUtil.nil(factTable))
+            return tableNames;
+
+        // in case of not using sys_choice as fact table get fact table
+        if (factTable !== this.SYS_CHOICE) {
+            tableNames.push(factTable);
+            return tableNames;
+        }
+        // in case sys_choice used as fact table parse condition to get table
+        if (GlideStringUtil.nil(conditions))
+            return tableNames;
+
+        var parts = conditions.replace('^OR', '^').replace('^NQ', '^').split('^');
+        for (var i = 0; i &lt; parts.length; i++) {
+            var newTableName = '';
+            // only 'EQUALS' condition is supported for 'name' field
+            if (parts[i].indexOf(this.NAME_EQUALS) == 0) {
+                var nameValue = parts[i].replace(this.NAME_EQUALS, '').trim();
+
+                if (nameValue.indexOf(this.JAVASCRIPT_PREFIX) == 0) {
+                    var value = nameValue.replace(this.JAVASCRIPT_PREFIX, '');
+                    var tables = [];
+                    var evalObj = new GlideScriptEvaluator();
+                    evalObj.setEnforceSecurity(true);
+                    evalResult = evalObj.evaluateString(value, false);
+                    if (GlideStringUtil.notNil(evalResult)) {
+                        if (Array.isArray(evalResult) &amp;&amp; evalResult.length &gt; 0) {
+                            for (i = 0; i &lt; evalResult.length; i++)
+                                if (GlideStringUtil.notNil(evalResult[i]) &amp;&amp; tableNames.indexOf(evalResult[i]) == -1)
+                                    tableNames.push(evalResult[i]);
+                        } else {
+                            //it is a String
+                            newTableName = evalResult;
+                        }
+                    }
+
+                } else {
+                    newTableName = nameValue;
+                }
+            }
+            if (GlideStringUtil.notNil(newTableName) &amp;&amp; tableNames.indexOf(newTableName) == -1)
+                tableNames.push(newTableName);
+        }
+
+        return tableNames;
+    },
+
+
+    /**
+     * Check if indicator/breakdown has any scores in the last month
+     **/
+    hasScore: function(sys_id, id, isIndicator) {
+        var scoreTable = this.PA_SCORES;
+        var value = sys_id;
+
+        if (this.isNewScoreTable) {
+            scoreTable = this.PA_SCORES_L1;
+            value = id;
+        }
+        var scoreGr = new GlideRecord(scoreTable);
+
+        if (isIndicator) {
+            scoreGr.addQuery(this.INDICATOR, value);
+        } else {
+            var orCondition = scoreGr.addQuery(this.BREAKDOWN, value);
+            if (!this.isNewScoreTable)
+                orCondition.addOrCondition(this.BREAKDOWNL2, value);
+        }
+
+        scoreGr.addQuery(this.STARTED_AT, "&gt;=", gs.beginningOfLastMonth());
+        scoreGr.addQuery(this.STARTED_AT, "&lt;=", gs.endOfLastMonth());
+        scoreGr.setLimit(1);
+        scoreGr.setWorkflow(false);
+        scoreGr.queryNoDomain();
+        if (scoreGr.hasNext())
+            return true;
+
+        if (!isIndicator &amp;&amp; this.isNewScoreTable) {
+            //check breakdown l2
+            scoreGr = new GlideRecord(this.PA_SCORES_L2);
+            scoreGr.addQuery(this.BREAKDOWNL2, id);
+            scoreGr.addQuery(this.REF_ID_DOT + this.STARTED_AT, "&gt;=", gs.beginningOfLastMonth());
+            scoreGr.addQuery(this.REF_ID_DOT + this.STARTED_AT, "&lt;=", gs.endOfLastMonth());
+            scoreGr.setLimit(1);
+            scoreGr.setWorkflow(false);
+            scoreGr.queryNoDomain();
+            if (scoreGr.hasNext())
+                return true;
+        }
+
+        return false;
+    },
+
+    type: 'PALicensingUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-07-23 06:57:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;898f2eb9b33233003e5362ff86a8dcdd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PALicensingUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Performance Analytics" source="com.snc.pa"&gt;97a305876da620100acb70b353433004&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_898f2eb9b33233003e5362ff86a8dcdd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-21 11:01:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;17955&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:17</sys_created_on>
+        <sys_id>2efc457e2f331110d8a4d5f62799b6a2</sys_id>
+        <sys_name>PALicensingUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2efc457e2f331110d8a4d5f62799b6a2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

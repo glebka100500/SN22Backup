@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>738eb643b73100108af2eb56ee11a99e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RequestedForUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;RequestedForUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RequestedForUtil = Class.create();
+RequestedForUtil.prototype = {
+    initialize: function() {
+    },
+	hasRequestedForOnVariableSet : function(variableSetSysId) {
+		if (!GlideStringUtil.isEligibleSysID(variableSetSysId))
+			return false;
+		var gr = new GlideRecord("item_option_new");
+		gr.addQuery("type", "31");
+		gr.addQuery("variable_set", variableSetSysId);
+		gr.query();
+		return gr.hasNext();
+	},
+	hasRequestedForOnItem : function(itemSysId) {
+		if (!GlideStringUtil.isEligibleSysID(itemSysId))
+			return false;
+		//Check on variables attached to item
+		var gr = new GlideRecord("item_option_new");
+		gr.addQuery("type", "31");
+		gr.addQuery("cat_item", itemSysId);
+		gr.query();
+		if (gr.hasNext())
+			return true;
+		//check on variable set's attached to item
+		gr = new GlideRecord("io_set_item");
+		gr.addQuery("sc_cat_item", itemSysId);
+		gr.query();
+		while(gr.next()) {
+			if (this.hasRequestedForOnVariableSet(gr.variable_set))
+				return true;
+		}
+		return false;
+	},
+	getDocumentationLink : function() {
+		return '&lt;a id="permalink" class="linked" style="color:#666666;" href="itsm_context_help.do?help_resource=CSHelp:Variable_Types" target="_blank"&gt;' + new GlideSysMessage.format("More Info.") + '&lt;/a&gt;';
+	},
+    type: 'RequestedForUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-12-23 08:23:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;738eb643b73100108af2eb56ee11a99e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RequestedForUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog - Requested For variable type (do not activate...see plugin description)" source="com.glideapp.servicecatalog.requested_for"&gt;d575cd0b6de620100acb70b353433000&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_738eb643b73100108af2eb56ee11a99e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-02-13 22:56:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1260&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:30</sys_created_on>
+        <sys_id>4fcc053e2f331110d8a4d5f62799b672</sys_id>
+        <sys_name>RequestedForUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4fcc053e2f331110d8a4d5f62799b672</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

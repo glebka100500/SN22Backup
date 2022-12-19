@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>344e94170b111200a8d7a12cf6673a99</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXCanonicalizationWorker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Progress workers for some of the steps in the Canonicalization Guided Setup&lt;/description&gt;
+        &lt;name&gt;AJAXCanonicalizationWorker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AJAXCanonicalizationWorker = Class.create();
+AJAXCanonicalizationWorker.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	download: function() {
+		var worker = new GlideScriptedHierarchicalWorker();
+		worker.setProgressName(gs.getMessage("Normalization Data Service"));
+		worker.setScriptIncludeName("CanonicalRepo");
+		worker.setScriptIncludeMethod("syncDataWithRepository");
+		worker.setBackground(true);
+		worker.start();
+		return worker.getProgressID();
+	},
+	update: function() {
+		var l = new GlideStringList();
+		l.add("cmdb_ci");
+		var worker = new CanonicalUpdaterWorker(l);
+		worker.setProgressName(gs.getMessage("Normalization Data Service"));
+		worker.setBackground(true);
+		worker.start();
+		return worker.getProgressID();
+	},
+	updateCmdbModel: function() {
+		var l = new GlideStringList();
+		l.add("cmdb_model");
+		var worker = new CanonicalUpdaterWorker(l);
+		worker.setProgressName(gs.getMessage("Normalization Data Service"));
+		worker.setBackground(true);
+		worker.start();
+		return worker.getProgressID();
+	},
+	updateSAM: function() {
+		var l = new GlideStringList();
+		l.add("cmdb_sam_sw_install");
+		l.add("cmdb_sam_sw_usage");
+		l.add("cmdb_sam_sw_discovery_model");
+		
+		var worker = new CanonicalUpdaterWorker(l);
+		worker.setProgressName(gs.getMessage("Normalization Data Service"));
+		worker.setPublisher(true);
+		worker.setBackground(true);
+		worker.start();
+		return worker.getProgressID();
+	},
+	updateSAMP: function() {
+		var worker = new CanonicalUpdaterWorker();
+		var tables = new SAMCoreCompanyUtil().getTablesReferingCoreCompany();
+		for (var table in tables) {
+			if (tables.hasOwnProperty(table)) {
+				var fields = tables[table];
+				for (var i=0; i &lt; fields.length; i++) {
+					worker.addNormalization(table, fields[i]);
+				}
+			}
+		}
+		worker.setProgressName(gs.getMessage("Normalization Data Service"));
+		worker.setBackground(true);
+		worker.start();
+		return worker.getProgressID();
+	},
+	
+	// This canonicalization work is fast enough that it does not warrant being run inside a background progress worker
+	updateRefQual: function() {
+		var canonicalRefQualUpdater = new SNC.CanonicalRefQualUpdater();
+		return canonicalRefQualUpdater.process();
+	},
+	
+	type: 'AJAXCanonicalizationWorker'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-02-05 21:46:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;344e94170b111200a8d7a12cf6673a99&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;22&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXCanonicalizationWorker&lt;/sys_name&gt;
+        &lt;sys_package display_value="Normalization Data Services Configuration" source="com.glide.data_services_canonicalization.config"&gt;e854c50f6da620100acb70b35343302f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_344e94170b111200a8d7a12cf6673a99&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-21 16:23:05&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2246&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:48</sys_created_on>
+        <sys_id>c66cc1ba2f331110d8a4d5f62799b655</sys_id>
+        <sys_name>AJAXCanonicalizationWorker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c66cc1ba2f331110d8a4d5f62799b655</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

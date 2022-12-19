@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>42e78f86c32232008ebd1962c1d3ae55</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SaViewServiceMap&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;"View Map" action for Application Service&amp;#13;
+Includes validation.&amp;#13;
+Returns url of service map page, or error message when map cannot be opened.&lt;/description&gt;
+        &lt;name&gt;SaViewServiceMap&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SaViewServiceMap = Class.create();
+SaViewServiceMap.prototype = {
+	_ERR_NO_ENTRY_POINTS: gs.getMessage("No map available, please add an entry point"),
+	_ERR_OPERATIONAL_NOT_SUPPORTED: gs.getMessage("Not operational service map cannot be viewed by current user."),
+
+    initialize: function() {
+    },
+
+	/**
+	 * @param bsId - id of business service.
+	 * If service mpa can be opened - the object with "url" returned.
+	 * Otherwise, an object with "message" returned. "message" contains translated message for user.
+	 */
+	getMapUrl: function(bsId, dontValidateEntryPoints) {
+		var user = GlideUser.getCurrentUser();
+		var canEdit = user.hasRole("app_service_admin");
+		var isAppOwner = user.hasRole("sm_app_owner");
+	
+		var currName;
+		var isOperational = false;
+		var serviceGr = new GlideRecord('cmdb_ci_service');
+		if (serviceGr.get(bsId)) {
+			currName = encodeURIComponent(serviceGr.getValue('name'));
+			isOperational = serviceGr.getValue('operational_status') == 1;
+		}
+		
+		if (!canEdit &amp;&amp; !isAppOwner &amp;&amp; !isOperational) {
+			return {
+					"message": this._ERR_OPERATIONAL_NOT_SUPPORTED
+				};
+		}
+		
+		if (!dontValidateEntryPoints) {
+			var entryPointsGr = new GlideRecord('sa_m2m_service_entry_point');
+			entryPointsGr.addQuery('cmdb_ci_service', bsId);
+			entryPointsGr.query();
+			if (!entryPointsGr.next()) {
+				return {
+					"message": this._ERR_NO_ENTRY_POINTS
+				};
+			}
+		}
+		
+		return {
+			"url": this.buildUrl(bsId, currName)
+		};		
+	},
+	
+	/**
+	 * Giving sys_id in table sa_service_counters,
+	 * returns sys_id of referenced business service for cmdb_ci_service_discovered.
+	 * @param sys_id - id of record in sa_service_counters table.
+	 * @return service_id for the given record.
+	 */
+	getServiceIdFromSaCountersId: function(sys_id) {
+		var gr = new GlideRecord("sa_service_counters");
+		gr.addQuery("sys_id", sys_id);
+		gr.query();
+
+		if (gr.next())
+			return gr.getValue("service_id");
+		
+	
+		return null;
+	},
+
+	buildUrl: function(id, name) {
+		return '$sw_topology_map.do?sysparm_bsid=' + id + 
+				'&amp;sysparm_bsname=' + name +
+				'&amp;sysparm_plugin_mode=mapping';
+	},
+
+    type: 'SaViewServiceMap'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-05-07 09:17:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;42e78f86c32232008ebd1962c1d3ae55&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;22&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SaViewServiceMap&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Service" source="com.snc.cmdb.it_service"&gt;72b4cdcf6da620100acb70b353433039&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_42e78f86c32232008ebd1962c1d3ae55&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-03-05 16:02:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2129&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:07</sys_created_on>
+        <sys_id>f27c89ba2f331110d8a4d5f62799b673</sys_id>
+        <sys_name>SaViewServiceMap</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f27c89ba2f331110d8a4d5f62799b673</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>987e4b666713220089ec9a6617415afc</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ActivityServiceImpl&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Gets installed as part of "com.snc.activity_subscriptions" plugin Activity Subscriptions Framework.&amp;#13;
+Contains all the methods to perform Activity related operations.&lt;/description&gt;
+        &lt;name&gt;ActivityServiceImpl&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ActivityServiceImpl = Class.create();
+ActivityServiceImpl.prototype = {
+    initialize: function(activitySubContext) {
+		this.activitySubContext = activitySubContext;
+		this.activityDAO = activitySubContext.getActivityDAO();
+		this.subscriptionDAO =  activitySubContext.getSubscriptionDAO();
+		this.ACTIVITY_RATE_COUNT_LIMIT = 100;
+		this.ACTIVITY_RATE_TIME_LIMIT = 36000;
+    },
+
+	getRelatedActivity: function(activityGr){
+		return new global.ActivityDAO().getRelatedActivity(activityGr);
+	},
+	
+	getActivitiesData: function(reqObj) {
+		if(!reqObj) return {"status": 400, "message": gs.getMessage("Make sure to pass proper request parameters")};
+		
+		//If contextId is passed, get the activities based on context
+		if(reqObj.contextId) {
+			var activityContextService = this.activitySubContext.getService(ActivityConstants.ACTIVITY_CONTEXT_SERVICE);
+			return activityContextService.getActivities(reqObj);
+		}
+		else { //If contextId is not passed, get the activities from activities or activity stream tables
+			return this.getActivities(reqObj.profileId, reqObj.activity_count, reqObj.stream, reqObj.stFrom, reqObj.last, reqObj.before, reqObj.actor, reqObj.enableAggregation, reqObj.isFirstLoad);
+		}
+	},
+	
+    	getActivities: function(profileId, activity_count, stream, stFrom, last, before, actor, enableAggregation, isFirstLoad){
+			var user = profileId || this.subscriptionDAO.getLiveProfileId();
+			if(!user || !stream)
+			return {"status":400,
+			    "message":"Make sure a valid stream and user are passed",
+			    "user":user,
+			    "stream":stream};
+			var results;
+			var fanoutEnabled = this.activityDAO.isFanoutEnabled(stream);
+			if(!fanoutEnabled || fanoutEnabled == 0){
+				var reqParameters = {
+					"countToReturn":activity_count,
+					"liveProfileId":user,
+					"streamId":stream,
+					"enableAggregation":enableAggregation
+				};
+				if(!this.gatherActivities(reqParameters))//update stream table with latest activities
+					gs.info('Unable to sync activities for the stream ' + stream);
+				before = new GlideDateTime();
+			}
+			this.activityDAO.updateLastAccessTime(stream);
+			results = this.activityDAO.getActivities(activity_count, stream, stFrom, last, before, actor, enableAggregation, isFirstLoad);
+			return {"status":200,"data":results};
+		},
+	
+	gatherActivities: function(reqParameters){
+		if(!reqParameters.liveProfileId || !reqParameters.streamId)
+			return false;
+		var pullService = new ActivityStreamPullService(this.activitySubContext);
+		if(!pullService.updateStreamWithLatestActivities(reqParameters))
+			return false;
+		return true;
+	},
+	
+	initializeActivity: function(){
+		var gr=this.activityDAO.initializeActivity();
+		return gr;
+	},
+	createActivity: function(source, verb, isUndoActivity,activityGr, valueMap, module) {
+		if(!source)
+			return {"status":400,
+					"message":"Make sure a valid source is passed",
+					"source":source};
+		if(this.isRateLimitReached() === true){
+			return {"status":400,
+					"message":"Create Activity Rate Limit is reached. Please try after sometime",
+					"source":source};
+		}
+		if(this.activitySubContext.isPluginEnabled())
+			this.activityDAO.createActivity(source, verb, isUndoActivity,activityGr, valueMap, module);
+	},
+
+	populateActivityStream: function(activity,subscribers,activityJSON, additionalAttributes){	
+		if(!activity || !subscribers)
+			return {"status":400,
+					"message":"Make sure activity and subscribers are valid",
+					"activity":activity,
+					"subscribers":subscribers};
+
+		this.activityDAO.populateActivityStream(activity,subscribers,activityJSON, additionalAttributes);
+	},
+
+	flushStreamCacheForSubscribers : function(subscribers) {
+		if(!subscribers)
+			return {"status":400,
+					"message":"Make sure subscribers are valid",
+					"subscribers":subscribers};
+		this.activityDAO.flushStreamCacheForSubscribers(subscribers);
+	},
+
+	isActivityValid: function(content, profile_id, verb, isUndoActivity){
+		if(this.activitySubContext.isCommunityPluginActive == true)
+			return new sn_communities.CommunityActivityService().isActivityValid(content, profile_id, verb, isUndoActivity);
+	},
+	getFeedbackedMembers: function(content,verb){
+		if(this.activitySubContext.isCommunityPluginActive == true)
+			return new sn_communities.CommunityActivityService().getFeedbackedMembers(content,verb);
+	},
+	initiateFanout: function(current){
+			this.activityDAO.initiateFanout(current);
+	},
+	isRateLimitReached: function(){
+		var rateLimitCount = parseInt(gs.getProperty('com.snc.actsub.activity.rate.count.limit',this.ACTIVITY_RATE_COUNT_LIMIT));
+		var rateLimitTime = parseInt(gs.getProperty('com.snc.actsub.activity.rate.time.limit',this.ACTIVITY_RATE_TIME_LIMIT));
+		var lastNthActivityCrDate = this.activityDAO._getRecentNthActivityCrDt(rateLimitCount);
+		if(lastNthActivityCrDate){
+			var diffSeconds = Math.abs(parseInt(gs.dateDiff(gs.nowDateTime(), lastNthActivityCrDate, true)));
+			if(diffSeconds &lt;= rateLimitTime)
+				return true;
+		}
+		return false;
+	},
+
+	getActivityInfo: function(activityId) {
+		if(!activityId)
+			return null;
+		return this.activityDAO.getActivityInfo(activityId);
+	},
+	
+	filterByFanoutFlag: function(subscribersList){
+		return this.activityDAO.filterByFanoutFlag(subscribersList);
+	},
+
+	deleteInvalidRecords: function(){
+		this.activityDAO.deleteInvalidRecords();
+	},
+
+	type: 'ActivityServiceImpl'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-11-28 08:53:01&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;987e4b666713220089ec9a6617415afc&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;219&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ActivityServiceImpl&lt;/sys_name&gt;
+        &lt;sys_package display_value="Subscriptions and Activity Feed Framework" source="com.snc.activity_subscriptions"&gt;7427f20f2f400110d8a4d5f62799b6eb&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_987e4b666713220089ec9a6617415afc&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-15 11:18:26&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5327&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:24</sys_created_on>
+        <sys_id>fa3d05be2f331110d8a4d5f62799b6de</sys_id>
+        <sys_name>ActivityServiceImpl</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fa3d05be2f331110d8a4d5f62799b6de</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

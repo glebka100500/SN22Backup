@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5e0fc3570a0a0ba700fa6a429d1bc10c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CacheInspectAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Cache inspector backend&lt;/description&gt;
+        &lt;name&gt;CacheInspectAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CacheInspectAjax = Class.create();
+
+CacheInspectAjax.prototype =  Object.extendsObject(AbstractAjaxProcessor, {
+	process: function() {
+		if (!gs.hasRole('maint'))
+			return;
+
+		if (this.getChars() == "list")
+			this._generateList();
+		else if (this.getChars() == "get")
+			this._getData();
+	},
+	
+	_generateList: function() {
+		var i = null;
+		
+		if (this.getType().equals("shr")) {
+			i = GlideCacheManager.getSharedKeys();
+		} else if (this.getType().equals("exp")) {
+			var ks = GlideCompiler.getAllCache().keySet();
+			var al = new Packages.java.util.TreeSet(ks);
+			i = al.iterator();
+		} else {
+			i = GlideCacheManager.getPrivateKeys(this.getName() ? this.getName() : null);
+		}
+		
+		var filter = this.getParameter("sysparm_filter");
+		if (i != null) {
+			while(i.hasNext()) {
+				var key = i.next();
+				var match = false;
+				
+				if (!filter)
+					match = true;
+				else if (filter.startsWith("$") &amp;&amp; key.startsWith(filter.substring(1)))
+					match = true;
+				else if (key.indexOf(filter) &gt; -1)
+					match = true;
+				
+				if (match)
+					this._addBasicResponse(key, key, key);
+			}
+		}
+	},
+	
+	_getData: function() {
+		if (this.getType().equals("shr")) {
+			v = GlideCacheManager.getSharedString(this.getName());
+		} else if (this.getType().equals("exp")) {
+			if (gs.hasRole("maint")) {
+				v = GlideCompiler.getCacheDetails(this.getName(),true);
+			}
+			else {
+				v = GlideCompiler.getCacheDetails(this.getName());
+			}
+		} else {
+			v = GlideCacheManager.getPrivateString(this.getName(), this.getValue());
+		}
+		
+		if (v == null)
+			v = "NO CACHE DATA";
+		
+		this._addBasicResponseText("details", v);
+	},
+	
+	_addBasicResponse: function(name, label, value) {
+		var item = this.newItem();
+		item.setAttribute("name", name);
+		item.setAttribute("label", label);
+		item.setAttribute("value", value);
+	},
+	
+	_addBasicResponseText: function(name, value) {
+		var item = this.newItem();
+		item.setAttribute("name", name);
+		item.appendChild(this.getDocument().createTextNode(value));
+	},
+	
+	type: "CacheInspectAjax"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-02-10 02:42:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5e0fc3570a0a0ba700fa6a429d1bc10c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CacheInspectAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5e0fc3570a0a0ba700fa6a429d1bc10c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-07-19 17:58:18&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2029&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:50</sys_created_on>
+        <sys_id>d1ac85fa2f331110d8a4d5f62799b621</sys_id>
+        <sys_name>CacheInspectAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d1ac85fa2f331110d8a4d5f62799b621</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

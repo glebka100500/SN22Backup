@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>66bf6bd2b7130010ebf7082e7e11a98c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KMFRoleAdministration&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Provides helper APIs that are client callable for UI page: 'KMF Role Administration'&lt;/description&gt;
+        &lt;name&gt;KMFRoleAdministration&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KMFRoleAdministration = Class.create();
+KMFRoleAdministration.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    //Fetch and return a list of users (sys_id and name) who are admins and security_admins
+    getAvailableUsers: function() {
+        //Add the available users to select from
+        var avalable_items = [];
+
+        var available_users = new GlideRecord("sys_user_has_role");
+	var inner_join = available_users.addJoinQuery("sys_user_has_role", "user", "user");
+	available_users.addQuery("role.name", "admin").addOrCondition("role.name", "sn_kmf.admin");
+	inner_join.addCondition("role.name", "security_admin").addOrCondition("role.name", "sn_kmf.admin");
+	available_users.addNotNullQuery("user.name");
+	available_users.query();
+
+	var visited_user_sys_ids = [];
+	while (available_users.next() &amp;&amp; available_users.canRead()) {
+		var avalable_item = {};
+		var user_sys_id = available_users.user.sys_id.toString();
+		avalable_item.sys_id = user_sys_id;
+		avalable_item.name = available_users.user.name.toString();
+		if (visited_user_sys_ids.indexOf(user_sys_id) === -1) {
+			visited_user_sys_ids.push(user_sys_id);
+			avalable_items.push(avalable_item);
+		}
+	}
+
+        return JSON.stringify(avalable_items);
+    },
+
+    //Fetch and return a list of KMF admin user sys_id's
+    getKMFAdminUserSysIds: function() {
+        //Collect the KMF admin user sys_ids
+        var kmf_admin_user_sys_ids = [];
+	var kmf_admin_users = new GlideRecord("sys_user_has_role");
+	kmf_admin_users.addQuery("role.name", "sn_kmf.admin");
+	kmf_admin_users.query();
+
+	while (kmf_admin_users.next() &amp;&amp; kmf_admin_users.canRead()) {
+		var user_sys_id = kmf_admin_users.user.sys_id.toString();
+		if (kmf_admin_user_sys_ids.indexOf(user_sys_id) === -1)
+			kmf_admin_user_sys_ids.push(user_sys_id);
+	}
+
+        return JSON.stringify(kmf_admin_user_sys_ids);
+    },
+
+    // Call the server side logic to process the user sys_ids for KMF admin role assignment
+    assignKMFAdminRole: function() {
+        var user_sys_ids = this.getParameter('sysparm_user_sys_ids');
+        var administration_result = new SNC.KMFRoleAssignmentInterface().assignKMFAdminRole(user_sys_ids);
+        if (!administration_result)
+            gs.addErrorMessage(gs.getMessage("Error occurred on attempting to persist 'Key Management' admin role changes administered. Please see logs for more information"));
+        else
+            gs.addInfoMessage(gs.getMessage("Successfully persisted 'Key Management' admin role changes administered. User(s) with role changes have to logout and log back in to see the changes in effect."));
+    },
+
+    type: 'KMFRoleAdministration'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-03-04 18:00:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;66bf6bd2b7130010ebf7082e7e11a98c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KMFRoleAdministration&lt;/sys_name&gt;
+        &lt;sys_package display_value="Key Management Framework" source="com.glide.kmf.global"&gt;ef854d4b6de620100acb70b3534330ec&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_66bf6bd2b7130010ebf7082e7e11a98c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-11 23:16:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2646&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:05</sys_created_on>
+        <sys_id>0dbc0dfa2f331110d8a4d5f62799b63e</sys_id>
+        <sys_name>KMFRoleAdministration</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0dbc0dfa2f331110d8a4d5f62799b63e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

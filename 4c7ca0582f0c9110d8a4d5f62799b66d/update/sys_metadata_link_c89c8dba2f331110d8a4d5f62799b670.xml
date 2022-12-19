@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>516f1852c32130102c5b4e483c40ddf2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OIDC_internal_facebook&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;OIDC_internal script has out of the box implementation of OIDC web SSO request generation, response parsing and validation. In order to support customization customers can override these methods in OIDC_custom Script Include. Below are some methods with their intended functionality.&amp;#13;
+&amp;#13;
+getRelayStateOptions: &amp;#13;
+    this method provides a way to set relay state options to support request generation customizations.&amp;#13;
+&amp;#13;
+getComputedRequestURI, getComputedRequestQueryString, getComputedBaseURL, setCustomRelayState: &amp;#13;
+    These 4 methods are to support relay state generation customizations.&lt;/description&gt;
+        &lt;name&gt;OIDC_internal_facebook&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+var OIDC_internal_facebook = Class.create();
+OIDC_internal_facebook.prototype = Object.extend(new OIDC_internal(), {
+    initialize: function() {
+         OIDC_internal.prototype.initialize.call(this);
+    },
+	
+    generateRelayState: function() {
+		var serviceUrl = this.ssoRecord.getValue("service_url");
+		// As this is OIDC login flow, Setting request type to OIDC.
+		var reqType = "OIDC";
+		this.logDebug("Generate Nonce:" + true);
+        return this.glideoidc.generateRelayStateWithNonce(serviceUrl, reqType, true);
+    },
+	
+	getAuthorizationURL: function() {
+		var reqOptions = this.getRelayStateOptions();
+		this.glideoidc.setRelayStateOptions(reqOptions);
+		var origRelayState = this.generateRelayState();
+		var nonce = this.glideoidc.getNonce();
+		this.logDebug("Nonce generated for state:" + origRelayState);
+		var map = {"state": origRelayState, "nonce": nonce, "response_type": "id_token"};
+		return this.oauthClient.getAuthorizationURL(map);
+    },
+	
+	getRelayStateByIdAndValidateNonce: function(stateId, token) {
+		return this.glideoidc.getRelayStateByIdAndValidateNonce(stateId, token);
+    },
+	
+    type: 'OIDC_internal_facebook'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-07-26 15:09:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;516f1852c32130102c5b4e483c40ddf2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OIDC_internal_facebook&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_516f1852c32130102c5b4e483c40ddf2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-11 07:39:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1182&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:29</sys_created_on>
+        <sys_id>c89c8dba2f331110d8a4d5f62799b670</sys_id>
+        <sys_name>OIDC_internal_facebook</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c89c8dba2f331110d8a4d5f62799b670</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

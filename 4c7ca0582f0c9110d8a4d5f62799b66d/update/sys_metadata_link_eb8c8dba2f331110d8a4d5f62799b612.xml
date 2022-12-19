@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4f5ba2cd73e400100628bd49faf6a71d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DeleteRibbonRecordAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Utility to check if different confirmation message needs to be shown for Ribbon Settings table&lt;/description&gt;
+        &lt;name&gt;DeleteRibbonRecordAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DeleteRibbonRecordAjax = Class.create();
+DeleteRibbonRecordAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+getCascadeDeleteTables: function() {
+      var confNeeded = gs.getProperty('glide.ui.confirm_cascade_delete');
+      if(confNeeded == null || confNeeded != "true") {
+         return '';
+      }
+      var objSysId = this.getParameter('sysparm_obj_id');
+      var tblName = this.getParameter('sysparm_table_name');
+      var stackName = this.getParameter('sysparm_nameofstack');
+	  var gotoUrl = this.getParameter('sysparm_goto_url');
+      
+      var dMap = GlideCascadeFromDelete.getCascadeTables(tblName, objSysId, stackName);
+      var retUrl = dMap.remove("return_url");
+
+      // Use the more explicit sysparm_goto_url if it exists
+      if (gotoUrl &amp;&amp; gotoUrl != "")
+          retUrl = gotoUrl;
+	   
+      var dList = '';
+ 	  dList += this.getConfirmationMessage() + ';';
+	
+      if(retUrl != null) dList += retUrl + ';';
+         else dList += 'null;';
+         
+      if( dMap.isEmpty()) {
+         return dList;
+      }
+      
+      // translate returned Java Map to a string format that client page can understand
+      var objName = dMap.remove("name");
+      dList += objName + ';';
+      var itr = dMap.keySet().iterator();
+      while(itr.hasNext()) {
+         var dTbl = itr.next();
+         var count = dMap.get(dTbl).intValue();
+         dList = dList + count + ':' + dTbl + ',';
+      }
+      return dList;
+   },
+	
+   getConfirmationMessage : function() {
+		var settingTable = this.getParameter('sysparm_setting_table');
+		var settings = new GlideAggregate('sys_aw_ribbon_setting');
+		settings.addAggregate('COUNT');
+		settings.addQuery('table', settingTable);
+		settings.query();
+		var count = 0;
+		if (settings.next()) {
+			count = settings.getAggregate('COUNT');
+		}
+		if (count == 1)
+			return 'If deleted, this table inherits the parent table ribbon settings. Do you want to proceed?';
+		else
+			return 'null';
+	},
+   
+   isDomainUsed: function() {
+   	var domainSysID = this.getParameter('sysparm_domain_id');
+   	return GlideDomainSupport.isDomainUsed(domainSysID);
+   },
+	
+   areDomainsUsed: function() {
+		var selDomains = this.getParameter('sysparm_domain_ids');
+	    var selDomainsList = selDomains.split(",");
+		for(i = 0; i&lt;selDomainsList.length; i++){
+			if(GlideDomainSupport.isDomainUsed(selDomainsList[i]))
+				return true;
+		}
+		return false;
+	},
+   
+   proceedWithDeleteFromForm: function() {
+      var objSysId = this.getParameter('sysparm_obj_id');
+      var tblName = this.getParameter('sysparm_table_name');
+	  var disableWf = this.getParameter('sysparm_disable_wf');
+	   
+      var gRecord = new GlideRecord(tblName);
+	  if(JSUtil.notNil(disableWf) &amp;&amp; disableWf == 'true') {
+		 gRecord.setWorkflow(false);
+	  }
+	  if(gRecord.get(objSysId)) {
+		  if (gRecord.canDelete())
+	         gRecord.deleteRecord();
+      }
+      return true;
+   },
+   
+   proceedWithDeleteFromList: function() {
+      var objSysIds = this.getParameter('sysparm_obj_list');
+      var tblName = this.getParameter('sysparm_table_name');
+	   
+      var objList = objSysIds.split(',');
+      var gr = new GlideRecord(tblName);
+      gr.initialize();
+      if(new GlideTableDescriptor(tblName).isValidField('sys_id'))
+        this.deleteMultiple(gr,objList);
+      else
+        this.deleteSingle(gr,objList);
+    
+      return true;
+    },
+  
+    deleteMultiple: function(gr,objList) {
+      // PRB570448, remove records that cannot be deleted because of ACL restrictions first
+      // then call deleteMultiple(), since it uses DBQuery and bypasses ACL checks.
+      var tblName = gr.getTableName();
+      var sysIdsToDel = '';
+      for(var i=0; i&lt;objList.length; i++) {
+      
+        if(objList[i] == null || objList[i] == '') {
+          continue;
+        }
+      
+        gr.get('sys_id', objList[i]);
+        if(gr.canDelete()) {
+          if(i &gt; 0) sysIdsToDel += ',';
+            sysIdsToDel += objList[i];
+        }
+      }
+      if(sysIdsToDel != '') {
+        var gRecord = new GlideRecord(tblName);
+        gRecord.addQuery('sys_id','IN', sysIdsToDel);
+        if (GlideDomainSupport.getCurrentDomainValueOrGlobal() == 'global')
+          gRecord.queryNoDomain();
+        else
+          gRecord.query();
+        gRecord.deleteMultiple();
+      }
+    },
+  
+    deleteSingle: function(gr,objList) {
+      for(var i=0; i&lt;objList.length; i++) {
+        if(objList[i] == null || objList[i] == '') {
+          continue;
+        }
+        gr.get(objList[i]);
+        if (gr.canDelete())
+          gr.deleteRecord();
+      }
+   },
+  
+   toString: function() { return 'DeleteRibbonRecordAjax'; }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-10-15 22:34:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4f5ba2cd73e400100628bd49faf6a71d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DeleteRibbonRecordAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agent Workspace - Ribbon" source="com.snc.agent_workspace.ribbon"&gt;dff40dc36de620100acb70b353433037&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4f5ba2cd73e400100628bd49faf6a71d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-10-15 22:49:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4639&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:26</sys_created_on>
+        <sys_id>eb8c8dba2f331110d8a4d5f62799b612</sys_id>
+        <sys_name>DeleteRibbonRecordAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_eb8c8dba2f331110d8a4d5f62799b612</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

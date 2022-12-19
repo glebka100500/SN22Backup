@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>52d69ceaeb233100469a20425206feb6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.EmailOAuthHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utility functions for Email OAuth 2.0 authentication&lt;/description&gt;
+        &lt;name&gt;EmailOAuthHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var EmailOAuthHelper = Class.create();
+
+EmailOAuthHelper.prototype = {
+    initialize: function() {},
+
+    needsUserAuthorizationSoon: function(grAccount, withinDays) {
+        if (!grAccount)
+            return false;
+        if (grAccount.getValue("authentication") != "oauth2")
+            return false;
+        if (!grAccount.getValue("oauth_profile"))
+            return false;
+
+        var token = this.getToken(grAccount.getUniqueValue(), grAccount.getValue("oauth_profile"));
+        if (token) {
+            var thirtyDaysInSecs = withinDays * 86400;
+            if (token.getRefreshToken() &amp;&amp; !this.isExpired(token.getRefreshTokenExpiresIn(), thirtyDaysInSecs))
+                return false;
+        }
+        return true;
+    },
+
+    isExpired: function(expiresIn, withinSeconds) {
+        if (expiresIn &gt; withinSeconds)
+            return false;
+        return true;
+    },
+
+    getToken: function(requestorId, oauthProfileId) {
+        if (!requestorId || !oauthProfileId)
+            return null;
+        var client = new sn_auth.GlideOAuthClient();
+        return client.getToken(requestorId, oauthProfileId);
+    },
+
+    refreshAccessToken: function(requestorId, oauthProfileId, token) {
+        if (!(token &amp;&amp; requestorId &amp;&amp; oauthProfileId))
+            return;
+
+        var tokenRequest = new sn_auth.GlideOAuthClientRequest();
+        tokenRequest.setGrantType("refresh_token");
+        tokenRequest.setRefreshToken(token.getRefreshToken());
+        tokenRequest.setParameter('oauth_requestor_context', 'email');
+        tokenRequest.setParameter('oauth_requestor', requestorId);
+        tokenRequest.setParameter('oauth_provider_profile', oauthProfileId);
+
+        var oAuthClient = new sn_auth.GlideOAuthClient();
+        var tokenResponse = oAuthClient.requestTokenByRequest(null, tokenRequest);
+        var error = tokenResponse.getErrorMessage();
+        if (error)
+            gs.warn("Error:" + tokenResponse.getErrorMessage());
+    },
+
+    invokeClientCredentials: function(requestor, oauth_provider_profile) {
+        var requestor_context = "email";
+        var tokenRequest = new sn_auth.GlideOAuthClientRequest();
+
+        tokenRequest.setParameter('oauth_requestor_context', requestor_context);
+        tokenRequest.setParameter('oauth_requestor', requestor);
+        tokenRequest.setParameter('oauth_provider_profile', oauth_provider_profile);
+
+        var oAuthClient = new sn_auth.GlideOAuthClient();
+        var tokenResponse = oAuthClient.requestTokenByRequest(null, tokenRequest);
+
+        var errorMsg = tokenResponse.getErrorMessage();
+
+        if (errorMsg) {
+            gs.log('OAuth authentication failed for ' + requestor );
+        }
+    },
+
+    checkAndRefreshAccessToken: function(grEmailAccount) {
+        if (grEmailAccount.getValue("authentication") != "oauth2")
+            return false;
+
+        var accountMsg = grEmailAccount.getValue("name");
+        var type = grEmailAccount.getValue("type");
+        if (!accountMsg)
+            accountMsg = grEmailAccount.getUniqueValue();
+        accountMsg = "Account=\"" + accountMsg + "\"";
+
+        var token = this.getToken(grEmailAccount.getUniqueValue(), grEmailAccount.getValue('oauth_profile'));
+        var accessToken = token.getAccessToken();
+        if (accessToken) {
+            if (!this.isExpired(token.getExpiresIn(), 300))
+                return;
+        }
+
+        if (type == 'graph-receive') {
+            this.invokeClientCredentials(grEmailAccount.getUniqueValue(), grEmailAccount.getValue('oauth_profile'));
+			return;
+        }
+
+        if (!token.getRefreshToken()) {
+            gs.error("No OAuth refresh token for active email account. Manual reauthorization required. " + accountMsg);
+            return;
+        }
+
+        if (this.isExpired(token.getRefreshTokenExpiresIn(), 0)) {
+            gs.error("OAuth refresh token for active email account is expired. Manual reauthorization required. " + accountMsg);
+            return;
+        }
+
+        gs.info("Refreshing oauth access token for email. " + accountMsg);
+        this.refreshAccessToken(grEmailAccount.getUniqueValue(), grEmailAccount.getValue('oauth_profile'), token);
+    },
+
+    type: 'EmailOAuthHelper'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-04-23 19:51:08&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;52d69ceaeb233100469a20425206feb6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;138&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;EmailOAuthHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Email - OAUTH support for IMAP and SMTP" source="com.glide.email.oauth"&gt;dda6e7992f540110d8a4d5f62799b639&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_52d69ceaeb233100469a20425206feb6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-14 10:04:59&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4198&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:32</sys_created_on>
+        <sys_id>709c8dba2f331110d8a4d5f62799b6ce</sys_id>
+        <sys_name>EmailOAuthHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_709c8dba2f331110d8a4d5f62799b6ce</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

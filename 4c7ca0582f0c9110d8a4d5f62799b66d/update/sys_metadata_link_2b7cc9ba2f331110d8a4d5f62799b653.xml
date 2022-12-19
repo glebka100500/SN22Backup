@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>44c7c3a40a25810200e0dbdf70ea7f0c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MetricInstance&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Metrics  insert and update metric_instance rows&amp;#13;
+var mi = new MetricInstance(definition, current);&amp;#13;
+mi.process();&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;MetricInstance&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var MetricInstance = Class.create();
+
+MetricInstance.prototype = {
+    initialize: function(definitionGR, currentGR) {
+        this.definition = definitionGR;
+        this.current = currentGR;
+    },
+
+    // process is the driver for field value duration type definitions 
+    process: function() {
+        answer = true; 
+        mi = this; // global variable
+        eval(this.definition.script);
+        if (!answer) 
+           return; 
+
+        this.endDuration();  // end any previous duration for this metric
+        this.startDuration(); // start a new one    
+    },
+
+    startDuration: function() {
+        var gr = this.getNewRecord();
+        gr.field_value = this.current[this.definition.field];
+        gr.start = current.sys_updated_on;
+        gr.insert();
+    },
+
+    endDuration: function() {
+        var gr = new GlideRecord('metric_instance');
+        gr.addQuery('definition', this.definition.sys_id);
+        gr.addQuery('id', this.current.sys_id);
+        gr.addQuery('calculation_complete', false);
+        gr.query();
+        if (!gr.next())
+          return;
+          
+        gr.end = this.current.sys_updated_on;
+        gr.duration = gs.dateDiff(gr.start.getDisplayValue(), gr.end.getDisplayValue());
+        gr.calculation_complete = true;
+        gr.update();
+    },
+
+    getNewRecord: function() {
+        var gr = new GlideRecord('metric_instance');
+        gr.table = this.current.getRecordClassName();
+        gr.id = this.current.sys_id;
+        gr.definition = this.definition.sys_id;
+        gr.field = this.definition.field;
+        return gr;
+    },
+
+    // return true if a metric exists for this definition and current
+    metricExists: function() {
+        var gr = new GlideRecord('metric_instance');
+        gr.addQuery("id", this.current.sys_id);
+        gr.addQuery("definition", this.definition.sys_id);
+        gr.query();
+        return gr.hasNext();
+    },
+
+    _z : function() {
+    }    
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-12-17 11:49:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;44c7c3a40a25810200e0dbdf70ea7f0c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;70&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MetricInstance&lt;/sys_name&gt;
+        &lt;sys_package display_value="Metric Definition" source="com.glide.metrics"&gt;ff6241c76d6620100acb70b353433041&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_44c7c3a40a25810200e0dbdf70ea7f0c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;glide.maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2009-08-21 20:35:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2039&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:10</sys_created_on>
+        <sys_id>2b7cc9ba2f331110d8a4d5f62799b653</sys_id>
+        <sys_name>MetricInstance</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2b7cc9ba2f331110d8a4d5f62799b653</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

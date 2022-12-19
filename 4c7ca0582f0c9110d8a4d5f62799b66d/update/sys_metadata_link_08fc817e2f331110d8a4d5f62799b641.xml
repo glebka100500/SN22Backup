@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>85ab74e19fc00300598a5bb0657fcf65</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PMKingstonTopTaskUpgradeHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PMKingstonTopTaskUpgradeHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PMKingstonTopTaskUpgradeHelper = Class.create();
+PMKingstonTopTaskUpgradeHelper.prototype = {
+    initialize: function() {
+    },
+
+    process: function () {
+        // gs.log("========== START OF PMKingstonTopTaskUpgradeHelper ============= ");
+        this.populateTopTasksOnRelation();
+        this.populateTopTaskOnNotification();
+        // gs.log("========== END OF PMKingstonTopTaskUpgradeHelper ============= ");
+    },
+
+    distinctIds: function (table, column, nullQueryColumn) {
+        // gs.log("Into distinctIds -&gt; " + table + " | " + column + " | " + nullQueryColumn);
+        var distinctSysIds = [];
+        var ga = new GlideAggregate(table);
+        ga.addAggregate("COUNT", column);
+        ga.addNullQuery(nullQueryColumn);
+        ga.groupBy(column);
+        ga.query();
+        while(ga.next()) {
+            distinctSysIds.push(ga.getValue(column));
+        }
+        return distinctSysIds;
+    },
+
+    populateTopTasksOnRelation: function () {
+        // gs.log("Into populateTopTasksOnRelation");
+        var distinctParentIds = this.distinctIds("planned_task_rel_planned_task", "parent", "parent_top_task");
+        var distinctChildIds = this.distinctIds("planned_task_rel_planned_task", "child", "child_top_task");
+        var arrayUtil = new ArrayUtil();
+        arrayUtil.concat(distinctParentIds, distinctChildIds);
+        arrayUtil.unique(distinctParentIds);
+
+
+        var gr = new GlideRecord("planned_task");
+        gr.addQuery("sys_id", "IN", distinctParentIds.join(","));
+        gr.query();
+        while(gr.next()) {
+            this.multiUpdateColumn("planned_task_rel_planned_task", "parent", gr.getValue("sys_id"),
+                "parent_top_task", gr.getValue("top_task"));
+            this.multiUpdateColumn("planned_task_rel_planned_task", "child", gr.getValue("sys_id"),
+                "child_top_task", gr.getValue("top_task"));
+        }
+    },
+
+    populateTopTaskOnNotification: function () {
+        // gs.log("Into populateTopTaskOnNotification");
+        var distinctTaskIds = this.distinctIds("planned_task_notification", "task", "task_top_task");
+        if(distinctTaskIds.length &gt; 0) {
+            var gr = new GlideRecord("planned_task");
+            gr.addQuery("sys_id", "IN", distinctTaskIds.join(","));
+            gr.query();
+            while(gr.next()) {
+                this.multiUpdateColumn('planned_task_notification', 'task',
+                    gr.getValue("sys_id"), 'task_top_task', gr.getValue("top_task"));
+            }
+        }
+    },
+
+    multiUpdateColumn: function (table, queryColumn, queryColumnValue, updateColumn, updateColumnValue) {
+        //gs.log("Into multiUpdateColumn -&gt; " + table + " | " + queryColumn + " | " + queryColumnValue + " | " + updateColumn
+           // + " | " + updateColumnValue)
+        var mUpdate = new GlideMultipleUpdate(table);
+        mUpdate.addQuery(queryColumn, queryColumnValue);
+        mUpdate.setValue(updateColumn, updateColumnValue);
+        mUpdate.execute();
+    },
+
+    type: 'PMKingstonTopTaskUpgradeHelper'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-07-18 22:25:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;85ab74e19fc00300598a5bb0657fcf65&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PMKingstonTopTaskUpgradeHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_85ab74e19fc00300598a5bb0657fcf65&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-07-18 22:26:24&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3047&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:07</sys_created_on>
+        <sys_id>08fc817e2f331110d8a4d5f62799b641</sys_id>
+        <sys_name>PMKingstonTopTaskUpgradeHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_08fc817e2f331110d8a4d5f62799b641</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

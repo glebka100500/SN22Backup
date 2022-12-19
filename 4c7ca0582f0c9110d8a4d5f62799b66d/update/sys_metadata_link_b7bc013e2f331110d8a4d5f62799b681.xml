@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6b894eae0ab3015572e68ea71c49c9c3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Round&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Rounds numbers with various rounding modes and intervals.&lt;/description&gt;
+        &lt;name&gt;Round&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// field normalization
+
+var Round = Class.create();
+
+Round.prototype = {
+    initialize: function(mode, interval) {
+        this.mode = mode;
+        this.interval = interval - 0;
+    },
+    
+    round: function(value) {
+        // if we don't have a valid mode, log an error message and return with nuttin'...
+        if (!this[this.mode]) {
+            this.errorMessage = 'Rounding mode "' + this.mode + '" not supported';
+            return null;
+        }
+        
+        // if we don't have a valid interval, log an error message and return with nuttin'...
+        if ((this.interval == null) || (typeof this.interval != 'number') || isNaN(this.interval) || (this.interval == 0)) {
+            this.errorMessage = 'Interval is not a valid number or is zero';
+            return null;
+        }
+        
+        // normalize before rounding...
+        var normal = value / this.interval;
+        var roundedNormal = this[this.mode](normal);
+        var roundedValue = roundedNormal * this.interval;
+        return roundedValue;
+    },
+    
+    half_up: function(value) {
+        return (value &gt;= 0) ? Math.floor(value) + ((this.fracPart(value) &gt;= 0.5) ? 1 : 0) : Math.floor(value) + ((this.fracPart(value) &lt;= 0.5) ? 1 : 0);
+    },
+    
+    half_down: function(value) {
+        return (value &gt;= 0) ? Math.floor(value) + ((this.fracPart(value) &gt; 0.5) ? 1 : 0) : Math.floor(value) + ((this.fracPart(value) &lt; 0.5) ? 1 : 0);
+    },
+    
+    half_away: function(value) {
+        return (value &gt;= 0) ? this.intPart(value) + ((this.fracPart(value) &gt;= 0.5) ? 1 : 0) : this.intPart(value) - ((this.fracPart(value) &gt;= 0.5) ? 1 : 0);
+    },
+    
+    half_toward: function(value) {
+        return (value &gt;= 0) ? this.intPart(value) + ((this.fracPart(value) &gt; 0.5) ? 1 : 0) : this.intPart(value) - ((this.fracPart(value) &gt; 0.5) ? 1 : 0);
+    },
+    
+    half_even: function(value) {
+        if (Math.abs(this.fracPart(value)) != 0.5)
+            return this.half_away(value);
+        
+        return (this.isEven(value)) ? this.intPart(value) : this.intPart(value) + ((value &gt;= 0) ? 1 : -1);
+    },
+    
+    half_odd: function(value) {
+        if (Math.abs(this.fracPart(value)) != 0.5)
+            return this.half_away(value);
+        
+        return (!this.isEven(value)) ? this.intPart(value) : this.intPart(value) + ((value &gt;= 0) ? 1 : -1);
+    },
+    
+    up: function(value) {
+        return Math.ceil(value);
+    },
+    
+    down: function(value) {
+        return Math.floor(value);
+    },
+    
+    away: function(value) {
+        var ip = this.intPart(value);
+        return (ip == value) ? value : (ip + ((value &lt; 0) ? -1 : 1));
+    },
+    
+    toward: function(value) {
+        return this.intPart(value);
+    },
+    
+    intPart: function(value) {
+        return (value &lt; 0) ? Math.ceil(value) : Math.floor(value);
+    },
+    
+    fracPart: function(value) {
+        return value - this.intPart(value);
+    },
+    
+    isEven: function(value) {
+        return (this.intPart(value) &amp; 1) == 0;
+    },
+    
+    type: 'Round'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-01-09 16:28:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6b894eae0ab3015572e68ea71c49c9c3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Round&lt;/sys_name&gt;
+        &lt;sys_package display_value="Field Normalization" source="com.snc.field_normalization"&gt;74d312912f730110d8a4d5f62799b6a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6b894eae0ab3015572e68ea71c49c9c3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;tom.dilatush&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-01-09 20:03:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3120&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:17</sys_created_on>
+        <sys_id>b7bc013e2f331110d8a4d5f62799b681</sys_id>
+        <sys_name>Round</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b7bc013e2f331110d8a4d5f62799b681</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

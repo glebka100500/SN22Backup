@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>56d28c5f0b101300ee540e7363673a4a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PTGlobalAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Planned Task Global API&lt;/description&gt;
+        &lt;name&gt;PTGlobalAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PTGlobalAPI = Class.create();
+
+PTGlobalAPI.convertDateTimeZone = function( /* GlideDateTime */ dateTime, /*String*/ timeZone, isValue) {
+    var tz = Packages.java.util.TimeZone.getTimeZone(timeZone);
+    var gdt = new GlideDateTime();
+    gdt.setTZ(tz);
+    if(isValue)
+		gdt.setValue(dateTime);
+	else
+		gdt.setDisplayValue(dateTime);
+    return gdt;
+};
+
+
+PTGlobalAPI.convertDateTimeZoneFrom_To = function(glideDateTime, from, to) {
+    var gsdt = new GlideScheduleDateTime(glideDateTime);
+    var displayValue = gsdt.convertTimeZone(from, to);
+
+	var offset = PTGlobalAPI.getDSTOffset(displayValue, to, false);
+
+    var gdt = new GlideDateTime();
+    gdt.setDisplayValue(displayValue);
+	if(offset) {
+		gdt.add(-offset);
+	}
+    return gdt;
+};
+
+PTGlobalAPI.getDSTOffset = function(/* GlideDateTime */ dateTime, /*String*/ timeZone, isValue) {
+	var gdt = PTGlobalAPI.convertDateTimeZone(dateTime, timeZone, isValue);
+	if(gdt.isDST()) {
+		return gdt.getDSTOffset();
+	}
+	
+	return null;
+};
+
+PTGlobalAPI.convertDateTimeZoneAndFormat = function( /* String */ dateTime, fromTimeZone, toTimeZone, fromFormat, toFormat) {
+    var sdf = new Packages.java.text.SimpleDateFormat(fromFormat);
+    var fromTZ = Packages.java.util.TimeZone.getTimeZone(fromTimeZone);
+    sdf.setTimeZone(fromTZ);
+
+    var toSDF = new Packages.java.text.SimpleDateFormat(toFormat);
+    var toTZ = Packages.java.util.TimeZone.getTimeZone(toTimeZone);
+    toSDF.setTimeZone(toTZ);
+
+    return (toSDF.format(sdf.parse(dateTime)));
+};
+
+PTGlobalAPI.getProjectTaskTable = function(parentTable) {	
+		return SNC.PPMConfig.getProjectTaskTable(parentTable);	
+};
+
+PTGlobalAPI.getNumber = function(sysClassName) {
+	return GlideNumberManager.getNumber(sysClassName);
+};
+
+PTGlobalAPI.enableMoveAllTasksRegardlessOfConstraintSessionProperty = function() {
+	gs.getSession().putProperty("ppm.move_all_tasks.regardless_of_constraint", "true");
+};
+
+PTGlobalAPI.disableMoveAllTasksRegardlessOfConstraintSessionProperty = function() {
+	gs.getSession().putProperty("ppm.move_all_tasks.regardless_of_constraint", "false");
+};
+
+PTGlobalAPI.prototype = {
+    initialize: function() {},
+
+    fullRecalculate: function(sys_id) {
+        return new SNC.PlannedTaskAPI().fullRecalculate(sys_id);
+    },
+	
+	recalculateDeferredTask: function(sys_id) {
+        return new SNC.PlannedTaskAPI().recalculateDeferredTask(sys_id);
+    },
+
+    initializeTask: function(gr) {
+        var plannedTaskAPI = new SNC.PlannedTaskAPI();
+        return plannedTaskAPI.initializeTask(gr);
+    },
+
+    calculateStartDate: function( /*GlideDateTime*/ endDate, /*GlideDuration*/ duration, scheduleId) {
+        var resp = JSON.parse(new SNC.PlannedTaskAPI().calculateStartDate(endDate, duration, scheduleId));
+        if (resp.status == 'success') {
+            var gdt = new GlideDateTime();
+            gdt.setDisplayValue(resp.date);
+            return gdt;
+        }
+        return endDate;
+    },
+
+    getDescendants: function(gr, include) {
+        return new SNC.PlannedTaskAPI().getDescendants(gr, include);
+    },
+
+    /**
+    * Method is to resolve the issue of getting custom roles of scoped app
+    * Fix: get the scoped app custom role based on configured field and by passing suffix
+    */
+    getScopedAppRole: function(roleSuffix, rolePrefixField){
+        var role = roleSuffix;
+        var prefix = "it";
+        var config = new GlideRecord("pm_app_config");
+        config.query();
+        config.next();
+        var prefixFromConfig = config.getElement(rolePrefixField);
+        if(prefixFromConfig != null ) {
+            prefix = prefixFromConfig;
+        }
+        role = prefix.concat("_"+role);
+        return role;
+    },
+
+    createRelation: function(params, stopWorkflow) {
+        if (gs.nil(params.child) || gs.nil(params.parent) || gs.nil(params.parent_top_task) || gs.nil(params.child_top_task))
+            return null;
+        var gr = new GlideRecord('planned_task_rel_planned_task');
+        gr.initialize();
+        gr.setValue('parent', params.parent);
+        gr.setValue('child', params.child);
+        gr.setValue('parent_top_task', params.parent_top_task);
+        gr.setValue('child_top_task', params.child_top_task);
+        gr.setValue('type', '33a57d3d0a0a0b7b00819e4d4402fb14');
+        gr.setValue('sub_type', 'fs');
+        gr.setValue('lag', params.lag);
+        if (stopWorkflow)
+            gr.setWorkflow(false);
+        return gr.insert();
+    },
+
+    removeUserRoles: function(userSysId, roles) {
+        if(gs.nil(userSysId)){
+            gs.error("userSysId shouldn't be null");
+            return;
+        }
+        if(gs.nil(roles)){
+            gs.error("roles shouldn't be null");
+            return;
+        }
+        var gr = new GlideRecord('sys_user_has_role');
+        gr.addQuery('role.name', 'IN', roles);
+        gr.addQuery('user', userSysId);
+        gr.query();
+        gr.deleteMultiple();
+    },
+
+    removeMembersFromGroup: function(groupId) {
+        if(gs.nil(groupId)){
+            gs.error("groupId shouldn't be null");
+            return;
+        }
+        var gr = new GlideRecord('sys_user_grmember');
+        gr.addQuery('group', groupId);
+        gr.query();
+        gr.deleteMultiple();
+    },
+
+    removeGroupMembersById: function(groupMemberIds) {
+        if(gs.nil(groupMemberIds)){
+            gs.error("groupMemberIds shouldn't be null");
+            return;
+        }
+        var groupMemberGR = new GlideRecord('sys_user_grmember');
+        groupMemberGR.addQuery('sys_id', 'IN',groupMemberIds.join(','));
+        groupMemberGR.query();
+        groupMemberGR.deleteMultiple();
+    },
+
+    updateMultipleDictionary: function(gr, changeMap) {
+        Object.keys(changeMap).forEach(function(key) {
+            gr.setValue(key, changeMap[key]);
+        });
+        gr.updateMultiple();
+    },
+
+    updateDictionary: function(gr, changeMap) {
+        Object.keys(changeMap).forEach(function(key) {
+            gr.setValue(key, changeMap[key]);
+        });
+        gr.update();
+    },
+    getEntityMetadata: function(sysClass, context){
+               return new SNC.PlannedTaskAPI().entityMetadata(sysClass, context);
+       },
+
+    /**
+     * 
+     * @param {string} sysId 
+     */
+    getTaskStartDate: function(sysId){
+        return new SNC.PlannedTaskAPI().getTaskStartDate(sysId);
+    },
+
+    /**
+     * 
+     * @param {string} startDate 
+     * @param {string} duration 
+     * @param {string} scheduleId 
+     */
+    calculateEndDate: function(startDate, duration, scheduleId){
+        return new SNC.PlannedTaskAPI().calculateEndDate(startDate, duration, scheduleId);
+    },
+
+    /**
+     * 
+     * @param {string} startDate - internalDisplayValue 
+     * @param {string} endDate - internalDisplayValue
+     * @param {string} scheduleId 
+     */
+    calculateDuration: function(startDate, endDate, scheduleId){
+        return new SNC.PlannedTaskAPI().calculateDuration(startDate, endDate, scheduleId);
+    },
+
+/**
+     * 
+     * @param {string} taskId 
+	  * @param {string} taskId - can be Planned Task, WorkPlan, WorkPlanTask 
+     */
+    getScheduleForTask: function(taskId, sysClassName){
+		var gr = new GlideRecord(sysClassName);
+		if(gr.instanceOf('pm_project') || gr.instanceOf('pm_project_task')){
+			return this.getScheduleForTaskId(taskId);
+		}
+		if(gr.instanceOf('sn_wp_work_plan') || gr.instanceOf('sn_wp_work_plan_task')){
+			return this.getScheduleForWorkPlan(taskId);
+		}
+         PPMDebug.log('getScheduleForTaskId: '+ taskId);
+         return new SNC.PlannedTaskAPI().getScheduleForTaskId(taskId);
+    },
+
+    /**
+     * 
+     * @param {string} taskId 
+     */
+    getScheduleForTaskId: function(taskId){
+         PPMDebug.log('getScheduleForTaskId: '+ taskId);
+         return new SNC.PlannedTaskAPI().getScheduleForTaskId(taskId);
+    },
+	
+	/**
+     * 
+     * @param {string} taskId 
+     */
+    getScheduleForWorkPlan: function(taskId){
+         PPMDebug.log('getScheduleForTaskId: '+ taskId);
+         return new SNC.PlannedTaskAPI().getScheduleForWorkPlan(taskId);
+    },
+	
+	getSchedule: function(sysClassName, scheduleId, scheduleTimezone, startYear, endYear, forward){
+		var gr = new GlideRecord(sysClassName);
+		if(gr.instanceOf('pm_project') || gr.instanceOf('pm_project_task')){
+			return this.getProjectSchedule(scheduleId, scheduleTimezone, startYear, endYear, forward);
+		}
+		if(gr.instanceOf('sn_wp_work_plan') || gr.instanceOf('sn_wp_work_plan_task')){
+			return this.getWorkPlanSchedule(scheduleId, scheduleTimezone, startYear, endYear, forward);
+		}
+		
+	},
+		
+	getProjectSchedule: function(scheduleId, scheduleTimezone, startYear, endYear, forward){
+         PPMDebug.log('getProjectSchedule: '+ scheduleId);
+         return new SNC.PlannedTaskAPI().getSchedule(scheduleId, scheduleTimezone, startYear, endYear, forward);
+    },
+	
+   
+    getWorkPlanSchedule: function(scheduleId, scheduleTimezone, startYear, endYear, forward){
+         PPMDebug.log('getWorkPlanSchedule: '+ scheduleId);
+         return new SNC.PlannedTaskAPI().getWorkPlanSchedule(scheduleId, scheduleTimezone, startYear, endYear, forward);
+    },
+
+
+    RecalculateStartDateFromAbsoluteDurationPerSchedule : function(endDate, duration, scheduleId) {
+		var durationActualValue = this.getDurationActual(endDate, duration, scheduleId);	
+		var startDate =  new SNC.PlannedTaskAPI().calculateStartDate(endDate, durationActualValue, scheduleId);
+     	return startDate;
+    }, 
+
+    getConsoleConfig: function(sysClass,context){
+        return new SNC.PlannedTaskAPI().gridEntityMetadata(sysClass,context);
+    },
+	
+	/*New API for scenario Planning to fetch projects demands for multiple portfolios &amp;
+	 * String baseClasses - Fetch data for just requested classes and order e.g 'pm_project,dmn_demand' requirement to avoid programs &amp;
+	 * int recordLimit - Limit number of task  fetched  (OPTIONAL) "-1" to fetch all &amp;
+	 * String columns - Planning Console Display Column(jsonColumn) to fetch only requested column data(For ranking feature)(OPTIONAL) "" to fetch gantt data
+	 */
+	fetchGanttDataForMultipleSources: function(sysClassName, planningConsoleContext, sysIds, queryConstraintConditionsMap, recordLimit, columns, baseClasses) {
+        var queryConstraint = this.buildQueryConstraintObject(queryConstraintConditionsMap);
+        return new SNC.PlannedTaskAPI().getGanttDataForMultiSources(sysClassName, planningConsoleContext, 
+			sysIds, queryConstraint, recordLimit, columns, baseClasses);
+    },
+	
+	buildQueryConstraintObject: function(queryMap) {
+      var queryConstraint = new SNC.QueryConstraint();
+      for (var tableName in queryMap) {
+        queryConstraint.addNodeQueryCondition(tableName, queryMap[tableName]);
+      }
+      return queryConstraint;
+    },
+
+    fetchCurrencySymbols: function(){
+        var currencySymbol = new SNC.PlanningScriptable().getCurrencySymbol();
+        return JSON.parse(currencySymbol);
+    },
+
+    getScheduleId : function(taskSysId) {
+        if (JSUtil.nil(taskSysId)) {
+            gs.log("PTGlobal::getScheduleId for taskSysId= " + taskSysId);
+            return "";
+        }
+        var scheduleId = "";
+        var plannedTask = new GlideRecord("planned_task");
+        plannedTask.get(taskSysId);
+        var topTaskGr = plannedTask.top_task.getRefRecord();
+        var sysClassName = topTaskGr.getValue('sys_class_name');
+        var topTaskRecord = new GlideRecord(sysClassName);        
+        if (topTaskRecord.get(plannedTask.top_task)) {
+            if (!JSUtil.nil(topTaskRecord.schedule)) {
+                scheduleId = topTaskRecord.schedule;
+            } else gs.log("getScheduleId: no  schedule specified for top task");
+        }
+        gs.log("getScheduleId taskSysId= " + taskSysId + " scheduleId=" + scheduleId);
+
+        return scheduleId;
+    },
+
+
+
+    getHoursPerDay : function(startDate, scheduleSysId, taskSysId) {
+        gs.log("PTGlobal::getHoursPerDay " + startDate + " schedule_sys_id=" + scheduleSysId + " task_sys_id=" + taskSysId);
+        if (JSUtil.nil(scheduleSysId)) {
+            if (JSUtil.nil(startDate)) {
+                var gr = new GlideRecord("planned_task");
+                if(!gr.get(taskSysId))
+                    return 24;
+                startDate = gr.start_date;
+            }
+            scheduleSysId = this.getScheduleId(taskSysId);
+        }
+        var hoursPerDay = new SNC.PlannedTaskAPI().getHoursPerDay(startDate, scheduleSysId);
+        return hoursPerDay;
+    },
+
+    getDurationActual : function(endDate, taskDuration, scheduleId) {
+		if (JSUtil.nil(taskDuration))
+			return (new GlideDuration(0));
+		var numberOfDays = taskDuration.getDayPart();
+		var hr = parseFloat(this.getHoursPerDay(endDate,scheduleId));
+		var numberOfDaysperScheduleNumericValue = numberOfDays * hr * 3600 * 1000;
+		var dayDuration = new GlideDuration();
+		dayDuration.setValue(numberOfDays * 24 * 3600 * 1000);		
+		var durationWithoutDate = taskDuration.subtract(dayDuration);
+		var durationActual = new GlideDuration(numberOfDaysperScheduleNumericValue);
+		durationActual = durationActual.add(durationWithoutDate);	
+		return durationActual;//.getDurationValue();		
+	},
+	
+	getPlannedTaskExtentions: function(extention) {
+		return new GlideScriptedExtensionPoint().getExtensions(extention);
+	},
+	
+	buildGlideRecord: function(gr, task, columns) {
+		var dateColumns = ['start', 'end'];
+        for (var i = 0; i &lt; columns.length; i++) {
+            var column = columns[i];
+            var field = task[column.name];
+            if (field &amp;&amp; column.internalColumnName != 'sys_id') {
+				if(column.type == 'date_time' || column.type == 'date'){
+					var gdt;
+					if(column.type == 'date' &amp;&amp; dateColumns.indexOf(column.internalColumnName) != -1)
+					   gdt = new GlideDate();
+					else
+					   gdt = new GlideDateTime();
+					if(column.isMillisecond)
+						gdt.setNumericValue(this._getFieldValue(field));
+					else if (column.isDisplay)
+						gdt.setDisplayValue(this._getFieldValue(field));
+					else 
+						gdt.setDisplayValueInternal(this._getFieldValue(field));
+					
+				    if(column.type == 'date' &amp;&amp; dateColumns.indexOf(column.internalColumnName) != -1)
+					    gr.setValue(column.internalColumnName, gdt.getLocalDate());
+                    else
+					    gr.setValue(column.internalColumnName, gdt.getValue());
+
+					if(column.internalColumnName == 'start_date')
+						gr.setValue('schedule_start_date', gdt.getValue());
+					
+					if(column.internalColumnName == 'end_date')
+						gr.setValue('schedule_end_date', gdt.getValue());
+
+				} else if(column.internalColumnName == 'duration' || column.internalColumnName == 'work_duration') {
+					gr.setValue(column.internalColumnName, this._getDurationValue(field));	 
+				} else
+					gr.setValue(column.internalColumnName, this._getFieldValue(field));
+			}
+        }
+    },
+	
+	buildPlannedTaskRelationGR: function(relationGr, relation) {
+		relationGr.setValue("parent", relation.source);
+		relationGr.setValue("child", relation.target);
+		relationGr.setValue("sub_type", relation.type);
+		relationGr.setValue("parent_top_task", relation.parent_top_task);
+		relationGr.setValue("child_top_task", relation.child_top_task);
+		
+		var lag = new GlideDuration(relation.lag + ' 00:00:00');
+		relationGr.setValue("lag", lag.getValue());
+	},
+	
+	_getDurationValue: function(field) {
+		var value = this._getFieldValue(field);
+		if(!JSUtil.nil(value))
+			return value + ":00";
+		else
+			return '';
+	},
+	
+	_getFieldValue: function(field) {
+		if(field.hasOwnProperty("value")) {
+			return field.value;
+		} else 
+			return field;
+	},
+	
+	addDaysToTimeZoneDateTime: function(dateTime, days, timeZone) {
+		return new SNC.PTScheduleAPI().addDaysToTimeZoneDateTime(dateTime, days, timeZone);
+	},
+	
+	changeParent: function(gr, oldParentId, newParentId, enginePreferences) {
+		return new SNC.PlannedTaskAPI().changeParent(gr, oldParentId, newParentId, enginePreferences);
+	},
+	
+	validateChangeParent: function(gr, oldParentId, newParentId) {
+		return new SNC.PlannedTaskAPI().validateChangeParent(gr, oldParentId, newParentId);
+	},
+	
+	calculateEndDateInternal: function(startDateStr, durationStr, scheduleId) {
+		return new SNC.PlannedTaskAPI().calculateEndDateInternal(startDateStr, durationStr, scheduleId);
+	},
+	
+	calculateDurationInternal: function(startDateStr, endDateStr, scheduleId) {
+		return new SNC.PlannedTaskAPI().calculateDurationInternal(startDateStr, endDateStr, scheduleId);
+	},
+	
+	isTaskStartDateValidForProject: function(projectId, durationStr, startDateStr) {
+		return new SNC.PlannedTaskAPI().isTaskStartDateValidForProject(projectId, durationStr, startDateStr);
+	},
+	
+	isRelationValid: function(projectId, gr) {
+		return new SNC.PlannedTaskAPI().isRelationValid(projectId, gr);
+	},
+	
+	isHierarchyValid: function(projectId, gr) {
+		return new SNC.PlannedTaskAPI().isHierarchyValid(projectId, gr);
+	},
+	
+	isParentValid: function(projectId, gr) {
+		return new SNC.PlannedTaskAPI().isParentValid(projectId, gr);
+	},
+	
+	recalculateRelation: function(gr, topTask, operation, enginePreferences) {
+		return new SNC.PlannedTaskAPI().recalculateRelation(gr, topTask, operation, enginePreferences);
+	},
+	
+	recalculateTask: function(gr, isSaveProject, dirtyTaskIds) {
+		return new SNC.PlannedTaskAPI().recalculateTask(gr, isSaveProject, dirtyTaskIds);
+	},
+	
+	recalculateTaskWithPreviousGr: function(currentGr, isSaveProject, dirtyTaskIds, previousGr) {
+		return new SNC.PlannedTaskAPI().recalculateTaskWithPreviousGr(currentGr, isSaveProject, dirtyTaskIds, previousGr);
+	},
+	
+	deleteTaskAndRecalculate: function(gr, isSaveProject) {
+		return new SNC.PlannedTaskAPI().deleteTaskAndRecalculate(gr, isSaveProject);
+	},
+	
+	setConstraints: function(recalculationConstraint) {
+		return new SNC.PlannedTaskAPI().setConstraints(recalculationConstraint);
+	},
+	
+	setEnginePreference: function(enginePreferences) {
+		return new SNC.PlannedTaskAPI().setEnginePreference(enginePreferences);
+	},
+	
+	checkCycle: function(taskId) {
+		return new SNC.PlannedTaskAPI().checkCycle(taskId);
+	},
+	
+	isInterProjectRelationValid: function(gr) {
+		return new SNC.PlannedTaskAPI().isInterProjectRelationValid(gr);
+	},
+	
+	recalculateWithDirtyTasks: function(topTaskId, dirtyTaskIds) {
+		return new SNC.PlannedTaskAPI().recalculateWithDirtyTasks(topTaskId, dirtyTaskIds);
+	},
+	
+	acceptNotification: function(entityId, sysClassName, notificationSysId) {
+		return new SNC.PlannedTaskAPI().acceptNotification(entityId, sysClassName, notificationSysId);
+	},
+	
+	rejectNotification: function(notificationSysId) {
+		return new SNC.PlannedTaskAPI().rejectNotification(notificationSysId);
+	},
+	
+	applyTemplate: function(projectId, templateId, startDate) {
+		return new SNC.PlannedTaskAPI().applyTemplate(projectId, templateId, startDate);
+	},
+	
+	validateWbs: function(projectId) {
+		return new SNC.PlannedTaskAPI().validateWbs(projectId);
+	},
+	
+	getProjectTemplateTable: function(tableName) {
+        return SNC.PPMConfig.getTemplateTable(tableName);
+    },
+	
+	interProjectRelationCallback: function(parentGr, childGr, relationId, interProjectDependencyType) {
+		return new SNC.PlannedTaskAPI().interProjectRelationCallback(parentGr, childGr, relationId, interProjectDependencyType);
+	},
+	
+	setTranslatedMessages: function(msgs) {
+		return new SNC.PlannedTaskAPI().setTranslatedMessages(msgs);
+	},
+	
+	convertDateIfNotInSchedule: function(projectDate, scheduleId, timeZone) {
+		var scheduleUtil = new SNC.PTScheduleAPI().getSchedule(scheduleId, timeZone);
+        return scheduleUtil.convertDateIfNotInSchedule(projectDate);
+	},
+	
+	copyProject: function(projectId, projectStartDate, projectName, resetFields, defaultFields) {
+		return new SNC.PlannedTaskAPI().copyProject(projectId, projectStartDate, projectName, resetFields, defaultFields);
+	},
+	
+	copyTask: function(taskId, parentId, shortDescription) {
+		return new SNC.PlannedTaskAPI().copyTask(taskId, parentId, shortDescription);
+	},
+	
+	performWorkspaceAction: function(entityId, actionPayload, fireBrs) {
+		var api = new SNC.PlannedTaskAPI();
+		return api.performWorkspaceAction(entityId, actionPayload, fireBrs);
+	},
+	
+    type: 'PTGlobalAPI'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-02-20 11:15:58&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;56d28c5f0b101300ee540e7363673a4a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;107&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PTGlobalAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_56d28c5f0b101300ee540e7363673a4a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-21 15:43:20&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;20024&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:38</sys_created_on>
+        <sys_id>569c41fa2f331110d8a4d5f62799b682</sys_id>
+        <sys_name>PTGlobalAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_569c41fa2f331110d8a4d5f62799b682</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

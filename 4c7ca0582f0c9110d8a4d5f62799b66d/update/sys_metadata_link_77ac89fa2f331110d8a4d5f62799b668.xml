@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>63f2247bb712230026778d78ee11a9f3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeTypeDefaultsAjaxSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;  Customers should not change this class directly This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KnowledgeTypeDefaultsAjaxSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var KnowledgeTypeDefaultsAjaxSNC = Class.create();
+
+KnowledgeTypeDefaultsAjaxSNC.prototype = Object.extendsObject(AbstractAjaxProcessor ,{
+ 
+  getValues: function() {
+    var xml = new GlideXMLDocument("template_values");
+    var list = new SNC.KnowledgeHelper().getDefaultElements(this.getParameter('sysparm_query_string')+'');
+	var elements = list.get(0);
+	var kbKnowledgeGR = list.get(1);  
+    for (var i = 0; i &lt; elements.size(); i++) {
+        var ge = kbKnowledgeGR.getElement(elements.get(i));
+        if (ge.getED().isVirtual())
+           continue;
+
+        var name = ge.getName();
+        var value = this.getValue(ge);
+        var e = xml.createElement("item", null);
+        e.setAttribute("name", name);
+		e.setAttribute("value", value);
+        var dep = ge.getDependent();
+        if (dep)
+           e.setAttribute('dependent', dep);
+    }
+    var document =  xml.getDocument(); 
+    answer = document;
+    return document;
+  },
+
+  getValue: function(ge) {
+     if (!ge.isObject())
+        return ge + '';
+    
+     var ed = ge.getED();
+     if (ed.isJournal() || ed.isChoiceTable())
+        return ge + '';
+
+     //Domain types are same as the reference types for this purpose
+     if (ed != null &amp;&amp; ed.getInternalType() == 'domain_id')
+		  return ge + '';	
+	  
+		if (ed.getInternalType() == 'glide_date' ||  ed.getInternalType() == 'glide_date_time') {
+			return ge.getDisplayValue();
+        }
+     
+	  if (ed.getInternalType() != 'glide_duration' &amp;&amp; ed.getInternalType() != 'timer')
+        return ge.getValue();
+	  
+     return ge.getDurationValue();
+  }
+
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-12-17 09:07:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;63f2247bb712230026778d78ee11a9f3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeTypeDefaultsAjaxSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_63f2247bb712230026778d78ee11a9f3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-02-16 03:43:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1615&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:00</sys_created_on>
+        <sys_id>77ac89fa2f331110d8a4d5f62799b668</sys_id>
+        <sys_name>KnowledgeTypeDefaultsAjaxSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_77ac89fa2f331110d8a4d5f62799b668</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>31fdf1b037201000dadaa3549dbe5d7e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AbstractAjaxDataUpdateChecker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AbstractAjaxDataUpdateChecker&lt;/description&gt;
+        &lt;name&gt;AbstractAjaxDataUpdateChecker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AbstractAjaxDataUpdateChecker = Class.create();
+AbstractAjaxDataUpdateChecker.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+   updateData: function() {
+      var itemID = this.getParameter('sysparm_item_id');
+      var table = this.getTableName();
+      var result = "";
+      if (itemID != "" &amp;&amp; table != null){
+         var gr = new GlideRecord(table);
+         gr.addQuery('sys_id', itemID);
+         gr.query();
+         if (gr.next()){
+            var values = this.getNewValues(itemID, gr.state);
+            if (values){
+               gr.state = values[0];
+               gr.blocked = values[1];
+               gr.blocked_reason = values[2];
+               gr.update();
+               result = values.join("|");
+            }
+         }
+      }
+      return result;
+   },
+
+   whatWillChange: function() {
+      var itemID = this.getParameter('sysparm_item_id');
+      var table = this.getTableName();
+      var result = [];
+      if (itemID != "" &amp;&amp; table != null){
+         var gr = new GlideRecord(table);
+         gr.addQuery('sys_id', itemID);
+         gr.query();
+         if (gr.next()){
+            var values = this.getNewValues(itemID, gr.state);
+            if (values){
+               result = this.getChangeMessages(gr, values);
+            }
+         }
+      }
+      return result.join("|");
+   },
+
+   getChangeMessages: function(){
+      return [];
+   },
+
+   getNewValues: function(){
+      return null;
+   },
+
+   getTableName: function(){
+      return null;
+   },
+	
+	/**
+	 * Prevent public access to this processor
+	 */
+	isPublic: function() {
+		return false;
+	}
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-08-15 09:46:10&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;31fdf1b037201000dadaa3549dbe5d7e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AbstractAjaxDataUpdateChecker&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_31fdf1b037201000dadaa3549dbe5d7e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-25 12:04:16&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1606&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:46</sys_created_on>
+        <sys_id>256c81ba2f331110d8a4d5f62799b687</sys_id>
+        <sys_name>AbstractAjaxDataUpdateChecker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_256c81ba2f331110d8a4d5f62799b687</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>60d7d5d86712030091d005225685efb7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WhitelistedClientErrorUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Whitelisted Client Error utility to check if a test log has a whitelisted client error record that matches its output.&lt;/description&gt;
+        &lt;name&gt;WhitelistedClientErrorUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WhitelistedClientErrorUtil = Class.create();
+WhitelistedClientErrorUtil.prototype = {
+    initialize: function() {
+    },
+
+	/**
+	 * function takes a test log record and returns the sys_id of the whitelisted client error
+	 * record that matches its error message or null if one does not exists
+	 */
+	getWhitelistedClientErrorSysId: function(current) {
+		var testLogErrorMessage = current.output;
+		var gr = new GlideRecord('sys_atf_whitelist');
+		gr.query();
+		while (gr.next()) {
+			if (testLogErrorMessage.contains(gr.error_message))
+				return gr.sys_id;
+		}
+		return null;
+	},
+
+	/**
+     * Retrieves the sys_id of the first allowed error which matches the error on the current step
+     */
+	getAllowListedErrorSysId: function(current) {
+		var testLogErrorMessage = current.output;
+		var location = current.type;
+		var gr = new GlideRecord("sys_atf_whitelist");
+		gr.query();
+		while (gr.next()) {
+			if (testLogErrorMessage.contains(gr.error_message) &amp;&amp; gr.error_location.toString() === location.toString())
+				return gr.sys_id;
+		}
+		return null;
+	},
+
+	doesTestHaveClientErrors: function(current) {
+		var clientErrorsGR = new GlideRecord("sys_atf_test_result_item");
+		clientErrorsGR.addQuery("test_result", current.sys_id);
+		clientErrorsGR.addQuery("type", "client_error");
+		clientErrorsGR.query();
+		return (clientErrorsGR.getRowCount() != 0);
+	},
+
+	/**
+    * Returns true if the test has any errors, either server or client
+    */
+	doesTestHaveErrors: function(current) {
+		var errorsGR = new GlideRecord("sys_atf_test_result_item");
+		errorsGR.addQuery("test_result", current.sys_id);
+		errorsGR.addQuery("type", "server_error").addOrCondition("type", "client_error");
+		errorsGR.query();
+		return (errorsGR.getRowCount() != 0);
+	},
+	
+	doesTestHaveServerErrors: function(current) {
+		var serverErrorsGR = new GlideRecord("sys_atf_test_result_item");
+		serverErrorsGR.addQuery("test_result", current.sys_id);
+		serverErrorsGR.addQuery("type", "server_error");
+		serverErrorsGR.query();
+		return (serverErrorsGR.getRowCount() != 0);
+	},
+
+	doesStepHaveClientErrors: function(current) {
+		var clientErrorsGR = new GlideRecord("sys_atf_test_result_item");
+		clientErrorsGR.addQuery("test_result", current.test_result);
+		clientErrorsGR.addQuery("step", current.step);
+		clientErrorsGR.addQuery("type", "client_error");
+		clientErrorsGR.query();
+		return (clientErrorsGR.getRowCount() != 0);
+	},
+
+	doesTestResultHaveFailingTestLogs: function(current) {
+		var failingTestLogsGR = new GlideRecord("sys_atf_test_result_item");
+		failingTestLogsGR.addQuery("test_result", current.sys_id);
+		failingTestLogsGR.addQuery("status", "failure");
+		failingTestLogsGR.query();
+		return (failingTestLogsGR.getRowCount() != 0);
+	},
+
+    type: 'WhitelistedClientErrorUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-11-03 23:43:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;60d7d5d86712030091d005225685efb7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WhitelistedClientErrorUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Automated Test Framework - Allowed Client Errors" source="com.glide.automated_testing_impl.wce"&gt;69e2018f6d6620100acb70b3534330aa&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_60d7d5d86712030091d005225685efb7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-01 19:26:34&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2769&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:55</sys_created_on>
+        <sys_id>22ac09fa2f331110d8a4d5f62799b6a0</sys_id>
+        <sys_name>WhitelistedClientErrorUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_22ac09fa2f331110d8a4d5f62799b6a0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

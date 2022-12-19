@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>347608540f2133005203cbb2ff767e1b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.BuildSuggestionsFromLogTable&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;When a customer upgrades to new instance, this script will prepopulate searches into search analytics and suggestions tables from the text_search table or sp_log table&lt;/description&gt;
+        &lt;name&gt;BuildSuggestionsFromLogTable&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var BuildSuggestionsFromLogTable = Class.create();
+BuildSuggestionsFromLogTable.prototype = {
+    initialize: function(maxRecordsToBuild) {
+        this.max = maxRecordsToBuild;
+    },
+
+    buildPortalSuggestions: function(appId, dataSource, searchSources, searchSourceSysIds) {
+        var appTable = "sp_portal";
+        this._seedAnalyticsAndBuildSuggestions(appId, appTable, dataSource, searchSources, searchSourceSysIds);
+    },
+
+    buildScopedSuggestions: function(configId) {
+        var appTable = "sys_scope";
+        var dataSource = "text_search";
+        var mobileAppId = this._getApplicationId(configId);
+        var searchSourceSysIds = this._getApplicationSearchSourceSysIds(configId);
+        var searchSources = this._getSearchSources(searchSourceSysIds);
+        this._seedAnalyticsAndBuildSuggestions(mobileAppId, appTable, dataSource, searchSources, searchSourceSysIds);
+    },
+
+    _seedAnalyticsAndBuildSuggestions: function(appId, appTable, dataSource, searchSources, searchSourceSysIds) {
+        var currentDateTime = new GlideDateTime();
+        var suggestionService = new SearchSuggestionService();
+        var count = 0;
+        var done = false;
+
+        var dataSourceGr = new GlideRecord(dataSource);
+        dataSourceGr.addQuery('sys_created_on', "&lt;", currentDateTime);
+        dataSourceGr.addQuery("table", "IN", searchSources);
+        dataSourceGr.orderByDesc("sys_created_on");
+        dataSourceGr.query();
+        dataSourceGr.next();
+
+        var totalRecordsToProcess = Math.min(dataSourceGr.getRowCount(), this.max);
+        //PROCESS BUILDING SUGGESTIONS IN CHUNKS OF 5000 RECORDS
+        var recordsToProcess = Math.min(totalRecordsToProcess, 5000);
+        while (count &lt; this.max &amp;&amp; !done) {
+            if (count + recordsToProcess &gt;= totalRecordsToProcess) {
+                dataSourceGr.chooseWindow(count, totalRecordsToProcess);
+                done = true;
+            } else
+                dataSourceGr.chooseWindow(count, count + recordsToProcess);
+
+            dataSourceGr.query();
+
+            while (dataSourceGr.next()) {
+                var searchTerm = "";
+                var results = 0;
+
+                if (dataSource == "text_search") {
+                    searchTerm = dataSourceGr.getValue('search_term');
+                    results = parseInt(dataSourceGr.getValue('results'));
+                } else if (dataSource == "sp_log") {
+                    searchTerm = dataSourceGr.getValue('text');
+                    results = parseInt(dataSourceGr.getValue('count'));
+                }
+
+                var user = dataSourceGr.getValue('user');
+                var sessionId = dataSourceGr.getValue('session_id');
+
+                this._insertSearchEvents(appId, appTable, searchTerm, user, sessionId, results, searchSourceSysIds);
+                suggestionService.build();
+                count = count + recordsToProcess;
+            }
+        }
+    },
+
+    _insertSearchEvents: function(appId, appTable, searchTerm, user, sessionId, results, searchSourceSysIds) {
+        var searchEventGr = new GlideRecord('sys_search_event');
+        var userLanguage = this._getUserLanguage(user);
+
+        searchEventGr.initialize();
+        searchEventGr.application_id = appId;
+        searchEventGr.application_table = appTable;
+        searchEventGr.setValue('search_query', searchTerm);
+        searchEventGr.setValue('user', user);
+        searchEventGr.setValue('session_id', sessionId);
+        searchEventGr.setValue('has_results', results);
+        searchEventGr.setValue('language', userLanguage);
+        searchEventGr.setValue('click_rank', 0);
+
+        var sysId = searchEventGr.insert();
+        for (var i = 0; i &lt; searchSourceSysIds.length; i++) {
+            this._insertSearchSourceEvents(sysId, searchSourceSysIds[i], searchTerm);
+        }
+    },
+
+    _insertSearchSourceEvents: function(sysId, sourceId, searchTerm) {
+        var searchSourceEventGr = new GlideRecord('sys_search_source_event');
+        searchSourceEventGr.initialize();
+        searchSourceEventGr.search_event = sysId;
+        searchSourceEventGr.source = sourceId;
+        searchSourceEventGr.search_query = searchTerm;
+        searchSourceEventGr.has_results = false;
+        searchSourceEventGr.insert();
+    },
+
+    _getApplicationId: function(searchContextConfigId) {
+        var appId;
+        var searchContextConfigGR = new GlideRecord('sys_search_context_config');
+        searchContextConfigGR.addQuery("sys_id", searchContextConfigId);
+        searchContextConfigGR.query();
+
+        if (searchContextConfigGR.next())
+            appId = searchContextConfigGR.getValue("application_id");
+
+        return appId;
+    },
+
+    _getApplicationSearchSourceSysIds: function(searchContextConfigId) {
+        var sysIds = [];
+        var searchSourceGR = new GlideRecord('m2m_search_context_config_search_source');
+        searchSourceGR.addQuery('search_context_config', searchContextConfigId);
+        searchSourceGR.query();
+
+        while (searchSourceGR.next()) {
+            sysIds.push(searchSourceGR.getValue("source") + "");
+        }
+
+        return sysIds;
+    },
+
+    _getSearchSources: function(searchSourceSysIds) {
+        var sources = [];
+        var gr = new GlideRecord('sys_search_source');
+        gr.addQuery('sys_id', 'IN', searchSourceSysIds);
+        gr.query();
+
+        while (gr.next()) {
+            sources.push(gr.getValue("source_table"));
+        }
+
+        return sources;
+    },
+
+    _getUserLanguage: function(userId) {
+        var userGr = new GlideRecord('sys_user');
+        userGr.addQuery('sys_id', userId);
+        userGr.query();
+        userGr.next();
+
+        var answer = userGr.getValue('preferred_language');
+        if (answer) {
+            gs.info("User Language: " + answer);
+            return answer;
+        } else {
+            var defaultLanguage = gs.getProperty("glide.sys.language");
+            gs.info("Default Language: " + defaultLanguage);
+            return defaultLanguage;
+        }
+    },
+
+    type: 'BuildSuggestionsFromLogTable'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-05-16 23:28:09&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;347608540f2133005203cbb2ff767e1b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;BuildSuggestionsFromLogTable&lt;/sys_name&gt;
+        &lt;sys_package display_value="Text search suggestions API" source="com.glide.search.suggestions"&gt;6cf2858f6d6620100acb70b353433022&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_347608540f2133005203cbb2ff767e1b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-05-28 22:09:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6061&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:48</sys_created_on>
+        <sys_id>526cc1ba2f331110d8a4d5f62799b698</sys_id>
+        <sys_name>BuildSuggestionsFromLogTable</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_526cc1ba2f331110d8a4d5f62799b698</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>99a0ba0914d89300964fa81e247aa81d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CalculateComplianceScore&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CalculateComplianceScore&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CalculateComplianceScore = Class.create();
+CalculateComplianceScore.prototype = {
+  /**
+    * Check if property value matches with the currenntVal beinng passed as funtion parameter and update complaince state of dependency respectively.
+    *
+    * @param {string} lookupTable - Table to fetch record from to validate record value.
+    * @param {string} updateTable - Table to update complaince state of record
+    * @param {string} propertyName - The property name of the dependency
+    * @param {string} recValue - Recommended value for dependency
+    * @param {string} defaultValue - Default value for dependency
+    */
+  checkForCompliance: function(lookupTable, updateTable, propertyName, recValue, defaultValue) {
+    var gr = new GlideRecord(lookupTable);
+    var gr_dep = new GlideRecord(updateTable);
+    gr_dep.get('harc_dependency_name', propertyName);
+    if (GlideProperties.get(propertyName, defaultValue).toLowerCase().toString() == recValue) {
+      gr_dep.harc_compliant = true;
+    } else {
+      gr_dep.harc_compliant = false;
+    }
+
+    // Fetch current property value and set to defaultValue if property has not been set yet
+    gr_dep.harc_current_value = GlideProperties.get(propertyName, defaultValue);
+    var configArr = gr_dep.harc_sec_configuration.split(","); //Each dependency can belong to multiple configurations
+    gr_dep.update();
+    this.setComplianceStateOfConfiguration(configArr);
+  },
+
+  /**
+    *Evaluate criteria in dependency groups and set compliance state of configuration whenever dependency is updated.
+    *
+    *@param {List} configArr - List of all configurations that dependency belongs
+    */
+  setComplianceStateOfConfiguration: function(configArr) {
+    var gr_config = new GlideRecord('isc_security_configurations');
+    for (var i = 0; i &lt; configArr.length; i++) {
+      var compliant = false;
+      var grp = new GlideRecord('isc_dependency_groups');
+      grp.addQuery('harc_sec_config', configArr[i]);
+      grp.query();
+      while (grp.next() &amp;&amp; !compliant) { //For each group within configuration
+        var deps = grp.harc_group_list.split(",");
+        var encodedQuery = "harc_compliant=true^sys_id=" + deps.join("^ORsys_id=");
+        var gr = new GlideRecord('isc_security_dependencies');
+        gr.addEncodedQuery(encodedQuery);
+        gr.query();
+        compliant = deps.length === gr.getRowCount();
+      }
+      gr_config.get(configArr[i]);
+      gr_config.harc_compliance_state = compliant ? 'Pass' : 'Fail'; //If any group has all dependencies as compliant, then set confoguration as compliant
+      gr_config.update();
+    }
+  },
+
+
+  /**
+    * Check if property exists and not contain empty value.
+    *
+    * @param {string} lookupTable Table to fetch record from to validate record value.
+    * @param {string} updateTable Table to update complaince state of record
+    * @param {string} propertyName Name of system property 
+    */
+  checkNotNill: function(lookupTable, updateTable, propertyName) {
+    var gr = new GlideRecord(lookupTable);
+    var gr_dep = new GlideRecord(updateTable);
+    gr_dep.get('harc_dependency_name', propertyName);
+    if (!gs.nil(gs.getProperty(propertyName))) {
+      gr_dep.harc_compliant = true;
+    } else {
+      gr_dep.harc_compliant = false;
+    }
+    gr_dep.harc_current_value = GlideProperties.get(propertyName);
+    var configArr = gr_dep.harc_sec_configuration.split(","); //Each dependency can belong to multiple configurations  
+    gr_dep.update();
+    this.setComplianceStateOfConfiguration(configArr);
+  },
+
+  /**
+    * Update system proterty with currentValue passed as parameter to function.
+    *
+    *@param {string} propertyName Name of system property to update.
+    *@param {string} currentValue Value passed to update system property.
+    */
+  updateProperty: function(propertyName, currentValue) {
+    gs.setProperty(propertyName, currentValue);
+  },
+
+  /**
+    * Check if property already exixts, if not insert new property. 
+    *
+    *@param {string} propertyName Name of system property to insert or update.
+    *@param {string} currentValue Value passed to update system property
+    *@param {string} propertyType Value passed to specify system property type
+    */
+  insertUpdateProperty: function(propertyName, currentValue, propertyType) {
+    var gr_xml = new GlideRecord('sys_properties');
+    if (!gr_xml.get("name", propertyName)) {
+      gr_xml.initialize();
+      gr_xml.name = propertyName;
+      gr_xml.type = propertyType;
+      gr_xml.value = currentValue;
+      gr_xml.insertWithReferences();
+    } else {
+      gs.setProperty(propertyName, currentValue);
+    }
+  },
+
+  /**
+    *Check if Plugin iss active and registered
+    *
+    *@param {string} pluginName Name of plugin.
+    *@param {string} dependencyTable Dependency table to update.
+    */
+  checkPlugin: function(pluginName, dependencyTable) {
+    var gr_dep = new GlideRecord(dependencyTable);
+    gr_dep.get('harc_dependency_name', pluginName);
+    if (GlidePluginManager.isRegistered(pluginName)) {
+      gr_dep.harc_compliant = true;
+    } else {
+      gr_dep.harc_compliant = false;
+    }
+    var configArr = gr_dep.harc_sec_configuration.split(","); //Each dependency can belong to multiple configurations   
+    gr_dep.update();
+    this.setComplianceStateOfConfiguration(configArr);
+  },
+
+  /**
+    * Execute all records from Security Dependencies table, update the compliance state of dependencies respectively.
+    */
+  runComplianceCheck: function() {
+    var evaluator = new GlideScopedEvaluator();
+    var gr_config = new GlideRecord('isc_security_configurations');
+    gr_config.query();
+    while (gr_config.next()) {
+      var gr_dep = new GlideRecord('isc_security_dependencies');
+      gr_dep.addQuery('harc_sec_configuration', 'CONTAINS', gr_config.sys_id);
+      gr_dep.query();
+      while (gr_dep.next()) {
+        var configArr = gr_dep.harc_sec_configuration.split(","); //Each dependency can belong to multiple configurations  
+        evaluator.evaluateScript(gr_dep, 'harc_inbound_script', null);
+        this.setComplianceStateOfConfiguration(configArr);
+      }
+    }
+    gr_config = new GlideRecord('isc_security_configurations');
+    gr_config.addEncodedQuery('harc_tableISNOTEMPTY^harc_conditionISNOTEMPTY'); // Set calculate compliance to true if run conndition holds true
+    gr_config.query();
+    while (gr_config.next()) {
+      var gr_evaluate = new GlideRecord(gr_config.harc_table); // Executing run condition
+      gr_evaluate.addEncodedQuery(gr_config.harc_condition);
+      gr_evaluate.query();
+      gr_config.harc_calculate_compliance = gr_evaluate.hasNext();
+      gr_config.update();
+    }
+
+  },
+
+  /**
+    *Calculate compliance for Managing Failed Login Attemps configuration
+    *
+    *@param {object} grDep GlideRecord variable for isc_security_dependencies.
+    */
+  complianceForManagingFailedLoginAttemps: function(grDep) {
+    var USER_CLEAR_LOCKOUT_ACTIVE = 2;
+    var gr_userClearAndLockout = new GlideRecord('sysevent_script_action');
+    gr_userClearAndLockout.addEncodedQuery('sys_idIN5e5183350a0a0a0a00093b591ece409f,5e44f9bf0a0a0a0a019a6440b2137767^active=true');
+    gr_userClearAndLockout.query();
+    var gr_autoLockout = new GlideRecord('sysevent_script_action');
+    gr_autoLockout.addQuery('sys_id', 'd92636b2975301008e00958e3b297567');
+    gr_autoLockout.addQuery('active', '1');
+    gr_autoLockout.query();
+    if ((gr_userClearAndLockout.getRowCount() == USER_CLEAR_LOCKOUT_ACTIVE) || gr_autoLockout.hasNext()) {
+      grDep.harc_compliant = true;
+    } else {
+      grDep.harc_compliant = false;
+    }
+    var configArr = gr_dep.harc_sec_configuration.split(","); //Each dependency can belong to multiple configurations  
+    gr_dep.update();
+    this.setComplianceStateOfConfiguration(configArr);
+  },
+
+  /**
+    *Update current value of configurations with user defined value on UI
+    *
+    *@param {object} responses Array of objects containing dependency name and its value.
+    */
+  activateConfigurations: function(responses) {
+    var evaluator = new GlideScopedEvaluator();
+    for (var obj in responses) {
+      var gr_dep = new GlideRecord('isc_security_dependencies');
+      gr_dep.addQuery('harc_dependency_name', responses[obj].name);
+      gr_dep.query();
+      if (gr_dep.next()) {
+        var vars = {
+          'userInput': responses[obj].value
+        };
+        evaluator.evaluateScript(gr_dep, 'harc_update_config', vars);
+      }
+    }
+  },
+
+  type: 'CalculateComplianceScore'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;aditya.ganapathy&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-02-14 00:06:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;99a0ba0914d89300964fa81e247aa81d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;169&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CalculateComplianceScore&lt;/sys_name&gt;
+        &lt;sys_package display_value="Instance Security Center" source="com.glide.instance_sec_center"&gt;8b74c54f6da620100acb70b353433054&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_99a0ba0914d89300964fa81e247aa81d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-29 22:02:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8490&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:33</sys_created_on>
+        <sys_id>cd4d85be2f331110d8a4d5f62799b60b</sys_id>
+        <sys_name>CalculateComplianceScore</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cd4d85be2f331110d8a4d5f62799b60b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

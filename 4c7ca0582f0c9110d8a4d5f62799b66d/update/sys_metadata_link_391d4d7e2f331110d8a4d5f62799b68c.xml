@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>94b9d3005b4f00109dac15233381c738</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DeepCopy&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;DeepCopy&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DeepCopy = Class.create();
+DeepCopy.prototype = {
+
+    addTestManagementCofig: function() {
+        var pm = new GlidePluginManager();
+        if (pm.isActive('com.snc.test_management.2.0')) {
+            var testTablesConfig = {
+                "tableName": "sn_test_management_m2m_task_test",
+                "referenceFieldToParent": "task",
+                "referenceFieldToChild": "test",
+                "fields": ["test"]
+            };
+            this.childTablesConfig.push(testTablesConfig);
+        }
+    },
+
+    deepCopy: function(oldParentRec) {
+		var result = {};
+        var newParentID = this.copySingleRecord(oldParentRec, this.parentFieldsToCopy, this.parentStateVal);
+        if (gs.nil(newParentID))
+            return;
+        for (var i = 0; i &lt; this.childTablesConfig.length; i++)
+            this.copyRecordsFromTable(this.childTablesConfig[i], newParentID, oldParentRec.getUniqueValue());
+
+		result.newStoryLink = oldParentRec.getTableName() + '.do?sys_id=' + newParentID;
+		result.newStoryID = newParentID;
+        return result;
+    },
+
+    copyRecordsFromTable: function(childTableConfig, newParentID, oldParentID) {
+        var gr = new GlideRecord(childTableConfig.tableName);
+        gr.addQuery(childTableConfig.referenceFieldToParent, oldParentID);
+        gr.query();
+
+        while (gr.next())
+            this.copySingleRecord(gr, childTableConfig.fields, childTableConfig.stateVal, childTableConfig.referenceFieldToParent, newParentID);
+    },
+
+    copySingleRecord: function(oldRec, fieldsArr, stateVal, referenceFieldToParent, newParentID) {
+        var newRec = new GlideRecord(oldRec.getTableName());
+        fieldsArr.forEach(function(field) {
+			if (!newRec.isValidField(field)) {
+				gs.warn("Skipping the field {0} as it is not valid on the table {1}", field, newRec.getTableName());
+				return;
+			}
+            if (field === "state")
+                newRec.setValue(field, stateVal);
+			else if (field === "short_description")
+				newRec.setValue(field, 'Copy of ' + oldRec.getValue(field));
+            else
+                newRec.setValue(field, oldRec.getValue(field));
+        }, this);
+        if (referenceFieldToParent)
+            newRec.setValue(referenceFieldToParent, newParentID);
+        return newRec.insert();
+    },
+    type: 'DeepCopy'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-02-14 05:58:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;94b9d3005b4f00109dac15233381c738&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;22&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DeepCopy&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_94b9d3005b4f00109dac15233381c738&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-05-22 06:03:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2307&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:47</sys_created_on>
+        <sys_id>391d4d7e2f331110d8a4d5f62799b68c</sys_id>
+        <sys_name>DeepCopy</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_391d4d7e2f331110d8a4d5f62799b68c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4f67d8f00a0a2c3e12b9c50e6497e0d0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeConflict&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Class that holds a Change Conflict's details&amp;#13;
+  plugin: com.snc.change.collision&lt;/description&gt;
+        &lt;name&gt;ChangeConflict&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeConflict = Class.create();
+
+// Change Conflict types
+// (sys_choice_conflict_type)
+ChangeConflict.CHANGETYPE_ALREADY_SCHEDULED             = 'ci_already_scheduled';
+ChangeConflict.CHANGETYPE_NOT_IN_WINDOW                 = 'not_in_maintenance_window';
+ChangeConflict.CHANGETYPE_BLACKOUT                      = 'blackout';
+ChangeConflict.CHANGETYPE_CHILD_ALREADY_SCHEDULED       = 'child_ci_already_scheduled';
+ChangeConflict.CHANGETYPE_CHILD_NOT_IN_WINDOW           = 'child_not_in_maintenance_window';
+ChangeConflict.CHANGETYPE_CHILD_BLACKOUT                = 'child_blackout';
+ChangeConflict.CHANGETYPE_PARENT_ALREADY_SCHEDULED      = 'parent_ci_already_scheduled';
+ChangeConflict.CHANGETYPE_PARENT_NOT_IN_WINDOW          = 'parent_not_in_maintenance_window';
+ChangeConflict.CHANGETYPE_PARENT_BLACKOUT               = 'parent_blackout';
+ChangeConflict.CHANGETYPE_ASSIGNED_TO_ALREADY_SCHEDULED = 'assigned_to_already_scheduled';
+
+ChangeConflict.prototype = {
+	
+	initialize: function(configurationItemId, changeId, ctype, conflictingChangeId, scheduleId, relatedCi, impactedService) {
+		this.configurationItemId = configurationItemId;
+		this.changeId = changeId;
+		this.ctype = ctype;
+		this.conflictingChangeId = conflictingChangeId;
+		this.scheduleId = scheduleId;
+		this.relatedCi = relatedCi;
+		this.impactedService = impactedService;
+	},
+	
+	toString: function() {
+		return "\rCI               : " + this.configurationItemId +
+		"\rService          : " + this.impactedService +
+		"\rChange           : " + this.changeId +
+		"\rConflict         : " + this.conflictingChangeId +
+		"\rRelatedCi        : " + this.relatedCi +
+		"\rSchedule         : " + this.scheduleId;
+	}
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;felix.bait&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-11-15 12:00:43&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4f67d8f00a0a2c3e12b9c50e6497e0d0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeConflict&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Collision Detector" source="com.snc.change.collision"&gt;479385476da620100acb70b3534330f0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4f67d8f00a0a2c3e12b9c50e6497e0d0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-30 12:27:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1687&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:26</sys_created_on>
+        <sys_id>238c8dba2f331110d8a4d5f62799b630</sys_id>
+        <sys_name>ChangeConflict</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_238c8dba2f331110d8a4d5f62799b630</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

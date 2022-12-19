@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8e00fead9f622200598a5bb0657fcff2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ShadowTaskQueryHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ShadowTaskQueryHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ShadowTaskQueryHelper = Class.create();
+ShadowTaskQueryHelper.prototype = {
+    initialize: function() {
+    },
+
+    type: 'ShadowTaskQueryHelper'
+};
+
+ShadowTaskQueryHelper.findIncomingRelationTo = function (sysId) { // sysId of shadowTask
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("child", sysId);
+        gr.addNotNullQuery("orig_sys_id");
+        gr.query();
+        if(gr.next()) {
+            PPMDebug.log("ShadowTaskQueryHelper.findIncomingRelationTo -&gt; " + gr.getValue("sys_id"));
+            return gr;
+        }
+    }
+};
+
+ShadowTaskQueryHelper.filterForNonShadowTask = function() {
+    var func = function(task) {
+        return JSUtil.nil(task.orig_sys_id);
+    };
+    return func;
+};
+
+ShadowTaskQueryHelper.filterForTaskHavingShadows = function() {
+    var func = function(task) {
+        var taskId = task.id || task.sys_id;
+        var shadowCount = 0;
+        var count = new GlideAggregate('planned_task');
+        count.addAggregate('COUNT');
+        count.addQuery('orig_sys_id', taskId);
+        count.query();
+        if (count.next()) 
+           shadowCount = count.getAggregate('COUNT');
+        return shadowCount &gt; 0;
+    };
+    return func;
+};
+
+ShadowTaskQueryHelper.findShadowTasks = function(taskId) {
+    var gr = new GlideRecord('planned_task');
+    gr.addQuery('orig_sys_id', taskId);
+    gr.query();
+    return gr;
+};
+
+ShadowTaskQueryHelper.findUpstreamTaskOfShadowRelation = function (sysId) { // sysId of shadowRelation
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        if(gr.get(sysId)) {
+            return gr.orig_sys_id.parent.getRefRecord(); 
+        }
+    }
+};
+
+ShadowTaskQueryHelper.findDownStreamTaskOfShadowRelation = function (sysId) { // sysId of shadowRelation
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        if(gr.get(sysId)) {
+            var rel = new GlideRecord("planned_task_rel_planned_task");
+            rel.addQuery("orig_sys_id", gr.getValue("orig_sys_id"));
+            rel.addQuery("sys_id", "!=", sysId);
+            rel.query();
+            if(rel.next())
+                return rel.parent.getRefRecord();
+        }
+    }
+};
+
+ShadowTaskQueryHelper.shouldProcessRelationImmediately = function(shadowRelationId) {
+    var gr = ShadowTaskQueryHelper.findExternalRelation(shadowRelationId);
+    if ( gr.getValue('inter_task_dependency_type') == 'hard' )
+        return true;
+    else
+        return false;   
+};
+
+ShadowTaskQueryHelper.findExternalRelation = function (sysId) { // sysId of shadowRelation
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        if(gr.get(sysId)) {
+            return gr.orig_sys_id.getRefRecord(); 
+        }
+    }
+};
+
+ShadowTaskQueryHelper.plannedTaskRecord = function (sysId) {
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task");
+        gr.get(sysId);
+        PPMDebug.log("ShadowTaskQueryHelper.plannedTaskRecord -&gt; " + gr.getValue("number"));
+        return gr;
+    }
+};
+
+ShadowTaskQueryHelper.projectTaskRecord = function (sysId) {
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("pm_project_task");
+        gr.get(sysId);
+        PPMDebug.log("ShadowTaskQueryHelper.projectTaskRecord -&gt; " + gr.getValue("number"));
+        return gr;
+    }
+};
+
+ShadowTaskQueryHelper.relationRecord = function (sysId) {
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.get(sysId);
+        PPMDebug.log("ShadowTaskQueryHelper.relationRecord -&gt; " + gr.getValue("sys_id"));
+        return gr;
+    }
+};
+
+ShadowTaskQueryHelper.findUpstreamShadowRelation = function (relationSysId) {
+    PPMDebug.log("ShadowTaskQueryHelper.findUpstreamShadowRelation -&gt; " + relationSysId);
+    if(JSUtil.notNil(relationSysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.get(relationSysId);
+        var parentId = gr.getValue("parent");
+        gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("parent", parentId);
+        gr.addQuery("orig_sys_id", relationSysId);
+        gr.addQuery("external", "false").addOrCondition("external", "0");
+        gr.query();
+        if(gr.next()) {
+            PPMDebug.log("ShadowTaskQueryHelper.findUpstreamShadowRelation upstreamShadowRelationId-&gt; " + gr.getValue("sys_id"));
+            return gr;
+        }
+    }
+};
+
+ShadowTaskQueryHelper.findDownstreamShadowRelation = function (relationSysId) {
+    PPMDebug.log("ShadowTaskQueryHelper.findDownstreamShadowRelation -&gt; " + relationSysId);
+    if(JSUtil.notNil(relationSysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.get(relationSysId);
+        var childId = gr.getValue("child");
+        gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("child", childId);
+        gr.addQuery("orig_sys_id", relationSysId);
+        gr.query();
+        if(gr.next()) {
+            PPMDebug.log("ShadowTaskQueryHelper.findUpstreamShadowRelation upstreamShadowRelationId-&gt; " + gr.getValue("sys_id"));
+            return gr;
+        }
+    }
+};
+
+ShadowTaskQueryHelper.findDownstreamTasksAndRelations = function(externalRelationSysIds, ignoreRelationSysIds) {
+    PPMDebug.log("ShadowTaskQueryHelper.findDownstreamTasksAndRelations -&gt; " + externalRelationSysIds.join(","));
+    var downstreamTasks = [], downstreamRelations = [];
+    var gr = new GlideRecord("planned_task_rel_planned_task");
+    gr.addQuery("orig_sys_id", "IN", externalRelationSysIds);
+    if(JSUtil.notNil(ignoreRelationSysIds) &amp;&amp; ignoreRelationSysIds.length &gt; 0)
+        gr.addQuery("sys_id", "NOT IN", ignoreRelationSysIds);
+    gr.query();
+    PPMDebug.log("findDownstreamTasksAndRelations -&gt; " + gr.getRowCount() + " | " + gr.getEncodedQuery());
+    while(gr.next()) {
+        downstreamRelations.push(gr.getValue("sys_id"));
+        var childRecord = gr.child.getRefRecord();
+        if(JSUtil.notNil(childRecord.getValue("orig_sys_id"))) {
+            downstreamTasks.push(gr.getValue("child"));
+        } else {
+            downstreamTasks.push(gr.getValue("parent"));
+        }
+    }
+    return {tasks: downstreamTasks, relations: downstreamRelations};
+};
+
+ShadowTaskQueryHelper.topTaskIds = function(taskSysIds) {
+    PPMDebug.log("ShadowTaskQueryHelper.topTaskIds -&gt; " + taskSysIds.join(","));
+    var topTaskIds = [];
+    if(JSUtil.notNil(taskSysIds) &amp;&amp; taskSysIds.length &gt; 0) {
+        var ga = new GlideAggregate("planned_task");
+        ga.addAggregate("COUNT", "top_task");
+        ga.addQuery("sys_id", "IN", taskSysIds);
+        ga.query();
+        while(ga.next()) {
+            topTaskIds.push(ga.getValue("top_task"));
+        }
+    }
+    return topTaskIds;
+};
+
+ShadowTaskQueryHelper.findIncomingRelationsTo = function (sysId) { // sysId of shadowTask
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("child", sysId);
+        gr.addNotNullQuery("orig_sys_id");
+        gr.query();
+        PPMDebug.log("Into ShadowTaskQueryHelper.findIncomingRelationsTo -&gt; " + gr.getRowCount() + " | " + gr.getEncodedQuery());
+        return gr;
+    }
+};
+
+ShadowTaskQueryHelper.isShadowTaskSuccessor = function(sysId) { //sysId of ShadowTask
+    var gr = ShadowTaskQueryHelper.findIncomingRelationsTo(sysId);
+    if ( JSUtil.nil(gr) )
+        return false;
+    if ( gr.getRowCount() &gt; 0 )
+        return true;
+    else
+        return false;
+};
+
+ShadowTaskQueryHelper.isSuccessorTaskInARelation = function (sysId) { // sysId of shadowTask
+    if(JSUtil.notNil(sysId)) {
+        var gr = ShadowTaskQueryHelper.findIncomingRelationsTo(sysId);
+        if(gr.getRowCount() &gt; 0)
+            return true;
+    }
+    return false;
+};
+
+ShadowTaskQueryHelper.findShadowSuccessorTasks = function (relationSysIds) { // sysId of shadowTask
+    var taskIds = [];
+    if(JSUtil.notNil(relationSysIds) &amp;&amp; relationSysIds.length &gt; 0) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("sys_id", "IN", relationSysIds.join(","));
+        gr.addNotNullQuery("orig_sys_id");
+        gr.query();
+        PPMDebug.log("Into ShadowTaskQueryHelper.findShadowSuccessorTasks -&gt; " + gr.getRowCount() + " | " + gr.getEncodedQuery());
+        while(gr.next()) {
+            var child = gr.child.getRefRecord();
+            if(JSUtil.notNil(child.getValue("orig_sys_id"))) {
+                taskIds.push(gr.getValue("child"));
+            } else {
+                taskIds.push(gr.getValue("parent"));
+            }
+        }
+    }
+    return false;
+};
+
+ShadowTaskQueryHelper.findAllIncomingRelationsTo = function (sysId, excludeRelationIds) { // sysId of shadowTask
+    if(JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord("planned_task_rel_planned_task");
+        gr.addQuery("child", sysId);
+        gr.addQuery("external", 0).addOrCondition("external", "false");
+        if(JSUtil.notNil(excludeRelationIds))
+            gr.addQuery("sys_id", "NOT IN", excludeRelationIds);
+        gr.query();
+        PPMDebug.log("Into ShadowTaskQueryHelper.findAllIncomingRelationsTo -&gt; " + gr.getRowCount() + " | " + gr.getEncodedQuery());
+        return gr;
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-18 21:08:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8e00fead9f622200598a5bb0657fcff2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;44&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ShadowTaskQueryHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8e00fead9f622200598a5bb0657fcff2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;9311&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:29</sys_created_on>
+        <sys_id>950dc57e2f331110d8a4d5f62799b665</sys_id>
+        <sys_name>ShadowTaskQueryHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_950dc57e2f331110d8a4d5f62799b665</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

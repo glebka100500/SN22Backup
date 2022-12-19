@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>60315382b7cc1010c44c6ff6ee11a97b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SNHelpQuestionController&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SNHelpQuestionController&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SNHelpQuestionController = Class.create();
+SNHelpQuestionController.prototype = {
+	
+    initialize: function() {
+		
+		this._helpConstants = new SNHelpConstantProvider();
+		this._dbCtrl = new SNHelpDBController(this._helpConstants.tables.question);
+		this._answerCtrl = new SNHelpAnswerController();
+		this._helpUtil = new SNHelpUtil();
+    },
+	
+	/*
+	* Retuns questions for the content id
+	* @param id {content id}
+	*/
+	getQuestions: function(id) {
+		
+		var questions, mapPayload, i;
+		
+		if (!id) {
+			this._helpUtil.setError(this.type,this._helpConstants.errorMessages.empty_sys_id);
+			return null;
+		}
+		
+		questions = this._dbCtrl.getByEncodedQuery(this._helpConstants.tableColumns.content +"="+ id, this._helpConstants.tableColumns.order);
+		
+		if (!questions) {
+			this._helpUtil.setError(this.type, this._helpConstants.errorMessages.no_records, id);
+			return null;
+		}
+		
+		for (i= 0; i&lt; questions.length; i++) {
+			questions[i].answers = this._answerCtrl.getAnswers(questions[i].sys_id) || [];
+		}
+		return questions;
+	},
+	
+    type: 'SNHelpQuestionController'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-10 03:32:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;60315382b7cc1010c44c6ff6ee11a97b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;51&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SNHelpQuestionController&lt;/sys_name&gt;
+        &lt;sys_package display_value="ServiceNow Help and Guidance Backend" source="com.glide.sn_help"&gt;b9e3c10b6da620100acb70b353433052&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_60315382b7cc1010c44c6ff6ee11a97b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-17 11:42:22&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1076&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:54</sys_created_on>
+        <sys_id>5aacc5fa2f331110d8a4d5f62799b6ff</sys_id>
+        <sys_name>SNHelpQuestionController</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5aacc5fa2f331110d8a4d5f62799b6ff</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

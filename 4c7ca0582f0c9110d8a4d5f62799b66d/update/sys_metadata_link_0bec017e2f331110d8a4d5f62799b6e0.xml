@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>841016c4d723120058c92cf65e6103b7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MatchingDimensionLastAssigned&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Get agent prioritized based on the last assigned work so that work load can be shared fairly.&lt;/description&gt;
+        &lt;name&gt;MatchingDimensionLastAssigned&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MatchingDimensionLastAssigned = Class.create();
+
+var MS_IN_HOUR = 3600 * 1000;
+
+MatchingDimensionLastAssigned.prototype = {
+	initialize: function() {
+	},
+	
+	process : function(task, users, taskFieldValues, args){
+		var returnUsers = {};
+		var userTaskStats = new GlideRecord("user_task_stats");
+		userTaskStats.addQuery("userIN" + users.join());
+		userTaskStats.orderBy("last_work_assigned");
+		userTaskStats.query();
+		var lastWorkedMax = 0;
+		while(userTaskStats.next()){
+			var gdt = new GlideDateTime();
+			gdt.setDisplayValue(userTaskStats.getDisplayValue("last_work_assigned"));
+
+			var ratingObj = {};
+			var lastWorked = userTaskStats.last_work_assigned.getGlideObject().getNumericValue();;
+			ratingObj.value = this.getDurationSinceLastAssigned(gdt, userTaskStats.user);
+			if (ratingObj.value &gt; lastWorkedMax)
+				lastWorkedMax = ratingObj.value;
+			ratingObj.rating = ratingObj.value;
+
+			ratingObj.displayValue = this.getTimeAgo(gdt);
+			ratingObj.detailedDisplayValue = userTaskStats.getDisplayValue("last_work_assigned");
+			returnUsers[userTaskStats.user] =  ratingObj;
+		}
+		lastWorkedMax = lastWorkedMax * 10; //So that agent with lastWorkedMax never gets rating 1
+		for(var i=0;i&lt;users.length;i++){
+			if(!returnUsers.hasOwnProperty(users[i])) {
+				var ratingObj = {};
+				ratingObj.rating = 1.0; 
+				ratingObj.displayValue = "never assigned";
+				ratingObj.detailedDisplayValue = "never assigned";
+				returnUsers[users[i]] = ratingObj;
+			} else {
+				returnUsers[users[i]].rating = 
+					returnUsers[users[i]].rating / lastWorkedMax;
+				returnUsers[users[i]].lastWorkedMax = lastWorkedMax;
+				
+			}
+		}
+		return returnUsers;
+	},
+	
+	getTimeAgo:function(glidedatetime){
+		if(glidedatetime){
+			var timeago = new GlideTimeAgo();
+			return timeago.format(glidedatetime);
+		}
+		return "";
+	},
+	
+	getDurationSinceLastAssigned : function(gdtLastWorkAssigned, agentID) {
+		var gdtNow = new GlideDateTime();
+		var durationSinceLastUsed = gdtNow.getNumericValue() - gdtLastWorkAssigned.getNumericValue();
+		return durationSinceLastUsed / MS_IN_HOUR;
+	},
+	
+	getDurationSinceLastAssignedPerSchedule : function(gdtLastWorkAssigned, agentID) {
+		var grAgent = new GlideRecordSecure("sys_user");
+		grAgent.get(agentID);
+		var durationSinceLastUsed = 8; //Default
+		var gdtNow = new GlideDateTime();
+		var matchingDimensionUtil = new MatchingDimensionUtil();
+		var schedule = matchingDimensionUtil.getAgentSchedule(agentID);
+		var agentTimeZone = matchingDimensionUtil.getAgentTimeZone(agentID);
+
+		if (schedule) {
+			var sched = new GlideSchedule(schedule, agentTimeZone);
+			var durationGD = sched.duration(gdtLastWorkAssigned, gdtNow, agentTimeZone);
+			if (durationGD.getNumericValue())
+				durationSinceLastUsed = durationGD.getNumericValue() / MS_IN_HOUR;	
+		}
+		if(new CSMUtil().isDebugOn())
+			gs.log("MatchingDimensionLastAssigned::getDurationSinceLastUsed =" + durationSinceLastUsed +
+			   " hours gdtLastWorkAssigned=" + gdtLastWorkAssigned.getDisplayValue() + " now=" + gdtNow.getDisplayValue() + 
+			   " schedule=" + sched.getName() + " agentTimeZone=" + 
+			   JSON.stringify(agentTimeZone) + " agent=" + grAgent.getDisplayValue() + " agentID=" + agentID);
+
+		return durationSinceLastUsed;
+	},
+			
+	type: 'MatchingDimensionLastAssigned'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-05-17 23:53:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;841016c4d723120058c92cf65e6103b7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;85&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MatchingDimensionLastAssigned&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_841016c4d723120058c92cf65e6103b7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-08-24 21:34:07&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3268&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:03</sys_created_on>
+        <sys_id>0bec017e2f331110d8a4d5f62799b6e0</sys_id>
+        <sys_name>MatchingDimensionLastAssigned</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0bec017e2f331110d8a4d5f62799b6e0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

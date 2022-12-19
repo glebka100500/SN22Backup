@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4b231fc3c3727200e412bea192d3ae3c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DiscoveryResult&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper API for creating/updating disovery_result records&lt;/description&gt;
+        &lt;name&gt;DiscoveryResult&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DiscoveryResult = Class.create();
+DiscoveryResult.prototype = {
+    initialize: function(status) {
+		this.status = status;
+    },
+
+	createResult: function(schedule) {
+		var dr = new GlideRecord("discovery_result");
+		dr.setValue('status', this.status);
+		if (schedule)
+			dr.setValue('schedule', schedule);
+
+		dr.setValue('started', new GlideDateTime());
+		dr.setValue('state', 'Starting');
+		dr.insert();
+	},
+
+	_getResultGr: function() {
+		var dr = new GlideRecord("discovery_result");
+		dr.addQuery('status', this.status);
+		dr.query();
+		if (!dr.next())
+			return null;
+
+		return dr;
+	},
+
+	_getDeviceHistoryGrs: function() {
+		var dh = new GlideRecord("discovery_device_history");
+		dh.addQuery('status', this.status);
+		dh.query();
+		if (!dh.hasNext())
+			return null;
+
+		return dh;
+	},
+
+	incrementField: function(field, num) {
+		var dr = this._getResultGr();
+		if (!dr)
+			return;
+
+		var mu = GlideMultipleUpdate("discovery_result");
+		mu.setIncrement(field, num);
+		mu.addQuery('sys_id', dr.sys_id);
+		mu.execute();
+	},
+
+	markCompleted: function() {
+		var activeNoClassify = 0;
+		var duplicate = 0;
+		var created = 0;
+		var updated = 0;
+		
+		var dr = this._getResultGr();
+		if (!dr)
+			return;
+
+		// There is a case where discovery completes before there
+		// is a device history record (scan 1 IP that does not return)
+		var dh = this._getDeviceHistoryGrs();
+		if (dh) {
+			while (dh.next()) {
+				switch ('' + dh.last_state) {
+					case "Updated CI":
+						updated += 1;
+						break;
+					case "Created CI":
+						created += 1;
+						break;
+					case "Identified, ignored extra IP":
+						duplicate += 1;
+						break;
+					default:
+						activeNoClassify += 1;
+						break;
+				}
+			}
+		}
+
+		dr.setValue('n_created_devices', created);
+		dr.setValue('n_updated_devices', updated);
+		dr.setValue('n_active_nc_ips', activeNoClassify);
+		dr.setValue('n_duplicate_ips', duplicate);
+		dr.setValue('ended', new GlideDateTime());
+		dr.setValue('state', 'Completed');
+		dr.update();
+	},
+
+	markActive: function() {
+		var dr = this._getResultGr();
+		if (!dr)
+			return;
+
+		dr.setValue('state', 'Active');
+		dr.update();
+	},
+
+	statusExists: function(status) {
+		var gr = new GlideRecord('discovery_status');
+		return status &amp;&amp; gr.get('sys_id', status);
+	},
+
+	deleteAllByStatus: function(status) {
+		var gr = new GlideRecord('discovery_result');
+		gr.addQuery('status', status);
+		gr.deleteMultiple();
+	},
+
+	deleteAllInvalidStatus: function() {
+		// First, delete all records that point to null status
+		var gr = new GlideRecord('discovery_result');
+		gr.addNullQuery('status');
+		gr.deleteMultiple();
+		// Now delete any records with status reference that doesn't exist
+
+		var ga = new GlideAggregate('discovery_result');
+		ga.groupBy('status');
+		ga.query();
+		while (ga.next()) {
+			var status = ga.getValue('status');
+			if (status &amp;&amp; !this.statusExists(status))
+				this.deleteAllByStatus(status);
+		}
+	},
+
+	deleteAllBySchedule: function(schedule) {
+		var gr = new GlideRecord('discovery_result');
+		gr.addQuery('schedule', schedule);
+		gr.deleteMultiple();
+	},
+
+	markCanceled: function() {
+		var activeNoClassify = 0;
+		var duplicate = 0;
+		var created = 0;
+		var updated = 0;
+
+		var dr = this._getResultGr();
+		if (!dr)
+			return;
+
+		var dh = this._getDeviceHistoryGrs();
+		if (dh) {
+			while (dh.next()) {
+				switch ('' + dh.last_state) {
+					case "Updated CI":
+						updated += 1;
+						break;
+					case "Created CI":
+						created += 1;
+						break;
+					case "Identified, ignored extra IP":
+						duplicate += 1;
+						break;
+					default:
+						activeNoClassify += 1;
+						break;
+				}
+			}
+		}
+
+		dr.setValue('n_created_devices', created);
+		dr.setValue('n_updated_devices', updated);
+		dr.setValue('n_active_nc_ips', activeNoClassify);
+		dr.setValue('n_duplicate_ips', duplicate);
+		dr.setValue('ended', new GlideDateTime());
+		dr.setValue('state', 'Canceled');
+		dr.update();
+	},
+
+    type: 'DiscoveryResult'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;josh.gerbasi&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-05-23 00:17:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4b231fc3c3727200e412bea192d3ae3c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DiscoveryResult&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4b231fc3c3727200e412bea192d3ae3c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;greg.grisco&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-12-07 23:37:36&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3929&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:19</sys_created_on>
+        <sys_id>218c4dba2f331110d8a4d5f62799b633</sys_id>
+        <sys_name>DiscoveryResult</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_218c4dba2f331110d8a4d5f62799b633</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5bae6fa15311220097c8a464aec5875a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UninstallScheduledJob&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Application uninstall handler. See attributes on table sysauto.&lt;/description&gt;
+        &lt;name&gt;UninstallScheduledJob&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UninstallScheduledJob = Class.create();
+UninstallScheduledJob.prototype = {
+    uninstall: function(sysID, appID, tableName) {
+		// temporarily turn on the workflow as we need the "automation synchronizer" business rule
+		// (sys_id:5f0749c70a0a0a6501c216a1dd3c10f7) to clean up the related sys_trigger records
+		var originalWorkflow = GlideSession.get().getWorkflow();
+		GlideSession.get().setWorkflow(true);
+		var gr = new GlideRecord(tableName);
+		if (gr.get(sysID) &amp;&amp; gr.getValue('sys_scope') == appID)			
+			gr.deleteRecord();
+		
+		GlideSession.get().setWorkflow(originalWorkflow);
+    },
+
+    type: 'UninstallScheduledJob'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-08-17 22:54:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5bae6fa15311220097c8a464aec5875a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UninstallScheduledJob&lt;/sys_name&gt;
+        &lt;sys_package display_value="Automated Action Interface" source="com.snc.automation"&gt;0bcc74836d2220100acb70b3534330bc&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5bae6fa15311220097c8a464aec5875a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-08-17 22:59:20&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;635&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:46</sys_created_on>
+        <sys_id>1cac05fa2f331110d8a4d5f62799b686</sys_id>
+        <sys_name>UninstallScheduledJob</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1cac05fa2f331110d8a4d5f62799b686</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

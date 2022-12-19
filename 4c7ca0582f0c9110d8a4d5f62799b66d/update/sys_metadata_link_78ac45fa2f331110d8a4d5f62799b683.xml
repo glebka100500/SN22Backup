@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5cfc3811c3203100b9e7ff9c02d3aeb3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXSysListSaveWorker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AJAXSysListSaveWorker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AJAXSysListSaveWorker = Class.create();
+AJAXSysListSaveWorker.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	start: function() {
+		// Setup background worker
+		var worker = new GlideSysListSaverWorker();
+		worker.setListID(this.getParameter('sysparm_ajax_processor_list_id'));
+		worker.setViewName(this.getParameter("sysparm_ajax_processor_view_name"));
+		worker.setFieldsSelected(this.getParameter("sysparm_ajax_processor_fields_selected"));
+		worker.setProgressName("Saving Form List");
+			
+		// Start worker in the background
+		worker.setBackground(true);
+		worker.start();
+		
+		// Return worker progress ID to caller
+		var progressId = worker.getProgressID();
+		return progressId;
+    },
+
+    type: 'AJAXSysListSaveWorker'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-11-21 19:52:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5cfc3811c3203100b9e7ff9c02d3aeb3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXSysListSaveWorker&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5cfc3811c3203100b9e7ff9c02d3aeb3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-11-21 19:52:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;746&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:48</sys_created_on>
+        <sys_id>78ac45fa2f331110d8a4d5f62799b683</sys_id>
+        <sys_name>AJAXSysListSaveWorker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_78ac45fa2f331110d8a4d5f62799b683</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

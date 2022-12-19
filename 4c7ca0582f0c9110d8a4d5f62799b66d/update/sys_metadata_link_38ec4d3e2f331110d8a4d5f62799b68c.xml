@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7f6e43b4376121003e7d40ed9dbe5d87</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.cxs_SearchResultsAJAX&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Returns results from a search formatted using the specified macro.&lt;/description&gt;
+        &lt;name&gt;cxs_SearchResultsAJAX&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var cxs_SearchResultsAJAX = Class.create();
+
+cxs_SearchResultsAJAX.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    INTERLEAVED: "interleaved",
+    HTTP_OK: "200",
+    HTTP_PARTIAL_CONTENT: "206",
+
+    process: function() {
+        var searchRequestJSON = this.getParameter("payload");
+
+        if (!searchRequestJSON)
+            return "";
+
+        var json = new JSON();
+	
+        searchRequestJSON = JSON.stringify(this._applyContextFilters(JSON.parse(searchRequestJSON)));
+		
+		var request = new SNC.SearchRequest();
+        var response = request.fromJSON(searchRequestJSON).submit();
+
+        if (!response)
+            return "";
+
+        var payload = this.newItem("payload");
+        
+        if (response.status.code != this.HTTP_OK &amp;&amp; response.status.code != this.HTTP_PARTIAL_CONTENT) {
+            payload.setAttribute("response", response.toJSON());
+            return;
+        }
+
+        response.results = this._filter(response.results, function(elem) {
+            return elem.meta &amp;&amp; (elem.meta.interleaved || elem.meta.pinned);
+        });
+
+        var macroNamesJSON = this.getParameter("cxs_macro_names");
+        var macroNames = !macroNamesJSON ? {} : json.decode(macroNamesJSON);
+
+        var responseJSON = response.toJSON();
+		
+		responseJSON = json.decode(responseJSON);
+        var html = cxs_App.getActions("cxs_FormatResults", responseJSON).usingMacro(macroNames);
+		
+		// PRB1352215: encode Emoji for the text fields of responseJSON
+		responseJSON.request.query.freetext = encodeURIComponent(responseJSON.request.query.freetext);
+		for (var i = 0; i &lt; responseJSON.results.length; i ++) {
+			responseJSON.results[i].meta.description = encodeURIComponent(responseJSON.results[i].meta.description);
+			responseJSON.results[i].meta.card_title = encodeURIComponent(responseJSON.results[i].meta.card_title);
+			responseJSON.results[i].meta.card_snippet = encodeURIComponent(responseJSON.results[i].meta.card_snippet);
+			responseJSON.results[i].title = encodeURIComponent(responseJSON.results[i].title);
+			responseJSON.results[i].snippet = encodeURIComponent(responseJSON.results[i].snippet);
+		}
+		responseJSON = json.encode(responseJSON);
+
+        payload.setAttribute("response", responseJSON);
+        payload.setAttribute("html", encodeURIComponent(html));
+    },
+
+    _filter: function(sourceArray, filterFunction) {
+        var filteredArray = [];
+        for (var i = 0; i &lt; sourceArray.length; i++) {
+            if (filterFunction.call(this, sourceArray[i]))
+                filteredArray.push(sourceArray[i]);
+        }
+
+        return filteredArray;
+    },
+
+    _applyContextFilters: function(searchRequestJSON) {
+		var requestQuery = JSON.parse(this.getParameter("cxs_filter_data"));
+		if (searchRequestJSON.meta) {
+			searchRequestJSON.meta['sourceField'] = this._getSourceField(searchRequestJSON.meta.current_search_field);
+			if (searchRequestJSON.meta.form) {
+				searchRequestJSON.formId = searchRequestJSON.meta.form.sys_id;
+				searchRequestJSON.formTable = searchRequestJSON.meta.form.tn;
+			}
+		}
+			
+        var context_resource_filters = {};
+        var isActive = GlidePluginManager.isActive('com.snc.contextual_search.dynamic_filters');
+        
+		if(!isActive || !requestQuery || 
+		   !requestQuery.hasOwnProperty("filters_configured") || !requestQuery.hasOwnProperty("source") ||
+		  !requestQuery.hasOwnProperty("fieldValues")) {
+            return searchRequestJSON;
+        }
+
+        var filtersConfigured = requestQuery.filters_configured;
+        var source = String(requestQuery.source);
+        var fieldValues = String(requestQuery.fieldValues);
+		var configId =  String(requestQuery.config_id);
+		
+		if(filtersConfigured == true) {
+			var configAction = cxs_App.getActions(source);
+			var filters = configAction.getFilters(configId, fieldValues);
+			var filtersJSON = JSON.parse(filters);
+			if(Object.keys(filtersJSON).length !== 0) {
+				searchRequestJSON.query.context_resource_filters = filtersJSON;
+			}
+		}
+        return searchRequestJSON;
+    },
+	
+	_getSourceField: function (currentSearchField) {
+		var arr = currentSearchField &amp;&amp; currentSearchField.length &gt; 0 ? currentSearchField.split('.'): '';		
+		return arr &amp;&amp; arr.length &gt; 0 ? (arr.length &gt; 1 ? arr[1]: arr[0]) : '';
+	},
+
+    isPublic: function() {
+        return false;
+    },
+
+    type: 'cxs_SearchResultsAJAX'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;nigel.bell&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-02-05 18:11:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7f6e43b4376121003e7d40ed9dbe5d87&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;137&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;cxs_SearchResultsAJAX&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Search" source="com.snc.contextual_search"&gt;947281c76d6620100acb70b35343306d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7f6e43b4376121003e7d40ed9dbe5d87&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-28 21:48:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4361&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:54</sys_created_on>
+        <sys_id>38ec4d3e2f331110d8a4d5f62799b68c</sys_id>
+        <sys_name>cxs_SearchResultsAJAX</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_38ec4d3e2f331110d8a4d5f62799b68c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

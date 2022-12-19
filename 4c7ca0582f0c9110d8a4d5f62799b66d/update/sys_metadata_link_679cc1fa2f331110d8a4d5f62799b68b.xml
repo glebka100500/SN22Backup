@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5a56d96feb0201006a668c505206fe26</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdTestCredStoreConnectionWorker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Worker for credential store connection test&lt;/description&gt;
+        &lt;name&gt;PwdTestCredStoreConnectionWorker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdTestCredStoreConnectionWorker = Class.create();
+
+PwdTestCredStoreConnectionWorker.prototype = {
+    CONNECTION_MASTER: 'Pwd Connection Test - Master',
+    WAIT_TIME: GlideProperties.get('password_reset.connection_test.progress_timeout', 120),
+    initialize: function() {},
+    // This is the entry method for this script from Test Connection UI action
+    // kicks of the master test connection workflow
+    process: function(cred_store_id) {
+        var LOG_ID = '[PwdTestCredStoreConnectionWorker - process] ';
+
+        // getting info about cred store for messages
+        var cred = new GlideRecord('pwd_cred_store');
+        if (!cred.get(cred_store_id)) {
+            this._setError(gs.getMessage('Invalid credential store ID: {0}', [cred_store_id]));
+            return;
+        }
+        var cred_store_name = cred.getValue('name');
+        var hostname = cred.getValue('hostname');
+        var isFlow = cred.type.use_flow;
+	var flow = cred.type.conn_test_flow.name;
+
+        worker.setProgressState("running");
+        this._addMessage(gs.getMessage('Starting connection test for credential store: {0} on host: {1}', [cred_store_name, hostname]));
+
+        if (!isFlow) {
+            // start master workflow			 
+            var context_id = this._startMasterWorkflow(cred_store_id);
+            if (context_id == null) {
+                return;
+            }
+        } else {
+			try {
+				var pwdFlowHelper = new PwdFlowHelper();
+				this._addMessage(gs.getMessage('Starting subflow : {0}', [flow]));
+				var outputs = pwdFlowHelper.startConnectionTestSubFlow(cred_store_id);
+				if(outputs.status == 'Success') {
+					this._addMessage(gs.getMessage('Connection test completed successfully.'));
+					worker.setProgressState("complete");
+				} else
+					this._setError(gs.getMessage('{0} \n Connection test failed.', [outputs.error_message]));
+	
+				return;
+			} catch (e) {
+				this._setError(gs.getMessage('{0} \n Connection test failed.', [e]));
+				return;
+			}
+		}
+
+
+        var pm = new GlideProgressMonitor(worker.getProgressID());
+        var progress_state = pm.waitForCompletionOrTimeout(this.WAIT_TIME);
+        if (!progress_state) {
+            this._setError(gs.getMessage('Timed out workflow: {0}', [this.CONNECTION_MASTER]));
+        }
+
+    },
+    _startMasterWorkflow: function(cred_store_id) {
+        var LOG_ID = '[PWD Test Cred Store Worker - startMasterWF] ';
+        var wf = new Workflow();
+        var workflowSysId = wf.getWorkflowFromName(this.CONNECTION_MASTER);
+
+        if (gs.nil(workflowSysId)) {
+            this._setError(gs.getMessage('Could not start workflow: {0}', [this.CONNECTION_MASTER]));
+            return null;
+        }
+        this._addMessage(gs.getMessage('Starting workflow: {0}', [this.CONNECTION_MASTER]));
+
+        var gr = wf.startFlow(workflowSysId, null, 'update', {
+            u_cred_store_id: cred_store_id,
+            u_worker_id: worker.getProgressID()
+        });
+        if (gr == null) {
+            this._setError(gs.getMessage('Could not start workflow: {0}', [this.CONNECTION_MASTER]));
+            return null;
+        } else {
+            gr.next();
+            var context_id = gr.getValue('sys_id');
+            return context_id;
+        }
+    },
+    _setError: function(msg) {
+        worker.setProgressState("error");
+        worker.setProgressStateCode("error");
+        this._addMessage(msg);
+    },
+
+    _addMessage: function(msg) {
+        worker.addMessage(msg);
+
+        var gr = new GlideRecord('sys_progress_worker');
+        gr.get(worker.getProgressID());
+        var summary = gr.getValue('output_summary');
+        if (summary == null) {
+            summary = '';
+        }
+        summary = summary + msg + '\n';
+        worker.setOutputSummary(summary);
+    }
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-06-24 22:17:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5a56d96feb0201006a668c505206fe26&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;62&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdTestCredStoreConnectionWorker&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5a56d96feb0201006a668c505206fe26&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-05-20 16:48:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3768&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:43</sys_created_on>
+        <sys_id>679cc1fa2f331110d8a4d5f62799b68b</sys_id>
+        <sys_name>PwdTestCredStoreConnectionWorker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_679cc1fa2f331110d8a4d5f62799b68b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

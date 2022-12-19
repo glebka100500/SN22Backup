@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9308dac49fd331001e021a1cf67fcfbf</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.IdentificationLookUpTables&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Script used to populate table choices for cmdb_identifier_entry&lt;/description&gt;
+        &lt;name&gt;IdentificationLookUpTables&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var IdentificationLookUpTables = Class.create();
+IdentificationLookUpTables.prototype = {
+	getLookupTables: function(className) {
+		var map = {};
+		var tables = j2js(new TableUtils(className).getTables());
+        for (var i = 0; i &lt; tables.length; i++) {
+            var refTables = this._getReferencingTables(tables[i]);
+            for (var j = 0; j &lt; refTables.length; j++)
+                map[refTables[j]] = '';
+        }
+
+        var result = [];
+        result.push(className);
+        for (var tab in map)
+            if (tab != className)
+                result.push(tab);
+
+        result = this._filterTable(result);
+        return result;
+	},
+
+	getLookupTablesForClassManager: function(className) {
+		var result = [];
+	    var lookupTables = this.getLookupTables(className);
+		for (var i = 0; i &lt; lookupTables.length; i++) {
+			if (className == lookupTables[i])
+				continue;
+			var entry = {};
+      entry.value = lookupTables[i];
+			entry.name = this._getClassLabel(lookupTables[i]);
+			result.push(entry);
+		}
+		return result;
+	},
+
+	process: function() {
+        var parent = '' + current.identifier.applies_to;
+        var map = {};
+        if (GlideStringUtil.nil(current.identifier) || GlideStringUtil.nil(parent)) {
+            parent = 'cmdb_ci'; // the only viable default
+            var extensions = j2js(new TableUtils(parent).getTableExtensions());
+            for (var i = 0; i &lt; extensions.length; i++) // add all CI types
+                map[extensions[i]] = '';
+        }
+        var tables = j2js(new TableUtils(parent).getTables());
+        for (var i = 0; i &lt; tables.length; i++) {
+            var refTables = this._getReferencingTables(tables[i]);
+            for (var j = 0; j &lt; refTables.length; j++)
+                map[refTables[j]] = '';
+        }
+
+        var result = [];
+        result.push(parent);
+        for (var tab in map)
+            if (tab != parent)
+                result.push(tab);
+
+        result = this._filterTable(result);
+        return result;
+    },
+
+    _filterTable: function(tables) {
+		var excluded = ['ecc_event', 'discovery_log', 'cmdb_metric'];
+        var filtered = [];
+        for (var i = 0; i &lt; tables.length; i++) {
+            var tbl = tables[i];
+			var j=0;
+			while (j&lt;excluded.length) {
+				if (tbl.indexOf(excluded[j])==0)
+					break;
+				j++;
+			}
+                        // filter out tables meant for workflow
+			if (tbl.startsWith('var__'))
+				continue;
+			
+			if (j==excluded.length)
+	            filtered.push(tbl);
+        }
+        return filtered;
+    },
+
+    _getReferencingTables: function(table) {
+        var referencingTables = [];
+        var gr = new GlideAggregate('sys_dictionary');
+        gr.addQuery('reference', table);
+        // exclude entries for duplicate_of field
+        gr.addQuery('element', '!=', 'duplicate_of');
+        gr.addAggregate('count');
+        gr.orderByAggregate('count');
+        gr.groupBy('name');
+        gr.query();
+        while (gr.next())
+            referencingTables.push('' + gr.name);
+        return referencingTables;
+    },
+
+	_getClassLabel : function(className) {
+		var descriptor = GlideTableDescriptor.get(className);
+		return descriptor.getLabel();
+	},
+
+    type: 'IdentificationLookUpTables'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-04-03 21:47:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9308dac49fd331001e021a1cf67fcfbf&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;45&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;IdentificationLookUpTables&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9308dac49fd331001e021a1cf67fcfbf&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-06-19 22:26:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3238&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:41</sys_created_on>
+        <sys_id>9c1dc97e2f331110d8a4d5f62799b6a7</sys_id>
+        <sys_name>IdentificationLookUpTables</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9c1dc97e2f331110d8a4d5f62799b6a7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

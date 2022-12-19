@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7781a57237202000dadaa3549dbe5deb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TeamVelocityUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;TeamVelocityUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TeamVelocityUtil = Class.create();
+TeamVelocityUtil.prototype = {
+    initialize: function(){
+    },
+    
+    getName: function(teamId) {
+        var teamGR = new GlideRecord("scrum_pp_team");
+	    if (teamGR.get(teamId))
+            return teamGR.team_name;
+        return teamId;
+    },
+    
+    hasData: function(teamNameId){
+        for (var id in this.getSprintData(teamNameId))
+            return true;
+        return false;
+    },
+    
+    getSprintData: function(teamId){
+        var teamName = this.getName(teamId);
+        var teams = {};
+        var tm = new GlideRecord("scrum_pp_team");
+        tm.addQuery("team_name", teamName);
+        tm.query();
+        while (tm.next())
+            teams[tm["sys_id"]] = tm.getValue("sys_id");
+        var releases = [];
+        var gr = new GlideRecord("rm_release_scrum");
+        gr.orderBy("start_date");
+        gr.query();
+        while(gr.next()) {
+            var sprints = [];
+            var count = 0;
+            var sp = new GlideRecord("rm_sprint");
+            sp.addQuery("release", gr["sys_id"]);
+            sp.addQuery("state", 3);
+            sp.orderBy("start_date");
+            sp.query();
+            while(sp.next())
+                if (teams[sp["release_team"]] != null) {
+                    sprints.push([sp.getValue("sys_id"), sp.getValue("short_description"), sp.getValue("actual_points")]);
+                    count++;
+                }
+            if (count &gt; 0)
+                releases.push([gr.getValue("sys_id"), count, gr.getValue("short_description"), sprints]);
+        }
+        return releases;
+    }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-03-07 09:02:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7781a57237202000dadaa3549dbe5deb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;24&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TeamVelocityUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7781a57237202000dadaa3549dbe5deb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-04-29 09:12:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1601&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:40</sys_created_on>
+        <sys_id>6ddcc53e2f331110d8a4d5f62799b6b9</sys_id>
+        <sys_name>TeamVelocityUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6ddcc53e2f331110d8a4d5f62799b6b9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

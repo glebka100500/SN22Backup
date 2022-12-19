@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>91b46d8b773323000f7a72f9691061a1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SkillAssignmentAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Helper API for assigning skills to users.&lt;/description&gt;
+        &lt;name&gt;SkillAssignmentAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SkillAssignmentAPI = Class.create();
+SkillAssignmentAPI.prototype = {
+    initialize: function() {
+    },
+	
+	/* Attempts to assign a skill to a user. 
+	If a skill level is also provided, also attempts to assign that skill level.
+	If the user already has the skill at the same or a higher level by itself (not inherited), does nothing. 
+	Returns the updated/added GlideRecord if the skill at the provided level is assigned, null otherwise. */
+	assignSkillToUser: function(/*sys_id*/ user, /*sys_id*/ skill, /*sys_id*/ skill_level) {
+		if(gs.nil(user) || gs.nil(skill)) {
+			gs.error('Skill assignment failed because either user or skill was not provided');
+			return null;
+		}
+		
+		var gr_user = new GlideRecord('sys_user');
+		var gr_skill = new GlideRecord('cmn_skill');
+		var gr_skill_level = new GlideRecord('cmn_skill_level');
+		
+		if(!gr_user.get(user) || !gr_skill.get(skill)) {
+			gs.error('Skill assignment failed because either user or skill does not exist');
+			return null;
+		}
+		
+		if(gr_skill_level.get(skill_level)) {
+			//If the skill has no level type but we attempt to assign a level anyway, stop this operation
+			if(gs.nil(gr_skill.level_type)) {
+				gs.error('Skill assignment failed because skill {0} has no level type', 
+						[gr_skill.sys_id]);
+				return null;
+			}
+			
+			//If there is a new skill level to assign, but it is not same level type as the skill, stop operation
+			if(gr_skill_level.getValue('skill_level_type') != gr_skill.getValue('level_type')) { 
+				gs.error('Skill assignment failed because Skill {0} does not contain the same level type as given skill level {1}', 
+						[gr_skill.sys_id, gr_skill_level.sys_id]);
+				return null;
+			}
+		}
+		else if (!gs.nil(skill_level)) {
+			gs.error('Skill assignment failed because the provided skill level does not exist');
+			return null;
+		}
+		
+		var gr_user_has_skill = new GlideRecord('sys_user_has_skill');
+		gr_user_has_skill.addQuery('user', user);
+		gr_user_has_skill.addQuery('skill', skill);
+		gr_user_has_skill.orderByDesc('skill_level.value');
+		gr_user_has_skill.query();
+		
+		//If user already has this skill assigned on its own, update the corresponding record
+		if(gr_user_has_skill.next())
+			return this._updateSkillLevel(user, skill, skill_level, gr_skill_level.value, gr_user_has_skill);
+		else
+			return this._insertSkill(user, skill, skill_level, gr_user_has_skill);
+	},
+	
+	/* THE FOLLOWING FUNCTIONS BELOW HERE ARE FOR INTERNAL USE AND SHOULD NOT BE USED BY THEMSELVES */
+	
+	_updateSkillLevel: function(user, skill, level, level_value, gr_user_has_skill) {
+		if (!gs.nil(level)) {
+			if(gr_user_has_skill.skill_level.value &lt; level_value) {
+				gr_user_has_skill.active = true;
+				gr_user_has_skill.skill_level = level;
+				gr_user_has_skill.update();
+			}
+			else
+				gs.info('Skill at level not assigned, user {0} already has skill {1} at a higher or equal standalone level than {2}', 
+					[user, skill, level]);
+		}
+		else
+			gs.info('Skill not assigned, user {0} already has skill {1} on its own', [user, skill]);
+
+
+		return gr_user_has_skill.sys_id;
+	},
+	
+	_insertSkill: function(user, skill, skill_level, gr_user_has_skill) {
+		gr_user_has_skill.initialize();
+		gr_user_has_skill.user = user;
+		gr_user_has_skill.skill = skill;
+		gr_user_has_skill.skill_level = skill_level;
+		gr_user_has_skill.insert();
+		
+		return gr_user_has_skill.sys_id;
+	},
+
+    type: 'SkillAssignmentAPI'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-02-27 19:45:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;91b46d8b773323000f7a72f9691061a1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;40&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SkillAssignmentAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="Skills Management" source="com.snc.skills_management"&gt;6c463c602fa33010d8a4d5f62799b6ab&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_91b46d8b773323000f7a72f9691061a1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-07 19:17:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3398&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:39</sys_created_on>
+        <sys_id>370d897e2f331110d8a4d5f62799b6a3</sys_id>
+        <sys_name>SkillAssignmentAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_370d897e2f331110d8a4d5f62799b6a3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

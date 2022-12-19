@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8e7ea851c0a80027007d6c82d1496f99</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CatalogTransactionBack&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Invoked when you hit back (the little green button top left) on a catalog item&lt;/description&gt;
+        &lt;name&gt;CatalogTransactionBack&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include('PrototypeServer');
+gs.include('AbstractTransaction');
+
+var CatalogTransactionBack = Class.create();
+
+CatalogTransactionBack.prototype = Object.extendsObject(AbstractTransaction, {
+
+	execute: function() {
+		var urlStack = j2js(gs.getSession().getStack());
+		var urlStackSize = urlStack.size();
+		var guideParam = j2js(this.request.getParameter('sysparm_guide'));
+
+
+		if (urlStackSize === 0 &amp;&amp; !JSUtil.nil(guideParam)) {
+
+			/****************************************************************************
+			 *Case - This is the first page in iFrame or direct hit from external URL
+			 *and session started from order guide so default to order guide describe
+			 *needs page
+			 ****************************************************************************/
+			return GlideappCatalogURLGenerator.getItemBaseURL(guideParam);
+
+		} else if (urlStackSize === 1) {
+
+			//Case - Session stack is as expected . Do not pop from stack if this is the last page.  
+			return urlStack.top();
+
+		} else {
+
+			//Case - Session stack is as expected . Pop to last page.
+			return urlStack.back();
+
+		}
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-09-23 09:16:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8e7ea851c0a80027007d6c82d1496f99&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;28&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CatalogTransactionBack&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8e7ea851c0a80027007d6c82d1496f99&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-06-17 09:13:18&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1099&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:30</sys_created_on>
+        <sys_id>690dc57e2f331110d8a4d5f62799b670</sys_id>
+        <sys_name>CatalogTransactionBack</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_690dc57e2f331110d8a4d5f62799b670</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

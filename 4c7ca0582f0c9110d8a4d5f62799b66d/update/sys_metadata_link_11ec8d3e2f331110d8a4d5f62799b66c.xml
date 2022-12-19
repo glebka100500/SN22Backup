@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>809d062ec0a8026c1e98d20fda3b95e7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SoftwarePackage&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Manage software package related operations.&lt;/description&gt;
+        &lt;name&gt;SoftwarePackage&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * Software package related calculations.
+ * 
+ * Aleck Lin aleck.lin@service-now.com
+ */
+
+var SoftwarePackage = Class.create();
+
+SoftwarePackage.prototype = {
+  initialize : function() {
+      this.spkgCache = {};
+      this.licenseCount = 0;
+  },
+
+  /*
+   * Calculates the total install count of each software package (cmdb_ci_spkg).
+   */
+  calcInstallCount: function() {
+      var gr = new GlideRecord('cmdb_ci_spkg');
+      gr.query();
+      while (gr.next())
+          this._calcInstallCount(gr);
+  },
+
+  _calcInstallCount: function(gr) {
+      var ga = new GlideAggregate('cmdb_software_instance');
+      ga.addQuery('software', gr.sys_id);
+      ga.addAggregate('COUNT');
+      ga.query();
+      var count = 0;
+      if (ga.next()) 
+          count = ga.getAggregate('COUNT');
+        
+      if (gr.install_count == count) 
+         return;
+
+      gr.install_count = count;
+      gr.update();   
+  },
+
+  calcLicenseCount: function() {
+      var gr = new GlideRecord('cmdb_ci_spkg');
+      gr.query();
+      while (gr.next())
+          this._calcLicenseCount(gr);
+  },
+
+  _calcLicenseCount: function(gr) {
+      if (this.spkgCache[gr.sys_id])
+          return;
+
+      var spkgArr = this.findAllSpkgs([gr.sys_id]);
+
+      var count = 0;
+      var gr = new GlideRecord("cmdb_ci_spkg");
+      gr.addQuery("sys_id", spkgArr);
+      gr.orderBy("sys_created_on");
+      gr.query();
+      while (gr.next()) {
+          this.spkgCache[gr.sys_id] = true;
+          count++;
+          
+          // If this is the last spkg, then give it all the rest of the license_count
+          if (count == spkgArr.length) {
+              gr.license_count = this.licenseCount;
+              this.licenseCount = 0;
+          } else {
+              if (this.licenseCount &gt;= gr.install_count)
+                  gr.license_count = gr.install_count;
+              else
+                  gr.license_count = this.licenseCount;
+
+              this.licenseCount -= gr.license_count;
+          }
+          gr.update();
+      }
+  },
+
+  
+  findAllSpkgs: function(spkgArr) {
+      var licenseArr = this.getASTLicenses(spkgArr);      
+      var license = new ASTLicense();
+      var spkgArr2 = license.getSoftwarePackages(licenseArr);   
+
+      if (spkgArr2.length == spkgArr.length)
+          return spkgArr2;
+      else
+          return this.findAllSpkgs(spkgArr2);
+  },
+
+
+  /*
+   *  Get an array list of licenses based on software packages.
+   */ 
+  getASTLicenses: function(list) {
+      this.licenseCount = 0;
+      var licenses = [];
+      var cache = {};
+      var gr = new GlideRecord('ast_license_package_instance');
+      gr.addQuery("ci_item", list);
+      gr.query();
+      while (gr.next()) {
+          var licenseSysId = gr.ast_license.sys_id;
+          if (cache[licenseSysId])
+              continue;
+          cache[licenseSysId] = true;
+
+          licenses.push(licenseSysId);
+          this.licenseCount += gr.ast_license.license_count;
+      }
+          
+      return licenses;
+  }
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;aleck.lin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-05-10 05:08:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;809d062ec0a8026c1e98d20fda3b95e7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;27&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SoftwarePackage&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Management Basics" source="com.snc.service"&gt;b89005876d2620100acb70b353433001&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_809d062ec0a8026c1e98d20fda3b95e7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;aleck.lin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2010-05-20 22:11:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3092&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:56</sys_created_on>
+        <sys_id>11ec8d3e2f331110d8a4d5f62799b66c</sys_id>
+        <sys_name>SoftwarePackage</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_11ec8d3e2f331110d8a4d5f62799b66c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

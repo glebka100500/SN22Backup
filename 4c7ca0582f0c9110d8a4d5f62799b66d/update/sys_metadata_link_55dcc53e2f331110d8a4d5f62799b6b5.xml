@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>773cf060cd924510f877b77ab7c509fb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KBLFRequestTranslationSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This will invoke the Localization-Framework's request translation API to create request items. Customers should not change this class directly, rather override methods in the subclass.
+This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KBLFRequestTranslationSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KBLFRequestTranslationSNC = Class.create();
+KBLFRequestTranslationSNC.prototype = {
+    initialize: function() {
+        this.SUCCESS = 'Success';
+        this.ERROR = 'Error';
+        this.UNEXPECTED_ERROR = 'UnexpectedError';
+        this.allowedWorkflowStates = 'draft,review,scheduled_publish,published,pending_retirement';
+        this.LANGUAGE_DELIMITER = '@';
+    },
+    /**
+     * this will create request translations in the localization framework table(request items).
+     *
+     * @param sysIds - knowledge articles selected for translation (Comma seperated values)
+     * @param targetLang - languages selected (Comma seperated values).
+     *
+     * return response object as below. 
+     * {
+     *       successLFRequestItems: [],
+     *       failedArticleCount: &lt;number&gt;,
+     *       skippedArticleCount: &lt;number&gt;
+     *   };
+     * 
+     */
+    requestTranslations: function(articleSysIds, targetLanguages, artifactInternalName) {
+        var lfApiResponseArray = [];
+        this.artifactInternalName = artifactInternalName;
+        this.targetLanguages = targetLanguages;
+        this.articleSysIdArray = ('' + articleSysIds).split(",");
+        try {
+            //build payload
+            var payload = this._buildRequestTranslationPayload(articleSysIds);
+            //API responses
+            lfApiResponseArray = this._submitRequestTranslations(payload);
+            //build response object
+            return this._getResponseObject(lfApiResponseArray);
+        } catch (e) {
+            return {
+                successLFRequestItems: 0,
+                failedArticleCount: this.articleSysIdArray.length,
+                skippedArticleCount: 0
+            };
+        }
+    },
+
+    /*
+     * Builds the below payload.
+     *
+     *
+     * {
+     *   "srcLang1@targetLang1":{
+     * 			  articleSysIdArray:['qwe45d..','zdr4..']
+     * 			  },
+     *   "srcLang1@targetLang2":{
+     * 			  articleSysIdArray:['qwe45d..','zdr4..']
+     * 			  }
+     *   ..
+     * }
+     */
+    _buildRequestTranslationPayload: function(articleSysIds) {
+        //Apply filters for workflow state and source articles(articles with out parent)
+        var articleGr = new GlideRecord('kb_knowledge');
+        articleGr.addQuery('sys_id', 'IN', articleSysIds);
+        articleGr.addQuery('workflow_state', 'IN', this.allowedWorkflowStates);
+        articleGr.addNullQuery('parent');
+        articleGr.query();
+        var knowledgeBaseArray = {},
+            allowedLanguagesForKB = {},
+            payload = {},
+            idx = 0,
+            count = 0;
+        var isBlockPluginActive = new KBCommon().isBlocksPluginActive();
+        while (articleGr.next()) {
+            //Store the "knowledge base"-"allowed languages" for key-value pair.
+            if (!allowedLanguagesForKB[articleGr.kb_knowledge_base])
+                allowedLanguagesForKB[articleGr.kb_knowledge_base] = {
+                    'enable_blocks': articleGr.kb_knowledge_base.enable_blocks + '',
+                    'allowedTargetLanguages': this._getAllowedTargetLanguages(articleGr.kb_knowledge_base.languages + '')
+                };
+            //get allowed languages
+            var targetLanguages = [].concat(allowedLanguagesForKB[articleGr.kb_knowledge_base].allowedTargetLanguages);
+            var allowedTargetLanguages = this._filterSourceLanguage(targetLanguages, articleGr.language + '');
+
+            //If there are no languages.
+            if (allowedTargetLanguages.length == 0)
+                continue;
+            var articleSysId = articleGr.getUniqueValue() + '';
+            //Block validation
+            var languagesToBeSkipped = [];
+            if (isBlockPluginActive &amp;&amp; articleGr.sys_class_name != 'kb_knowledge_block' &amp;&amp; allowedLanguagesForKB[articleGr.kb_knowledge_base].enable_blocks) {
+                languagesToBeSkipped = this._checkAnyBlockWithoutTranslations(articleSysId);
+            }
+            for (var tlIdx = 0; tlIdx &lt; allowedTargetLanguages.length; tlIdx++) {
+                //skip the article if one of its blocks is not present in the language.
+                if (languagesToBeSkipped.length &gt; 0 &amp;&amp; languagesToBeSkipped.indexOf(allowedTargetLanguages[tlIdx]) &gt; -1) {
+                    continue;
+                }
+                var key = '' + articleGr.language + this.LANGUAGE_DELIMITER + allowedTargetLanguages[tlIdx];
+                if (payload[key]) {
+                    payload[key].push(articleSysId);
+                } else {
+                    payload[key] = [articleSysId];
+                }
+            }
+        }
+        return payload;
+    },
+    /*
+     * filter sourcelanguage from the targetLanguage Array
+     */
+    _filterSourceLanguage: function(targetLanguages, sourceLanguage) {
+        //splice the source language from array.
+        var sourceLanguageIndex = targetLanguages.indexOf(sourceLanguage);
+        if (sourceLanguageIndex &gt; -1)
+            targetLanguages.splice(sourceLanguageIndex, 1);
+        return targetLanguages;
+    },
+    /*
+     * Check all the blocks have translation(s) in all the target languages.
+     *
+     * return languagesToBeSkipped - array of language codes.
+     */
+    _checkAnyBlockWithoutTranslations: function(articleSysId) {
+        var kbBlock = new KBBlock();
+        var languagesToBeSkipped = [];
+        //split the targetLanguage into array
+        var targetLanguageArray = this.targetLanguages.split(',');
+        //Get the blockArray for the given articleSysId
+        var blockArray = kbBlock.getBlockSysIds(articleSysId);
+        //Empty object: No blocks associated to any of the article.
+        if (blockArray.length == 0) {
+            return languagesToBeSkipped;
+        }
+        /*
+         * Check the block's translation exists in the given target languages.
+         * Get the response as below array from "getTranslatedBlockSyIds"
+         * 
+         * [blocksysid1_targetlanguage,blocksysid2_targetlanguage...] 
+         *
+         * Note: Here, blocksysid is source block sysId.
+         */
+        var translatedBlockArray = kbBlock.getTranslatedBlockSyIds(blockArray.join(","), this.targetLanguages);
+        /*
+         * Now for the given target languages and the article's block sysIds arrays.
+         *
+         * Concat forEach target_language and forEach blockSysId from the "targetLanguageArray" and "block array" respectively.
+         *
+         * Perform a search in translatedBlockArray using the concated string.
+         *
+         * If any such combination is not found, then the article will skipped(by populating the languagesToBeSkipped array).
+         */
+        //For the all the target languages, check all the blocks are present in translation block array.
+        for (var idx = 0; idx &lt; targetLanguageArray.length; idx++) {
+            for (var k = 0; k &lt; blockArray.length; k++) {
+                //Check all the blocks are present in translated array.
+                var searchStr = blockArray[k] + '_' + targetLanguageArray[idx];
+                if (translatedBlockArray.indexOf(searchStr) == -1) {
+                    //if atleast one article's block doesnt have translated version.
+                    languagesToBeSkipped.push(targetLanguageArray[idx]);
+                    break;
+                }
+            }
+
+        }
+        return languagesToBeSkipped;
+    },
+    /*
+     * build the response object.
+     */
+    _getResponseObject: function(lfApiResponseArray) {
+        var successLFRequestItems = [],
+            idx = 0;
+        var expectedRequestItems = this.targetLanguages.split(",").length * this.articleSysIdArray.length;
+        var failedArticleCount = 0;
+        for (var i = 0; i &lt; lfApiResponseArray.length; i++) {
+            if (lfApiResponseArray[i].status == this.SUCCESS) {
+                for (var j = 0; j &lt; lfApiResponseArray[i].details.length; j++) {
+                    if (!lfApiResponseArray[i].details[j].isError) {
+                        successLFRequestItems[idx++] = '' + lfApiResponseArray[i].details[j].requestedItemDetails.number;
+                    } else {
+                        ++failedArticleCount;
+                    }
+                }
+            } else if (lfApiResponseArray[i].status == this.ERROR) {
+                failedArticleCount += lfApiResponseArray[i].details.length;
+            } else if (lfApiResponseArray[i].status == this.UNEXPECTED_ERROR) {
+                failedArticleCount += lfApiResponseArray[i].failedArticleSysIdList.length;
+            }
+        }
+        var response = {
+            successLFRequestItems: successLFRequestItems,
+            failedArticleCount: failedArticleCount,
+            skippedArticleCount: (expectedRequestItems - successLFRequestItems.length - failedArticleCount)
+        };
+        return response;
+    },
+    /*
+     * create the request items for the eligible articles to translate. 
+     */
+    _submitRequestTranslations: function(payload) {
+        var lfApiResponseArray = [],
+            targetLanguageArray = [],
+            articleSysIdArray = [],
+            sourceLanguage = '',
+            targetLanguage = '';
+        var keyEntries = Object.keys(payload);
+        for (var i = 0; i &lt; keyEntries.length; i++) {
+            var key = keyEntries[i].split(this.LANGUAGE_DELIMITER);
+            sourceLanguage = key[0];
+            targetLanguage = key[1];
+            articleSysIdArray = payload[keyEntries[i]];
+            if (articleSysIdArray.length &gt; 0 &amp;&amp; !gs.nil(targetLanguage) &amp;&amp; !gs.nil(sourceLanguage)) {
+                lfApiResponseArray.push(this._callLFAPI(articleSysIdArray, [targetLanguage], sourceLanguage));
+            }
+        }
+
+        return lfApiResponseArray;
+    },
+    /*
+     * invoke the localization framwork API.
+     */
+    _callLFAPI: function(articleSysIdArray, targetLanguageArray, sourceLanguage) {
+        var apiResponseObject = {},
+            additionalInfo = {
+                "sourceLanguage": sourceLanguage
+            };
+        try {
+            var lfApi = new global.LocalizationFrameworkAPIV2();
+            apiResponseObject = lfApi.requestTranslations(
+                this.artifactInternalName,
+                articleSysIdArray,
+                targetLanguageArray,
+                additionalInfo
+            );
+        } catch (e) {
+            apiResponseObject.status = this.UNEXPECTED_ERROR;
+            apiResponseObject.message = e.message;
+            apiResponseObject.failedArticleSysIdList = articleSysIdArray;
+        }
+        return apiResponseObject;
+    },
+
+    /*
+     * Target language(s) should be only Knowledge Base's allowed language(s)
+     */
+    _getAllowedTargetLanguages: function(kbLanguages) {
+        var languageArray = [],
+            idx = 0;
+        if (gs.nil(kbLanguages)) {
+            languageArray = this.targetLanguages.split(",");
+        } else {
+            var kbLanguageArray = kbLanguages.split(",");
+            var targetLanguageArray = this.targetLanguages.split(",");
+            for (var i = 0; i &lt; targetLanguageArray.length; i++) {
+                //place the common languages
+                if (kbLanguageArray.indexOf(targetLanguageArray[i]) != -1) {
+                    languageArray.push(targetLanguageArray[i]);
+                }
+            }
+        }
+        return languageArray;
+
+    },
+    type: 'KBLFRequestTranslationSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-14 09:45:47&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;773cf060cd924510f877b77ab7c509fb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KBLFRequestTranslationSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Advanced" source="com.snc.knowledge_advanced"&gt;e36e64192f201110d8a4d5f62799b6e9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_773cf060cd924510f877b77ab7c509fb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-06 10:28:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;11331&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:40</sys_created_on>
+        <sys_id>55dcc53e2f331110d8a4d5f62799b6b5</sys_id>
+        <sys_name>KBLFRequestTranslationSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_55dcc53e2f331110d8a4d5f62799b6b5</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

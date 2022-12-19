@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6caae5c50a0a0b2b0083fa31560279a6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.BasicAuth&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implementation for HTTP Basic Authorization&lt;/description&gt;
+        &lt;name&gt;BasicAuth&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var BasicAuth = Class.create();
+
+BasicAuth.prototype = {
+   initialize : function(request, response, auth_type, auth_value) {
+	  this.request = request;
+      this.response = response;
+      this.auth_type = auth_type;
+      this.auth_value = auth_value;
+	    gs.log("Basic auth " + this.auth_type);
+//	    gs.warn('trying to get arguments ' + this.request);
+   },
+   
+   getAuthorized : function() {
+	   gs.log('--------------------------------- Basic Auth -------------------------')
+	  var signature = this.request.getHeader('X-Hub-Signature-256');
+	  var result;
+	 // gs.warn('caller ' + this.request.inputStream);
+	  if (signature != '' &amp;&amp; signature != null &amp;&amp; signature != undefined){ // verify signature 
+		  var cert = signature.split('=')[1];
+		  var secret = 'my-secret';
+		  gs.log('request' + this.request.getParameterNames());
+		  gs.log('login in user through ' + this.auth_type + " auth with signature " + signature);
+		  var resultBool = new MyJSUtils().verifySignature(cert, secret, payload);
+		  if (resultBool){
+			  result = GlideUser.authenticateUser('test.integration2', 'admin');
+		  }
+		  return result;
+	  }
+	  else 
+	  {
+	  var up = GlideStringUtil.base64Decode(this.auth_value);
+      var split = up.indexOf(":");
+      
+      if (split == -1) {
+         gs.log("Basic authentication not well formed");
+         return null;
+      }
+      
+      // locate user and impersonate
+      var userName = up.substring(0, split);
+      var password = up.substring(split + 1);
+	  result = GlideUser.authenticateUser(userName, password);
+      
+      if (!result) {
+         gs.log("Basic authentication failed for user: " + userName);
+         return null;
+      }}
+      
+      // user is authenticated, so return it...
+      return result;
+	   }
+	   
+	  
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-02-12 22:50:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6caae5c50a0a0b2b0083fa31560279a6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;157&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;BasicAuth&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6caae5c50a0a0b2b0083fa31560279a6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-11-18 15:39:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1831&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:18</sys_created_on>
+        <sys_id>d4cc413e2f331110d8a4d5f62799b620</sys_id>
+        <sys_name>BasicAuth</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d4cc413e2f331110d8a4d5f62799b620</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

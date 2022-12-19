@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6cb3ec020b723200ed45478d83673a77</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ShowRelatedTasksForBusinessService&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Supports show_related_records_business_service decoration on business_service&lt;/description&gt;
+        &lt;name&gt;ShowRelatedTasksForBusinessService&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ShowRelatedTasksForBusinessService = Class.create();
+ShowRelatedTasksForBusinessService.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	hasRelatedTaskCount : function() {
+		var businessService = this.getParameter("sysparm_business_service");
+		var sysId = this.getParameter("sysparm_sys_id");
+		var gr = new GlideRecord("task");
+		gr.addQuery("business_service", businessService);
+		gr.addQuery("active", true);
+		gr.addQuery("sys_id", "!=", sysId);
+		gr.setLimit(1);
+		gr.query();
+		return gr.hasNext();
+	},
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-05-19 06:41:38&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6cb3ec020b723200ed45478d83673a77&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ShowRelatedTasksForBusinessService&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Management Basics" source="com.snc.service"&gt;b89005876d2620100acb70b353433001&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6cb3ec020b723200ed45478d83673a77&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-05-25 06:44:31&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;527&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:19</sys_created_on>
+        <sys_id>98cc413e2f331110d8a4d5f62799b622</sys_id>
+        <sys_name>ShowRelatedTasksForBusinessService</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_98cc413e2f331110d8a4d5f62799b622</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

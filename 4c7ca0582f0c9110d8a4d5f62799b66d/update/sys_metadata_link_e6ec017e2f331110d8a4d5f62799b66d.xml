@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>83421061373111003e7d40ed9dbe5d2e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_Base&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base class for service catalog components&amp;#13;
+&amp;#13;
+You shouldn't directly instantiate this class, only it's sub classes.&amp;#13;
+&amp;#13;
+** DO NOT ALTER THIS CLASS, IT WILL SERVE NO PURPOSE **&lt;/description&gt;
+        &lt;name&gt;sc_Base&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * sc_Base
+ *
+ * Base class used for the creation of components of the Service Catalog.
+ *
+ * This class should never be instanciated directly.  It should only be extended.
+ *
+ * @author Chris Henson &lt;chris.henson@service-now.com&gt;
+ */
+var sc_Base = Class.create();
+
+sc_Base.prototype = {
+    initialize: function(_gr,_gs) {
+        this._log = (new GSLog(sc_.LOG_LEVEL,this.type)).setLog4J();
+		this._gr = (typeof _gr !== "undefined" ? _gr : current);  // Assume current if not defined
+		this._gs = (typeof _gs !== "undefined" ? _gs : gs); // Assume gs if not defined
+		
+        if (this.type == "sc_Base")
+            this._log.error("[initialise] You shouldn't be instanciating objects of type sc_Base");
+    },
+
+    /**
+     * get_gr(): Returns the GlideRecord that this object wraps
+     */
+    get_gr: function() {
+        return this._gr;
+    },
+	
+	get_gs: function() {
+		return this._gs;
+	},
+	
+	convertToJSONString: function(anObj){
+		if (GlideStringUtil.nil(anObj))
+			return "{}";
+		
+		var myJSON = new JSON();
+		return myJSON.encode(anObj);
+	},	
+
+    type: "sc_Base"
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-12-21 21:56:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;83421061373111003e7d40ed9dbe5d2e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_Base&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_83421061373111003e7d40ed9dbe5d2e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-12-22 12:49:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1083&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:01</sys_created_on>
+        <sys_id>e6ec017e2f331110d8a4d5f62799b66d</sys_id>
+        <sys_name>sc_Base</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e6ec017e2f331110d8a4d5f62799b66d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

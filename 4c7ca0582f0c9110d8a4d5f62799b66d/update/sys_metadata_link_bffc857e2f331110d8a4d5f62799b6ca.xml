@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8b54c234b7121300897725cbde11a95f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GetButtonTable&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;GetButtonTable&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var GetButtonTable = Class.create();
+GetButtonTable.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getButtonTableName: function() {
+		var buttonId = this.getParameter('sysparm_button_id');
+		if (!buttonId)
+			return "";
+
+		var msg = "";
+		var buttonGR = new GlideRecord("sys_sg_button");
+		if (!buttonGR.canRead()) {
+			gs.warn("Cannot read table: sys_sg_button");
+			msg = gs.getMessage("Security constraints prevent access to table");
+			gs.addErrorMessage(msg);
+			return "";
+		}
+
+		buttonGR.get(buttonId);
+		if(!buttonGR.isValidRecord()) {
+			gs.error("Invalid button: " + buttonId);
+			msg = gs.getMessage("Button not found");
+			gs.addErrorMessage(msg);
+			return "";
+		}
+
+		if (!buttonGR.canRead()) {
+			gs.warn("Cannot read record: " + buttonId);
+			msg = gs.getMessage("Security constraints prevent access to record");
+			gs.addErrorMessage(msg);
+			return "";
+		}
+
+		var buttonTableGE = buttonGR.getElement("table");
+		if (!buttonTableGE.canRead()) {
+			gs.warn("Cannot read field: table");
+			msg = gs.getMessage("Security constraints prevent access to field");
+			gs.addErrorMessage(msg);
+			return "";
+		}
+
+		return buttonGR.table;
+	},
+    type: 'GetButtonTable'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-05-23 12:23:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8b54c234b7121300897725cbde11a95f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GetButtonTable&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile plugin" source="com.glide.sg"&gt;0ced34cb6d2220100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8b54c234b7121300897725cbde11a95f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-05-01 11:29:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1191&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:22</sys_created_on>
+        <sys_id>bffc857e2f331110d8a4d5f62799b6ca</sys_id>
+        <sys_name>GetButtonTable</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bffc857e2f331110d8a4d5f62799b6ca</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

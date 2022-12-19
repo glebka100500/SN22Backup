@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7bbf43f0532003007bb7ddeeff7b12b7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AjaxAppManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Client Callable utility for App Store Applications.&lt;/description&gt;
+        &lt;name&gt;AjaxAppManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AjaxAppManager = Class.create();
+
+
+AjaxAppManager.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+
+	process: function() {
+	  if (this._getName() == 'getRollbackContextId')
+			return this._getRollbackContextId();
+		else if (this._getName() == 'getRollbackRunId')
+			return this._getRollbackRunId();
+		else if (this._getName() == 'getRollbackDenialReason')
+			return this._getRollbackDenialReason();
+    },
+	_getRollbackContextId: function() {
+		gs.info('AppId parameter is:' + this._getAppId());
+		gs.info('Version parameter is:' + this._getVersion());
+		var rctxid =  sn_app_api.AppStoreAPI.getRollbackContextId(this._getAppId() ,this._getVersion());
+		gs.info('rollbackContextId:' + rctxid);
+		return rctxid;
+	},
+	isRollbackEligible: function(glideRecord) {
+		gs.info('AppId parameter is:' + glideRecord.name);
+		gs.info('Version parameter is:' + glideRecord.version);
+		var rctxid =  sn_app_api.AppStoreAPI.isRollbackEligible(glideRecord.name ,glideRecord.version);
+		gs.info('rollbackContextId:' + rctxid);
+		return rctxid;
+	},
+	_getRollbackRunId: function() {
+		var rrid = sn_app_api.AppStoreAPI.getRollbackRunId(this._getRCId());
+		gs.info('rrid:' + rrid);
+		return rrid;
+	},
+	_getRollbackDenialReason: function() {
+		var denialReason = sn_app_api.AppStoreAPI.getRollbackDenialReason(this._getAppId(), this._getVersion());
+		gs.info('App Rollback Denial Reason &gt;&gt; ' + denialReason);
+		return denialReason;
+	},
+	_getName: function() {
+		return this.getParameter('sysparam_ajax_function');
+	},
+	_getAppId: function() {
+		return this.getParameter('appid');
+	},
+	_getVersion: function() {
+		return this.getParameter('version');
+	},
+	_getRCId: function() {
+		return this.getParameter('rollback_context_id');
+	},
+    type: 'AjaxAppManager'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-08-10 21:48:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7bbf43f0532003007bb7ddeeff7b12b7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;18&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AjaxAppManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Rollback Capabilities" source="com.glide.rollback"&gt;17ccb4836d2220100acb70b35343308e&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7bbf43f0532003007bb7ddeeff7b12b7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-11-21 22:20:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1763&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:47</sys_created_on>
+        <sys_id>83dc893e2f331110d8a4d5f62799b6ca</sys_id>
+        <sys_name>AjaxAppManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_83dc893e2f331110d8a4d5f62799b6ca</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

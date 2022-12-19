@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>80fa4f47932f030045a3f5be867ffba4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MatchingDimensionSkillAdvanced&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;MatchingDimensionSkillAdvanced&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MatchingDimensionSkillAdvanced = Class.create();
+MatchingDimensionSkillAdvanced.prototype = Object.extendsObject(AbstractMatchingDimension, {
+	
+	process : function(task, users, taskFieldValues, args){
+		var skillsRequired = []; //This will contain the list of Mandatory skills for a task.
+
+
+		/*Calculate the list of mandatory skills for this task from the m2m table.*/
+		var taskSkillRecord = new GlideRecord('task_m2m_skill');
+		taskSkillRecord.addQuery('mandatory', true);
+		taskSkillRecord.addQuery('task', task.sys_id);
+		taskSkillRecord.query();
+		while(taskSkillRecord.next()){
+			skillsRequired.push(taskSkillRecord.getValue('skill'));
+		}
+		
+		var returnUsers = {};
+		if(skillsRequired.length == 0 &amp;&amp; taskFieldValues.length==0){
+			for(var i = 0; i &lt; users.length; i++){
+				var skillObj = {};
+				skillObj.rating = 1.0;
+				skillObj.value = 1.0;
+				skillObj.displayValue = gs.getMessage("NA");
+				skillObj.detailedDisplayValue = gs.getMessage("Task has no skills");
+				returnUsers[users[i]] = skillObj;
+			}
+			return returnUsers;
+		}
+		var usersWithMandatory = [];
+		/*
+			Are there mandatory skills  defined for this task?
+			If yes, first calculate what agents in this assignment group have the mandatory skills, and add only those agents 
+			to the returnUsers. 
+			If not, add all the agents in an assignemnt group to the returnUsers.
+		*/
+		var skills = new GlideAggregate("sys_user_has_skill");
+		if(skillsRequired.length &gt;0){ //If mandatory skills are defined for this task.
+			skills.addEncodedQuery("skillIN" + skillsRequired.join());
+		}
+		skills.addEncodedQuery("userIN"+ users.join());
+		skills.addActiveQuery();
+		skills.addAggregate("COUNT(DISTINCT", "skill");
+		skills.addAggregate("MIN", "user.sys_id");
+		skills.groupBy("user");
+		skills.query();
+		
+		while(skills.next()){
+			var ratingObj = {};
+			var skillCount = 0; 
+			ratingObj.detailedDisplayValue = "Task has no skills";
+			
+			if(skillsRequired.length &gt; 0){
+				skillCount = skills.getAggregate("COUNT(DISTINCT", "skill");
+			}
+			if(skillCount != skillsRequired.length)
+				continue;
+			ratingObj.rating = Number(skillCount) * 1.0 / (skillsRequired.length + taskFieldValues.length);
+			ratingObj.value = skillCount;
+			ratingObj.displayValue = skillCount + " / " + (skillsRequired.length + taskFieldValues.length);
+			ratingObj.detailedDisplayValue = this.getDetailedDisplayValue(skills.getAggregate("MIN", "user.sys_id"), skillsRequired);
+			ratingObj.skillCount = skillCount;
+			returnUsers[skills.getAggregate("MIN","user.sys_id")] = ratingObj;
+			usersWithMandatory.push(skills.getAggregate("MIN","user.sys_id"));
+		}
+		
+		/*
+			For only the list of agents who ALREADY have the mandatory skills for this assignment group, check what users have one/more optional skills.
+			Update the JSON info for only those users.
+		*/	
+		var optionalSkills = new GlideAggregate("sys_user_has_skill");
+		optionalSkills.addEncodedQuery("skillIN" + taskFieldValues.join());
+		optionalSkills.addEncodedQuery("userIN"+ usersWithMandatory.join());
+		optionalSkills.addActiveQuery();
+		optionalSkills.addAggregate("COUNT(DISTINCT", "skill");
+		optionalSkills.addAggregate("MIN", "user.sys_id");
+		optionalSkills.groupBy("user");
+		optionalSkills.query();
+
+		while(optionalSkills.next()){
+			var optionalSkillCount = optionalSkills.getAggregate("COUNT(DISTINCT", "skill");
+			var userSysId = optionalSkills.user.sys_id;
+			returnUsers[userSysId].rating = (Number(returnUsers[userSysId].skillCount) + Number(optionalSkillCount)) *1.0 / (skillsRequired.length + taskFieldValues.length);
+			returnUsers[userSysId].value = Number(returnUsers[userSysId].skillCount) + Number(optionalSkillCount);
+			returnUsers[userSysId].displayValue = Number(returnUsers[userSysId].skillCount) + Number(optionalSkillCount) + " / " + (skillsRequired.length + taskFieldValues.length);
+			if(skillsRequired.length &gt; 0){
+				returnUsers[userSysId].detailedDisplayValue += ", ";
+			}
+			returnUsers[userSysId].detailedDisplayValue += this.getDetailedDisplayValue(optionalSkills.user.sys_id, taskFieldValues);
+		}
+		if(skillsRequired.length == 0){
+			for(var i=0;i&lt; users.length;i++){
+				if(!returnUsers[users[i]]){
+					var ratingObj = {};
+					ratingObj.rating = 0;
+					ratingObj.value = 0;
+					ratingObj.displayValue = "0 / " + taskFieldValues.length;
+					ratingObj.detailedDisplayValue = "No Matching Skills"; 
+					returnUsers[users[i]] = ratingObj;
+				}
+			}
+		}
+
+		return returnUsers;
+	},
+				
+	getDetailedDisplayValue : function(user, skillsRequired){
+		var skills = [];
+		var skillGR = new GlideRecord("sys_user_has_skill");
+		skillGR.addEncodedQuery("skillIN" + skillsRequired); //skillsRequired.join()
+		skillGR.addEncodedQuery("userIN"+ user);
+		skillGR.addActiveQuery();
+		skillGR.query();
+		while(skillGR.next())
+			skills.push(skillGR.getDisplayValue('skill'));
+		return skills.join(", ");
+	},
+				
+	type: 'MatchingDimensionSkillAdvanced'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-01-14 00:23:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;80fa4f47932f030045a3f5be867ffba4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MatchingDimensionSkillAdvanced&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_80fa4f47932f030045a3f5be867ffba4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-27 17:49:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4913&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:57</sys_created_on>
+        <sys_id>a5ec8d3e2f331110d8a4d5f62799b6d8</sys_id>
+        <sys_name>MatchingDimensionSkillAdvanced</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a5ec8d3e2f331110d8a4d5f62799b6d8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>60a6ff85c7720010d1cfd9795cc2607d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisConfigurationUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AisConfigurationUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisConfigurationUtil = Class.create();
+AisConfigurationUtil.prototype = {
+    initialize: function() {},
+
+    getChildTablesInDatasource: function(datasourceSysId, datasourceTable) {
+        var result = [];
+        result.push(datasourceTable);
+        var gr = new GlideRecord('ais_child_table');
+        gr.addQuery('datasource', datasourceSysId);
+        gr.addActiveQuery();
+        gr.query();
+        while (gr.next())
+            result.push(gr.getValue('table'));
+
+        return result;
+    },
+
+    getTablesInDatasource: function(datasource) {
+        var array = [];
+        var list = GlideDBObjectManager.get().getTableExtensions(datasource);
+        for (var i = 0; i &lt; list.size(); i++)
+            var tableName = list.get(i);
+        return array;
+    },
+
+    getAllIndexableTables: function() {
+        var tables = [];
+
+        var indexedTables = {};
+        var datasourceGr = new GlideRecord('ais_datasource');
+        datasourceGr.query();
+        while (datasourceGr.next())
+            indexedTables[datasourceGr.getValue('source')] = true;
+        var childTableGr = new GlideRecord('ais_child_table');
+        childTableGr.query();
+        while (childTableGr.next())
+            indexedTables[childTableGr.getValue('table')] = true;
+
+        var dictionaryGr = new GlideRecord('sys_dictionary');
+        dictionaryGr.addNullQuery('element');
+        dictionaryGr.addActiveQuery();
+        dictionaryGr.orderBy('name');
+        dictionaryGr.query();
+        while (dictionaryGr.next()) {
+            var curTable = dictionaryGr.getValue('name');
+            var canIndex = new sn_ais.AisUtil().isTableIndexable(curTable);
+            if (canIndex &amp;&amp; !(curTable in indexedTables))
+                tables.push(curTable);
+        }
+
+        return tables;
+    },
+
+    getColumns: function(table) {
+        var columns = [];
+        var td = GlideTableDescriptor.get(table);
+        if (td.isValid()) {
+            var fields = td.getActiveFieldNames();
+            for (var i = 0; i &lt; fields.size(); i++) {
+                var field = fields.get(i) + '';
+                columns.push(field);
+            }
+        }
+
+        return columns.join(',');
+    },
+
+    createOrUpdateDefaultSpellcheckDictionary: function(profileSysId, profileLabel) {
+        if (!profileSysId || !profileLabel)
+            return;
+
+        var searchSources = this.getSearchSourceFromProfile(profileSysId);
+        // name field max length is 200
+        //  - ' Default Spell Check Dictionary' length 31
+        //  - scope max length is 18
+        //  - a buffer of 10
+        var defaultLabel = profileLabel.substring(0, 200 - 31 - 18 - 10) + ' Default Spell Check Dictionary';
+
+        var m2m = new GlideRecord('ais_search_profile_ais_dictionary_m2m');
+        m2m.addQuery('dictionary.name', 'ENDSWITH', '_default_spell_check_dictionary');
+        m2m.addQuery('profile', profileSysId);
+        m2m.query();
+        var dictGr = new GlideRecord('ais_dictionary');
+        if (m2m.next() &amp;&amp; m2m.getValue('dictionary') &amp;&amp; dictGr.get(m2m.getValue('dictionary'))) {
+            dictGr.setValue('data_source', searchSources.join(','));
+            dictGr.setValue('state', 'DRAFT');
+            dictGr.update();
+        } else {
+            dictGr.initialize();
+            dictGr.setValue("label", defaultLabel);
+            dictGr.setValue("state", 'NEW');
+            dictGr.setValue("active", true);
+            dictGr.setValue("type", "SPELLCHECK");
+            dictGr.setValue("locale", "en");
+            dictGr.setValue("case_sensitive", false);
+            dictGr.setValue("punctuation_sensitive", false);
+            dictGr.setValue("derived", true);
+            dictGr.setValue("data_source", this.getSearchSourceFromProfile(profileSysId));
+            var dictSysId = dictGr.insert();
+            this.addDictionaryToProfile(profileSysId, dictSysId);
+        }
+    },
+
+    getSearchSourceFromProfile: function(profileSysId) {
+        var searchSources = [];
+        var gr = new GlideRecord('ais_search_profile_ais_search_source_m2m');
+        gr.addQuery('profile', profileSysId);
+        gr.addNotNullQuery('search_source');
+        gr.query();
+        while (gr.next()) {
+            var table = gr.search_source.datasource;
+            if (table)
+                searchSources.push(table);
+        }
+
+        return searchSources;
+    },
+
+    getSearchSourceQualifierFromProfile: function(profileSysId) {
+        var searchSources = [];
+        var gr = new GlideRecord('ais_search_profile_ais_search_source_m2m');
+        gr.addQuery('profile', profileSysId);
+        gr.addNotNullQuery('search_source');
+        gr.query();
+        while (gr.next()) {
+            var table = gr.search_source.datasource;
+            var source = gr.getValue("search_source");
+            if (table)
+                searchSources.push(source);
+        }
+
+        return 'sys_idIN' + searchSources.join(',');
+    },
+
+    getIndexedSource: function(source) {
+        var gr = new GlideRecord('ais_datasource');
+        gr.addQuery("source", source);
+        gr.query();
+        if (gr.next())
+            return gr;
+        return null;
+    },
+
+    getIndexedSourceFromProfile: function(profileSysId) {
+        var indexedSources = [];
+        var gr = new GlideRecord('ais_search_profile_ais_search_source_m2m');
+        gr.addQuery('profile', profileSysId);
+        gr.addNotNullQuery('search_source');
+        gr.query();
+        while (gr.next()) {
+            var table = gr.search_source.datasource;
+            if (table &amp;&amp; !indexedSources.contains(table))
+                indexedSources.push(table);
+        }
+
+        return 'sourceIN' + indexedSources.join(',');
+    },
+
+    addDictionaryToProfile: function(profileSysId, dictSysId) {
+        var gr = new GlideRecord('ais_search_profile_ais_dictionary_m2m');
+        gr.initialize();
+        gr.setValue('profile', profileSysId);
+        gr.setValue('dictionary', dictSysId);
+        gr.insert();
+    },
+
+    indexTable: function(tableName) {
+        new sn_ais.IndexEvent().indexTable(tableName);
+    },
+
+	publishProfiles: function(profileSysIdsArray) {
+		var result = {
+			'state': 'success',
+			'message': '',
+			'failedSysIds': []
+		};
+
+		if (!Array.isArray(profileSysIdsArray) || profileSysIdsArray.length == 0) {
+			result.state = 'failure';
+			result.message = "Invalid input profileSysIdsArray";
+			return result;
+		}
+
+		var synchronizer = new sn_ais.Synchronizer();
+		for (var i = 0; i &lt; profileSysIdsArray.length; i++) {
+			var curSysId = profileSysIdsArray[i];
+			var profile = new GlideRecord('ais_search_profile');
+			var response = false;
+			if (profile.get(curSysId)) {
+				response = synchronizer.publishProfile(profile.getValue('name'));
+			}
+			if (!response) {
+				result.state = 'failure';
+				result.failedSysIds.push(curSysId);
+				result.message = 'Failed to published some/all profiles, please check log for more details';
+			}
+		}
+
+		return result;
+	},
+
+	indexDatasources: function(datasourceSysIdsArray) {
+		var result = {
+			'state': 'success',
+			'message': '',
+			'failedSysIds': []
+		};
+
+		if (!Array.isArray(datasourceSysIdsArray) || datasourceSysIdsArray.length == 0) {
+			result.state = 'failure';
+			result.message = "Invalid input datasourceSysIdsArray";
+			return result;
+		}
+		
+		var indexEvent = new sn_ais.IndexEvent();
+		for (var i = 0; i &lt; datasourceSysIdsArray.length; i++) {
+			var curSysId = datasourceSysIdsArray[i];
+			var datasource = new GlideRecord('ais_datasource');
+			var response = false;
+			if (datasource.get(curSysId)) {
+				response = indexEvent.indexTableNoBlock(datasource.getValue('source'));
+			}
+			if (!response) {
+				result.state = 'failure';
+				result.message = 'Failed to trigger index event for some/all index sources, please check log for more details';
+				result.failedSysIds.push(curSysId);
+			}
+		}
+		
+		return result;
+	},
+
+    type: 'AisConfigurationUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-02-05 00:22:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;60a6ff85c7720010d1cfd9795cc2607d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;63&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisConfigurationUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_60a6ff85c7720010d1cfd9795cc2607d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-07-28 21:37:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7901&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:55</sys_created_on>
+        <sys_id>e6ac09fa2f331110d8a4d5f62799b608</sys_id>
+        <sys_name>AisConfigurationUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e6ac09fa2f331110d8a4d5f62799b608</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

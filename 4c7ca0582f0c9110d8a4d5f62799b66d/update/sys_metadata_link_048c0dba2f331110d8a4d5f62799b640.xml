@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>46a5a402c32121007cae8039dfba8f11</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WorkflowElementVersionUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Workflow Element Activity version utilities to handle Create, Checkout, Delete, and Publish functionality&lt;/description&gt;
+        &lt;name&gt;WorkflowElementVersionUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WorkflowElementVersionUtils = Class.create();
+WorkflowElementVersionUtils.prototype = {
+    initialize: function() {
+      this.ElementVersionAPI = new SNC.ElementVersionAPI(); // new syle API
+    },
+
+	canSubmit: function(current) {
+		return this.ElementVersionAPI.canSubmit(current);
+	},
+	
+	canCheckout: function(current) {
+		return this.ElementVersionAPI.canCheckout(current);
+	},
+	
+	canForceCheckout: function(current) {
+		return this.ElementVersionAPI.canForceCheckout(current);
+	},
+	
+	canPublish: function(current) {
+		return this.ElementVersionAPI.canPublish(current);
+	},
+	
+	canEdit: function(current) {
+		return this.ElementVersionAPI.canEdit(current);
+	},
+	
+	canDelete: function(current) {
+		return this.ElementVersionAPI.canDelete(current);
+	},
+	
+	canDeleteCondition: function(current) {
+		var act_ele_Id = current.activity_definition;
+		var gRec = new GlideRecord('wf_element_activity');
+		gRec.get(act_ele_Id);
+		return this.ElementVersionAPI.canDelete(gRec);
+	},
+	
+	save: function(current) {
+		return this.ElementVersionAPI.save(current);
+	},
+	
+	submit: function(current) {
+		return this.ElementVersionAPI.submit(current);
+	},
+	
+	publish: function(current) {
+		return this.ElementVersionAPI.publish(current);
+	},
+	
+	checkout: function(current) {
+		var id = this.ElementVersionAPI.checkout(current);
+		return id;
+	},
+	
+	forceCheckout: function(current) {
+		return this.ElementVersionAPI.forceCheckout(current);
+	},
+	
+	deleteIt: function(current) {
+		var id = this.ElementVersionAPI.deleteIt(current);
+		return id;
+	},
+	
+	deleteConditionDefault: function(current) {
+		var id = this.ElementVersionAPI.deleteConditionDefault(current);
+		return id;
+	},
+	
+	getVersions: function(activityId) {
+		return this.ElementVersionAPI.getVersions(activityId);
+	},
+	
+	getActiveElementActivityList: function(userId) {
+		return this.ElementVersionAPI.getActiveElementActivityList(userId);
+	},
+	
+	getActiveElementActivityListQuery: function(userId) {
+		return this.ElementVersionAPI.getActiveElementActivityListQuery(userId);
+	},
+
+    type: 'WorkflowElementVersionUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;arturo.ma&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-06-27 22:35:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;46a5a402c32121007cae8039dfba8f11&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;48&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WorkflowElementVersionUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_46a5a402c32121007cae8039dfba8f11&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;arturo.ma&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-04-22 20:20:52&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2070&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:13</sys_created_on>
+        <sys_id>048c0dba2f331110d8a4d5f62799b640</sys_id>
+        <sys_name>WorkflowElementVersionUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_048c0dba2f331110d8a4d5f62799b640</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

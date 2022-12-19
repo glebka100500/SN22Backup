@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>512f39b63b3133007fef460044efc446</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RemoveCustomTableRole&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;RemoveCustomTableRole&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RemoveCustomTableRole = Class.create();
+RemoveCustomTableRole.prototype = {
+	initialize: function() {
+		this.USER = "user";
+		this.ROLE = "role";
+		this.GROUP = "group";
+		this.CONTAINS = "contains";
+		this.SYS_USER_GRMEMBER_TABLE = "sys_user_grmember";
+		this.SYS_USER_HAS_ROLE_TABLE = "sys_user_has_role";
+		this.SYS_GROUP_HAS_ROLE_TABLE = "sys_group_has_role";
+		this.SYS_USER_ROLE_CONTAINS_TABLE = "sys_user_role_contains";
+	},
+
+	removeRoleViaGroupRole :function(group, roleName, roleSysId ) {
+		var sysUserGrmemberGR = new GlideRecord(this.SYS_USER_GRMEMBER_TABLE);
+		sysUserGrmemberGR.addQuery(this.GROUP, group);
+		sysUserGrmemberGR.query();
+		
+		while (sysUserGrmemberGR.next()) {
+			var user = sysUserGrmemberGR.getValue(this.USER);
+			this.removeRoleViaUserRole(user, roleName, roleSysId);
+		}
+	},
+	
+	removeRoleViaUserRole: function(user, roleName, roleSysId) {
+		//remove access to CT for child roles
+		var sysUserRoleContainsGr = new GlideRecord(this.SYS_USER_ROLE_CONTAINS_TABLE);
+		sysUserRoleContainsGr.addQuery(this.ROLE, roleSysId);
+		sysUserRoleContainsGr.query();
+		while (sysUserRoleContainsGr.next()) {
+			var childRoleSysId = sysUserRoleContainsGr.getValue(this.CONTAINS);
+			var childRoleName = sysUserRoleContainsGr.getElement(this.CONTAINS).getDisplayValue();
+			this.removeRoleViaUserRole(user, childRoleName, childRoleSysId);
+		}
+		
+		var sysUserHasRoleGr  = new GlideRecord(this.SYS_USER_HAS_ROLE_TABLE);
+		sysUserHasRoleGr.addQuery(this.USER, user);
+		sysUserHasRoleGr.addQuery(this.ROLE, roleSysId);
+		sysUserHasRoleGr.query();
+		
+	},
+	
+	removeRoleViaGroupMember :function(group, user) {
+		var sysGroupHasRoleGr = new GlideRecord(this.SYS_GROUP_HAS_ROLE_TABLE);
+		sysGroupHasRoleGr.addQuery(this.GROUP, group);
+		sysGroupHasRoleGr.query();
+		
+		while (sysGroupHasRoleGr.next()) {
+			var roleSysId = sysGroupHasRoleGr.getValue(this.ROLE);
+			var roleName = sysGroupHasRoleGr.getElement(this.ROLE).getDisplayValue();
+			this.removeRoleViaUserRole(user, roleName, roleSysId);
+		}
+	},
+	
+    type: 'RemoveCustomTableRole'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-06-06 12:56:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;512f39b63b3133007fef460044efc446&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RemoveCustomTableRole&lt;/sys_name&gt;
+        &lt;sys_package display_value="Subscription Administration Base" source="com.snc.usage_admin.base"&gt;e823c9cf6d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_512f39b63b3133007fef460044efc446&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-07-16 05:11:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2053&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:29</sys_created_on>
+        <sys_id>089c8dba2f331110d8a4d5f62799b66e</sys_id>
+        <sys_name>RemoveCustomTableRole</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_089c8dba2f331110d8a4d5f62799b66e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

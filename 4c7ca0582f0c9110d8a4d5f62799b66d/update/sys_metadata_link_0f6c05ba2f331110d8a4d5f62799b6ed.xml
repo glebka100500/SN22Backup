@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>36c27631ef132100438236caa5c0fbe9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.cxs_WizardConfig&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Creates and configures fields that have contextual search attached.&lt;/description&gt;
+        &lt;name&gt;cxs_WizardConfig&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var cxs_WizardConfig = Class.create();
+
+cxs_WizardConfig.prototype = {
+    EXCLUDE_FIELDS_FROM_OBJECT: {
+        "sys_created_by": true,
+        "sys_created_on": true,
+        "sys_domain": true,
+        "sys_mod_count": true,
+        "sys_updated_by": true,
+        "sys_updated_on": true,
+        "sys_package": true,
+        "sys_update_name": true
+    },
+
+    WIZARD_MACRO: "cxs_wizard_search",
+
+    initialize: function(gr) {
+        this._gr = gr;
+        this._gru = new GlideRecordUtil();
+    },
+
+    setName: function(configName) {
+        if (!this._gr || !this._gr.getUniqueValue())
+            return false;
+
+        if (configName) {
+            this._gr.name = configName;
+            return true;
+        }
+
+        this._gr.name = this._gr.expert.getDisplayValue();
+
+        return true;
+    },
+
+    isDuplicate: function() {
+        if (!this._gr)
+            return false;
+
+        // If this record is being updated and sc_cat_item has not changed
+        // we don't need to check if we're creating a duplicate
+        if (!this._gr.isNewRecord() &amp;&amp; (!this._gr.expert.changes() &amp;&amp; !this._gr.active.changes()))
+            return false;
+
+        // Search for an existing record that matches the one we're trying to create/update
+        var wizardConfigGr = new GlideRecord("cxs_wizard_config");
+        wizardConfigGr.addQuery("sys_id", "!=", this._gr.getUniqueValue());
+        wizardConfigGr.addQuery("expert", this._gr.expert);
+		wizardConfigGr.addActiveQuery();
+        wizardConfigGr.query();
+
+        return wizardConfigGr.hasNext();
+    },
+
+    getWizardVariableIds: function() {
+        var sysIds = [];
+
+        if (!this._gr)
+            return sysIds;
+
+        var wizardId = this._gr.expert + "";
+        if (!wizardId)
+            return sysIds;
+
+        var wizardGr = new GlideRecord("expert");
+        if (!wizardGr.get(wizardId))
+            return sysIds;
+
+        var searchableTypes = new cxs_WizardVarTypes().getTypeMap();
+
+        var varsGr = new GlideRecord("expert_variable");
+		varsGr.addQuery('expert',wizardId);
+		varsGr.query();
+		
+        while (varsGr.next())
+            if (searchableTypes[varsGr.type])
+                sysIds.push(varsGr.getUniqueValue());
+
+        return sysIds;
+    },
+
+    getWizardConfigObject: function() {
+        var wizardConfig = {};
+        this._gru.populateFromGR(wizardConfig, this._gr, this.EXCLUDE_FIELDS_FROM_OBJECT);
+        wizardConfig.resultsHeaderText = this._gr.getDisplayValue("results_header_text");
+        wizardConfig.configURL = this._gr.getLink(true);
+        wizardConfig.configDisplayValue = this._gr.getDisplayValue();
+        wizardConfig.search_field = {};
+        this._gru.populateFromGR(wizardConfig.search_field, this._gr.search_variable.getRefRecord(), this.EXCLUDE_FIELDS_FROM_OBJECT);
+
+        return wizardConfig;
+    },
+	
+	isOnWizard: function() {
+        var varGr = new GlideRecord("expert_variable");
+        varGr.addQuery("expert", this._gr.expert);
+        varGr.addQuery("macro.name", this.WIZARD_MACRO);
+        varGr.query();
+
+        return varGr.hasNext();
+    },
+
+    addToWizard: function() {
+        if (this.isOnWizard())
+            return false;
+    
+        var varGr = new GlideRecord("expert_variable");
+        varGr.type = 14 // Macro;
+        varGr.expert = this._gr.expert;
+        varGr.macro.setDisplayValue(this.WIZARD_MACRO);
+        varGr.question_text = "Contextual Search Results";
+        varGr.name = "contextual_search_results";
+        varGr.insert();
+
+		this.addToWizardPanel(varGr);
+		
+        return true;
+    },
+	
+	addToWizardPanel: function(exp_var) {
+		var varGr = new GlideRecord('expert_panel_variable');
+		varGr.addQuery('expert_variable',this._gr.search_variable);
+		varGr.addQuery('expert_panel.expert',this._gr.expert);
+		varGr.query();
+		
+		if (varGr.next()) {
+			var varPan = new GlideRecord('expert_panel_variable');
+			varPan.expert_panel = varGr.expert_panel;
+			varPan.expert_variable = exp_var.getUniqueValue();
+			varPan.order = varGr.order + 1;
+			varPan.insert();
+		}
+		
+		return true;
+	},
+
+    removeFromWizard: function() {
+        if (!this.isOnWizard())
+            return false;
+    
+        var varGr = new GlideRecord("expert_variable");
+        varGr.addQuery("expert", this._gr.expert);
+        varGr.addQuery("macro.name", this.WIZARD_MACRO);
+        varGr.query();
+
+        if (varGr.next()) {
+			this.removeFromWizardPanel(varGr);
+
+            return varGr.deleteRecord();
+		}
+
+        return false;
+    },
+	
+	removeFromWizardPanel: function(exp_var) {
+		var varGr = new GlideRecord('expert_panel_variable');
+		varGr.addQuery('expert_variable', exp_var.getUniqueValue());
+		varGr.addQuery('expert_panel.expert',this._gr.expert);
+		varGr.query();
+		
+		if (varGr.next())
+			return varGr.deleteRecord();
+		
+		return false;
+	},
+	
+    type: 'cxs_WizardConfig'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-09-22 14:01:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;36c27631ef132100438236caa5c0fbe9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;13&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;cxs_WizardConfig&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Search" source="com.snc.contextual_search"&gt;947281c76d6620100acb70b35343306d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_36c27631ef132100438236caa5c0fbe9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-07-28 15:28:16&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4841&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:52</sys_created_on>
+        <sys_id>0f6c05ba2f331110d8a4d5f62799b6ed</sys_id>
+        <sys_name>cxs_WizardConfig</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0f6c05ba2f331110d8a4d5f62799b6ed</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

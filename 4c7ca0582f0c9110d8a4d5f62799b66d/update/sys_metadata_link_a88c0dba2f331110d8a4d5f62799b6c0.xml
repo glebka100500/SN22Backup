@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>47ecef2d41d8210006ff035e3ab2cc76</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GeneralFormJava&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;General Application : All JAVA Classes used by the application should be defined here&lt;/description&gt;
+        &lt;name&gt;GeneralFormJava&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+*
+* All JAVA Classes used by the application are defined here.
+*
+*/
+var GeneralFormJava = Class.create();
+
+/**
+* PDF API Suite
+*/
+
+//GeneralFormJava.iTextPDF = SNC.itextpdf;
+GeneralFormJava.PdfName = SNC.PdfNameWrapper;
+GeneralFormJava.PDFTable = SNC.PdfPTableWrapper;
+GeneralFormJava.PDFCell = SNC.PdfPCellWrapper;
+GeneralFormJava.PDFPhrase = SNC.PhraseWrapper;
+GeneralFormJava.Color = SNC.BaseColorWrapper;
+GeneralFormJava.PdfBorderDictionary = SNC.PdfBorderDictionaryWrapper;
+GeneralFormJava.Element = SNC.ElementWrapper;
+GeneralFormJava.Rectangle = SNC.RectangleWrapper;
+GeneralFormJava.HTMLWorker = SNC.HTMLWorkerWrapper;
+GeneralFormJava.PageSize = SNC.PageSizeWrapper;
+GeneralFormJava.Document = SNC.DocumentWrapper;
+GeneralFormJava.ColumnText = SNC.ColumnTextWrapper;
+GeneralFormJava.FontFamily = SNC.FontFamilyWrapper;
+GeneralFormJava.Font = SNC.FontWrapper;
+GeneralFormJava.BaseFont = SNC.BaseFontWrapper;
+GeneralFormJava.BaseColor = SNC.BaseColorWrapper;
+GeneralFormJava.PdfPageEventHelper = SNC.PdfPageEventHelperWrapper;
+GeneralFormJava.PdfWriter = SNC.PdfWriterWrapper;
+GeneralFormJava.Image = SNC.ImageWrapper;
+GeneralFormJava.PdfParser = SNC.PdfParserWrapper;
+GeneralFormJava.SvgToPdf = SNC.SvgToPdf;
+
+GeneralFormJava.ByteArrayOutputStream = Packages.java.io.ByteArrayOutputStream;
+GeneralFormJava.StringReader = Packages.java.io.StringReader;
+GeneralFormJava.ByteArrayInputStream = Packages.java.io.ByteArrayInputStream;
+
+GeneralFormJava.SysAttachment = GlideSysAttachment;
+GeneralFormJava.Relationship = GlideRelationship;
+GeneralFormJava.GlideXMLUtil = GlideXMLUtil;
+GeneralFormJava.GlideStringUtil = GlideStringUtil;
+
+
+GeneralFormJava.prototype = {
+    initialize: function() {
+    },
+
+    type: 'GeneralFormJava'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;walter.brame&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-04-25 20:30:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;47ecef2d41d8210006ff035e3ab2cc76&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GeneralFormJava&lt;/sys_name&gt;
+        &lt;sys_package display_value="PDF Generator" source="com.snc.pdf_generator"&gt;c364414f6da620100acb70b353433099&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_47ecef2d41d8210006ff035e3ab2cc76&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-02-16 21:30:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1739&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:14</sys_created_on>
+        <sys_id>a88c0dba2f331110d8a4d5f62799b6c0</sys_id>
+        <sys_name>GeneralFormJava</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a88c0dba2f331110d8a4d5f62799b6c0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6b9af5afc31031001c13587981d3ae15</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ParseURL&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;this script translate 64 base sysid (used in db views) to regular sysid,&amp;#13;
+added new functionality adding table name, if none given  using svc_ci_assoc for backward compatibility.&amp;#13;
+usege:&amp;#13;
+//your 64 base sysId need to start with exactly(!!!!!) __ENC__ &amp;#13;
+var ga = new GlideAjax('ParseURL');&amp;#13;
+ga.addParam('sysparm_name','parseURL');&amp;#13;
+ga.addParam('rowId',rowSysId);&amp;#13;
+ga.addParam('table','em_event_group_assoc');&lt;/description&gt;
+        &lt;name&gt;ParseURL&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ParseURL = Class.create();
+ParseURL.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	parseURL: function() {
+		var str=this.getParameter('rowId');
+		var tableName = this.getParameter('table');
+		gs.log(str);
+		if (str != null &amp;&amp; str.startsWith("__ENC__")){
+			str = GlideStringUtil.base64Decode(str.substring("__ENC__".length));
+			gs.log('sw_debug '+ str);
+			str = str.substring(0, 32);
+			gs.log('sw_debug '+ str);
+		}
+		//get the ciId
+		if(tableName){
+			gs.log('sw_debug table name input'+ tableName);
+			var value;
+			var gr = new GlideRecord(tableName);
+			value= 'sys_id';
+			
+		}
+		else{
+			gs.log('sw_debug default table name'+ tableName);
+			var gr = new GlideRecord('svc_ci_assoc');
+			value = 'ci_id';
+		}
+		gr.addQuery('sys_id', str);
+		gr.query();
+		while(gr.hasNext()) {
+			gr.next();
+			if (gr.canRead()) {
+				gs.log('sw_debug return val ' + gr.getValue('ci_id'));
+				return gr.getValue(value);
+			}
+		}
+	},
+
+	_privateFunction: function() { // this function is not client callable
+
+}
+
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-11-16 13:39:58&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6b9af5afc31031001c13587981d3ae15&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;32&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ParseURL&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Service" source="com.snc.cmdb.it_service"&gt;72b4cdcf6da620100acb70b353433039&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6b9af5afc31031001c13587981d3ae15&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-03-13 12:51:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1021&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:17</sys_created_on>
+        <sys_id>bbbc013e2f331110d8a4d5f62799b683</sys_id>
+        <sys_name>ParseURL</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bbbc013e2f331110d8a4d5f62799b683</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

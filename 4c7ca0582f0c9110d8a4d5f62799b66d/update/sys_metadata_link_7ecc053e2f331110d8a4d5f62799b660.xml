@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>72ef5784e7431010748b42d6c2f6a9d1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UnifiedConversationUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;UnifiedConversationUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UnifiedConversationUtil = Class.create();
+UnifiedConversationUtil.prototype = {
+	LEGACY_VERSION: '1.0.0',
+	UDM_VERSION: '2.0.0',
+	CS_CONVERSATION_TABLE: 'sys_cs_conversation',
+	
+    initialize: function(conversationId) {
+		this.conversationId = conversationId;
+    },
+	
+	/**
+	 * The method is used to check the conversation is fully initialized.
+	 *
+	 * In legacy mode, this check is to ensure the handoff record is created for the conversation.
+	 * If the handoff is not created and user tries to create a new Conversation scriptable object,
+	 * an exception could be thrown.
+	 */
+	isInitialized : function() {
+		if (this.isConversationUDMVersion()) {
+			return true;
+		}
+		
+		if (this.isConversationLegacyVersion()) {
+			var liveGroupProfileId = sn_connect.Conversation.getLiveGroupProfileIdByInteractionMetadata(
+				this.CS_CONVERSATION_TABLE,
+				this.conversationId
+			);
+			
+			return (!liveGroupProfileId) ? false : true;
+		}
+		
+		return true;
+	},
+	
+	getConversationVersion: function() {
+		if (!this.conversationVersion) {
+			this.conversationVersion = sn_connect.Conversation.getVersion(this.conversationId);
+		}
+		return this.conversationVersion;
+	},
+	
+	isConversationLegacyVersion: function() {
+		return this.LEGACY_VERSION == this.getConversationVersion();
+	},
+	
+	isConversationUDMVersion: function() {
+		return this.UDM_VERSION == this.getConversationVersion();
+	},
+	
+    type: 'UnifiedConversationUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-08-31 02:42:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;72ef5784e7431010748b42d6c2f6a9d1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UnifiedConversationUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Interactions Management" source="com.glide.interaction"&gt;c6f449c36de620100acb70b35343307e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_72ef5784e7431010748b42d6c2f6a9d1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-04 17:28:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1423&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:29</sys_created_on>
+        <sys_id>7ecc053e2f331110d8a4d5f62799b660</sys_id>
+        <sys_name>UnifiedConversationUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7ecc053e2f331110d8a4d5f62799b660</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7e8aa32037132100763d2bb6dcbe5dd7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.EventHeartbeat&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;EventHeartbeat&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var EventHeartbeat = Class.create();
+EventHeartbeat.prototype = {
+    EVENT_NAME : 'glide.heartbeat',
+    LAST_BEAT_ID : 'glide.event_heartbeat.last_id',
+    LAST_BEAT : 'glide.event_heartbeat.last_beat',
+    LAST_DELAY : 'glide.event_heartbeat.last_delay',
+    CURRENT_AGE : 'glide.event_heartbeat.current_age',
+    VERSION_KEY : 'glide.event_heartbeat.version',
+    VERSION_NUMBER: '1.0',
+
+    initialize: function() {
+        this.shouldRun = gs.getProperty('glide.installation.developer') != 'true';
+    },
+
+    getStatus: function(name) {
+        var gr = new GlideRecord('sys_status');
+        gr.addQuery('name', name);
+        gr.orderByDesc('sys_updated_on');
+        gr.setLimit(1);
+        gr.query();
+        if (gr.next())
+            return gr.value + '';
+    },
+
+    beat : function() {
+        if (!this.shouldRun)
+            return;
+        var lb = this.getStatus(this.LAST_BEAT_ID);
+        var shouldBeat = true;
+        if (lb)
+            shouldBeat = this.processOldBeat(lb);
+
+        if (!shouldBeat)
+            return;
+
+        var gr = new GlideRecord('sysevent');
+        gr.name = this.EVENT_NAME;
+        gr.user_id = gs.getUserId();
+        gr.state = 'ready';
+        var id = gr.insert();
+        this.postStatus(this.LAST_BEAT_ID, id);
+        this.postStatus(this.VERSION_KEY, this.VERSION_NUMBER);
+    },
+
+    processOldBeat: function(sys_id) {
+        var gr = new GlideRecord('sysevent');
+        if (!gr.get(sys_id))
+            return true;
+
+        var status = gr.state + '';
+        if ('ready' == status || status.indexOf('q') == 0) {
+            var created = gr.sys_created_on.getGlideObject().getNumericValue();
+            var age = new GlideDateTime().getNumericValue() - created;
+
+            gs.print('EventHeartbeat created: ' + gr.sys_created_on + ', not yet processed, age: ' + age + 'ms');
+            this.postStatus(this.CURRENT_AGE, age);
+            return false;
+        }
+
+        if ('error' == status)
+            return true;
+
+        if ('processed' == status) {
+            var processed = gr.processed.getGlideObject().getNumericValue();
+            var created = gr.sys_created_on.getGlideObject().getNumericValue();
+            var delta = processed - created;
+
+            gs.print('EventHeartbeat created: ' + gr.sys_created_on + ", processed: " + gr.processed + ', delay: ' + delta + 'ms');
+
+            this.postStatus(this.LAST_BEAT, gr.sys_created_on);
+            this.postStatus(this.LAST_DELAY, delta);
+            this.postStatus(this.CURRENT_AGE, delta);
+
+            return true;
+        }
+
+        // should never get here but what the heck
+        return true;
+    },
+
+    postStatus : function(name, value) {
+        var gr = new GlideRecord('sys_status');
+        var exists = gr.get('name', name);
+
+        gr.name = name;
+        gr.value = value;
+
+        if (exists)
+            gr.update();
+        else
+            gr.insert();
+    },
+
+    type: 'EventHeartbeat'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-09-18 20:58:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7e8aa32037132100763d2bb6dcbe5dd7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;20&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;EventHeartbeat&lt;/sys_name&gt;
+        &lt;sys_package display_value="Advanced Schedules Support" source="com.glide.schedules"&gt;92a009c76d2620100acb70b353433070&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7e8aa32037132100763d2bb6dcbe5dd7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-07-07 23:33:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2957&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:53</sys_created_on>
+        <sys_id>a0ec0d3e2f331110d8a4d5f62799b6ec</sys_id>
+        <sys_name>EventHeartbeat</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a0ec0d3e2f331110d8a4d5f62799b6ec</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>68084cd793321200ea933007f67ffb7c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlannedTaskStateChangeHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PlannedTaskStateChangeHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlannedTaskStateChangeHandler = Class.create();
+
+PlannedTaskStateChangeHandler.processStateChange = function(current, previous, origSysId) {
+    gs.info("Into handleStateChange()");
+    // get state attributes for this table
+    var plannedTaskStateUtil = new PlannedTaskStateUtil(current);
+    var stateBucket = plannedTaskStateUtil.getBucketForState(current.state);
+    var isTopTask = current.top_task == current.sys_id;
+    var recalculationHelper = new RecalculationHelper();
+    var projectAction = current.top_task == origSysId;
+    var skippedStates = new PlannedTaskSkippedStates(current);
+    var currentState = current.getValue("state");
+    var shouldUpdatePercentComplete = skippedStates.shouldUpdatePercentComplete(currentState);
+    var isSubProjectAction = current.sys_id != current.top_task &amp;&amp; current.instanceOf("pm_project") &amp;&amp; current.sys_id == origSysId;
+    if (isTopTask || isSubProjectAction) {
+        if (!current.isNewRecord() &amp;&amp; current.active.changesTo(true) &amp;&amp; (projectAction || isSubProjectAction) &amp;&amp; !previous.active) {
+            gs.info("Task: " + current.short_description + " Re-opened, Clearing the Actuals and Reactivate the Children");
+            current.work_start = "";
+            current.work_end = "";
+            current.work_duration = "";
+            current.percent_complete = 0;
+            recalculationHelper.process(current, previous); // recalculate here
+            PlannedTaskUtilsV2.reactivateChildren(current, previous.state);
+        }
+        gs.info("stateBucket -&gt; " + stateBucket + " | projectAction -&gt; " + projectAction + " | isSubProjectAction " + isSubProjectAction);
+        if (stateBucket == PlannedTaskStateUtil.WORK_IN_PROGRESS) {
+            if (!(projectAction || isSubProjectAction))
+                return;
+            if (JSUtil.nil(current.work_start))
+                current.work_start = current.start_date;
+            gs.info("Set Work Start Date and Starting Leaves");
+            recalculationHelper.process(current, previous); // recalculate here
+            PlannedTaskUtilsV2.startLeaves(current, PlannedTaskStateUtil.WORK_IN_PROGRESS);
+            if (isSubProjectAction) {
+                PlannedTaskStateChangeHandler.updateRootWorkStartDate(current);
+                PlannedTaskUtilsV2.setParentState(current);
+            }
+        } else if ((projectAction || isSubProjectAction) &amp;&amp; stateBucket == PlannedTaskStateUtil.OPEN_STATES) {
+            gs.info("Set Project to Open");
+            PlannedTaskUtilsV2.openProject(current);
+            if (isSubProjectAction) {
+                recalculationHelper.process(current, previous);
+                PlannedTaskUtilsV2.setParentState(current);
+            }
+        } else {
+            if (current.active.changesTo(false)) {
+                gs.info("Task has been closed " + current.short_description);
+                if (projectAction || isSubProjectAction) {
+                    if (shouldUpdatePercentComplete)
+                        current.percent_complete = 100;
+                    gs.info("Closing the Children with Current State: " + current.state);
+                    // we populate the dates using PTA
+                    // recalculationHelper.process(current); // recalculate here
+                    PlannedTaskUtilsV2.closeChildren(current, current.state, shouldUpdatePercentComplete);
+                }
+                if (!projectAction &amp;&amp; ((origSysId == current.sys_id) || current.rollup)) {
+                    if (!current.rollup &amp;&amp; shouldUpdatePercentComplete)
+                        current.percent_complete = 100;
+                    gs.info("Starting the Successors " + current.short_description);
+                    // start successor tasks
+					if(!isSubProjectAction)
+						recalculationHelper.process(current, previous); // recalculate_here
+                    PlannedTaskUtilsV2.startSuccessors(current, PlannedTaskStateUtil.OPEN_STATES);
+                    gs.info("Setting the Parent State " + current.short_description);
+                    // check parent for close dependencies
+                    PlannedTaskUtilsV2.setParentState(current);
+                }
+            } else {
+				if (isSubProjectAction)
+                    PlannedTaskUtilsV2.setParentState(current);
+                // task has been closed and set to inactive
+				var isProjOrSubProjAction = projectAction || isSubProjectAction;
+                if (!isProjOrSubProjAction || (isProjOrSubProjAction &amp;&amp; !previous.active))
+                    return;
+                gs.info("Setting the Children State to Current State: " + current.state);
+                current.percent_complete = 0;
+                //recalculationHelper.process(current); // recalculate here
+                PlannedTaskUtilsV2.setChildrenState(current, stateBucket, current.state);
+                // Reset the Parent - to trigger the recalculation
+                current.work_start = "";
+                current.work_end = "";
+                current.work_duration = "";        
+            }
+        }
+    } else {
+        gs.info("Task is not Top Task");
+        if (stateBucket == PlannedTaskStateUtil.WORK_IN_PROGRESS) {
+            gs.info("stateBucket -&gt; WORK_IN_PROGRESS");
+            if (origSysId == current.sys_id) {
+                if (JSUtil.nil(current.work_start))
+                    current.work_start = current.start_date;
+                PlannedTaskStateChangeHandler.updateRootWorkStartDate(current);
+            }
+            if ((!current.parent.nil() &amp;&amp; current.parent != origSysId) ||
+                (!current.parent.nil() &amp;&amp; current.parent.changes())) {
+                gs.info("Starting Parent with Work State");
+                current.work_end = "";
+                recalculationHelper.process(current, previous); // recalculate here
+                PlannedTaskUtilsV2.startParent(current, PlannedTaskStateUtil.WORK_IN_PROGRESS);
+            }
+        } else {
+            if (current.active.changesTo(false) || stateBucket == PlannedTaskStateUtil.CLOSE_STATES) { // current task moved to closed state
+                gs.info("Task has been closed " + current.short_description);
+                if (!projectAction &amp;&amp; ((origSysId == current.sys_id) || current.rollup)) {
+                    if (!current.rollup &amp;&amp; shouldUpdatePercentComplete)
+                        current.percent_complete = 100;
+                    gs.info("Starting the Successors " + current.short_description);
+                    // start successor tasks
+                    recalculationHelper.process(current, previous); // recalculate_here
+                    PlannedTaskUtilsV2.startSuccessors(current, PlannedTaskStateUtil.OPEN_STATES);
+                    gs.info("Setting the Parent State " + current.short_description);
+                    // check parent for close dependencies
+                    PlannedTaskUtilsV2.setParentState(current);
+                }
+            } else {
+                if ((!projectAction &amp;&amp; !current.parent.nil() &amp;&amp; current.parent != origSysId) ||
+                    (!current.parent.nil() &amp;&amp; current.parent.changes())) {
+                    if (current.getValue("rollup") == "true") {
+                        current.work_start = "";
+                        current.work_end = "";
+                        current.work_duration = "";
+                        recalculationHelper.process(current, previous); // recalculate here
+                    }
+                    PlannedTaskUtilsV2.setParentState(current);
+                }
+            }
+        }
+    }
+    if (current.parent != previous.parent &amp;&amp; JSUtil.notNil(previous.parent)) {
+        gs.info('Parent has changed for task ' + previous.short_description);
+        PlannedTaskUtilsV2.setParentState(previous, true);
+    }
+};
+
+//Updates root node work_start if needed
+PlannedTaskStateChangeHandler.updateRootWorkStartDate = function(current) {
+    var root = new GlideRecord("planned_task");
+    root.get(current.top_task);
+    // gs.info("Checking Root Work Start: " + root.work_start);
+    if (current.work_start &lt; root.work_start) {
+        gs.info("Updating the Root Work Start ");
+        root.work_start = current.work_start;
+        root.setWorkflow(false);
+        root.update();
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;abel.tuter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-04-20 09:39:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;68084cd793321200ea933007f67ffb7c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;90&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlannedTaskStateChangeHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_68084cd793321200ea933007f67ffb7c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-06-10 06:17:20&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8227&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:08</sys_created_on>
+        <sys_id>79bc4dfa2f331110d8a4d5f62799b635</sys_id>
+        <sys_name>PlannedTaskStateChangeHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_79bc4dfa2f331110d8a4d5f62799b635</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

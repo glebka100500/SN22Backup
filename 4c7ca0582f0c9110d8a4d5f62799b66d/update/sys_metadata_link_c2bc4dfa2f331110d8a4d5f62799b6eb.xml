@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>689e746553232010fa75ddeeff7b1212</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MSAzureGlobalUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;MS Azure Global Utils&lt;/description&gt;
+        &lt;name&gt;MSAzureGlobalUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MSAzureGlobalUtils = Class.create();
+MSAzureGlobalUtils.prototype = {
+    initialize: function() {
+    },
+	
+	PROPERTIES: {
+		INSTANCE_NAME: 'instance_name',
+		INSTANCE_DOMAIN: 'glide.channelproxy.instance_domain_suffix'
+	},
+	
+	encrypt: function (value){
+		var glideEncrypter = new GlideEncrypter();
+		return glideEncrypter.encrypt(value);
+	},
+	
+	decrypt: function (value){
+		var glideEncrypter = new GlideEncrypter();
+		return glideEncrypter.decrypt(value);
+	},
+	
+	getBrowserURL: function() {
+		var transaction = GlideTransaction.get();
+		var baseURL =  transaction.getBaseURL();
+		return GlideStringUtil.stripSuffix(baseURL, "/");
+	},
+	
+	getInstanceURL: function() {
+		var instanceName = gs.getProperty(this.PROPERTIES.INSTANCE_NAME);
+		var instanceDomain = gs.getProperty(this.PROPERTIES.INSTANCE_DOMAIN, 'service-now.com');
+		var url = 'https://' + instanceName + '.' + instanceDomain;
+		return GlideStringUtil.stripSuffix(url, "/");
+	},
+
+    type: 'MSAzureGlobalUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-04-15 23:24:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;689e746553232010fa75ddeeff7b1212&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MSAzureGlobalUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="MS Teams - App Core" source="com.snc.msteams.app.core"&gt;c93da7dc2f895110d8a4d5f62799b61b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_689e746553232010fa75ddeeff7b1212&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-19 17:51:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;979&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:10</sys_created_on>
+        <sys_id>c2bc4dfa2f331110d8a4d5f62799b6eb</sys_id>
+        <sys_name>MSAzureGlobalUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c2bc4dfa2f331110d8a4d5f62799b6eb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

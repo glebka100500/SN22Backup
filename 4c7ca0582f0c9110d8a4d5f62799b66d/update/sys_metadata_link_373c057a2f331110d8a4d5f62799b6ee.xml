@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>14744cdc7f00000101703ff18b07f769</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;AJAX helper functions&amp;#13;
+- create the item xml for a GlideRecord&lt;/description&gt;
+        &lt;name&gt;AJAXHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var AJAXHelper = Class.create();
+
+AJAXHelper.prototype = {
+  initialize: function() {
+  },
+  
+  // create xml item elements for each row in the GlideRecord
+  // an attribute for each element in the fields array
+  createItemXML: function(gr, element, fields) {
+     this.createItemXML(gr, element, fields, false);  
+  },
+
+  createItemXML0: function(gr, element, fields, sandbox) {
+    var doc = element.getOwnerDocument();
+    while (gr.next()) {
+        var item = doc.createElement('item'); 
+        element.appendChild(item);
+        for (var i = 0; i &lt; fields.length; i++) {
+          var name = fields[i];
+          if (sandbox &amp;&amp; !gr[name].canRead())
+              continue;
+
+          item.setAttribute(name, gr.getValue(name));
+        }
+    }
+  }
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-04-21 14:03:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;14744cdc7f00000101703ff18b07f769&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="UI Pages (define HTML pages and their processing)" source="com.glide.ui_page"&gt;12acb4436d2220100acb70b353433096&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_14744cdc7f00000101703ff18b07f769&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;pat.casey&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2009-11-09 21:34:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;819&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:06</sys_created_on>
+        <sys_id>373c057a2f331110d8a4d5f62799b6ee</sys_id>
+        <sys_name>AJAXHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_373c057a2f331110d8a4d5f62799b6ee</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

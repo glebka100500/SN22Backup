@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>91c8ebb653520110a260ddeeff7b12cf</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PreTopicDiscoveryInputProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PreTopicDiscoveryInputProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PreTopicDiscoveryInputProcessor = Class.create();
+PreTopicDiscoveryInputProcessor.prototype = {
+    initialize: function() {
+    },
+	
+	process: function(input) {
+		var featurePayload = {};
+		
+		// Build payload for language detection feature
+		var langDetect = {"utterance" : input["utterance"]};
+		featurePayload["Virtual Agent Language Detection"] = langDetect;
+		
+		return featurePayload;
+	},
+	
+	shouldPause: function(input) {
+		return false;
+	},
+
+    type: 'PreTopicDiscoveryInputProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-21 22:06:16&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;91c8ebb653520110a260ddeeff7b12cf&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PreTopicDiscoveryInputProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server" source="com.glide.cs"&gt;f9f62e472f000110d8a4d5f62799b60c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_91c8ebb653520110a260ddeeff7b12cf&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-22 00:05:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;501&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:39</sys_created_on>
+        <sys_id>c81d897e2f331110d8a4d5f62799b6a7</sys_id>
+        <sys_name>PreTopicDiscoveryInputProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c81d897e2f331110d8a4d5f62799b6a7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

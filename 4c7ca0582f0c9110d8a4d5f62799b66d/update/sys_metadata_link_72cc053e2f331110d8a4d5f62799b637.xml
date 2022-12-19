@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>72ccaaf2b7002300ee0d3177ee11a96b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CMDBUpdateSetPublisher&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This Script UpdateSetPublisher is developed as part of "Query Export" functionality&amp;#13;
+We are exporting only changed data&amp;#13;
+Example: &amp;#13;
+1.  var publisher =  new CMDBUpdateSetPublisher('My Test UpdateSet name'); &amp;#13;
+2.  var publisher = new CMDBUpdateSetPublisher();  // Use the current UpdateSet&amp;#13;
+&amp;#13;
+//Pass single table with one or multiple records&amp;#13;
+var gr = GlideRecord('qb_saved_query');&amp;#13;
+gr.query();&amp;#13;
+publisher.publishSingle(gr);&amp;#13;
+&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;CMDBUpdateSetPublisher&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CMDBUpdateSetPublisher = Class.create();
+CMDBUpdateSetPublisher.prototype = {
+    initialize: function(newUpdateSetName, logger) {
+        this.logger = logger;
+		this.api = new UpdateSetAPI();
+        if (newUpdateSetName !== null &amp;&amp; newUpdateSetName !== undefined ) {
+            this.originUpdateSetId = this.api.getCurrentUpdateSetID();
+            this.api.insertUpdateSetAsCurrent(newUpdateSetName);
+            this.logger.log('UpdateSet: ' + newUpdateSetName + ' set as current');
+        }
+        
+        this.isForcePublish = false;
+        this.manager = new GlideUpdateManager2();
+        this.countOfPublishedRecords = 0;
+        this.updateSetId = this.api.getCurrentUpdateSetID();
+    },
+    
+    complete: function() {
+        this.api.completeUpdateSet(this.updateSetId);
+    },
+    
+    accomplish: function() {
+        
+        if (this.originUpdateSetId !== undefined) {
+            /* Restore the previous UpdateSet to be a current*/
+            new GlideUpdateSet().set(this.originUpdateSetId);
+            this.logger.log('Original UpdateSet is set to current');
+        }else{
+            this.logger.error('Failed to set original UpdateSet as current');
+        }    
+    },
+    
+    getUpdateSetId: function() {
+        return this.updateSetId;
+    },
+	
+	publishMultiple: function (tables, skipLog, isReference, aRef, bRef) {      
+        for(var currentTableIndex in tables) {
+            var currentTable = tables[currentTableIndex];
+            this.publishSingle(currentTable, skipLog, isReference, aRef, bRef);
+        }
+	},
+    
+    publishSingle: function (table, skipLog, isReference, aRef, bRef) {      
+        this._publish(table, skipLog, isReference, aRef, bRef);
+	},
+       
+    _publish: function (gr, skipLog, isReference, aRef, bRef) {
+        if (gr === null)
+            return;
+        var tableName = gr.getTableName();
+		
+        while(gr.next()) {
+            if (!this._isRecordExist(gr) &amp;&amp; !this.isForcePublish) {
+                this.manager.saveRecord(gr);
+                if (skipLog === undefined || (skipLog !== undefined &amp;&amp; skipLog === false)){
+                    if(isReference === undefined || (isReference !== undefined &amp;&amp; isReference === false))
+                        this.logger.log('Exporting record: [' + tableName + '] ' + gr.getDisplayValue());
+                    else
+                        this.logger.log('Exporting record: [' + tableName + '] Reference: '  + gr.getElement(aRef).getDisplayValue() + '-&gt;' + gr.getElement(bRef).getDisplayValue());
+                }
+                    
+                //this.__publish(gr);
+                this.countOfPublishedRecords ++;
+            }
+        }
+	},
+    
+    _isRecordExist: function(gr) {
+        var upGr = new GlideRecord('sys_update_xml');
+        upGr.addQuery('name', gr.getTableName()+ '_' + gr.sys_id);
+        upGr.addQuery('update_set', this.updateSetId);
+        upGr.query();
+        if (upGr.hasNext())
+            return true;
+        return false;
+    },
+    
+    getCountOfPublishedRecords: function () {      
+        return this.countOfPublishedRecords;
+	},
+    
+    
+    __publish: function(gr) {
+        var upGr = new GlideRecord('sys_update_xml');
+        upGr.addQuery('name', this.manager.getUpdateName(gr));
+        upGr.addQuery('update_set', this.updateSetId);
+        upGr.query();
+        if (upGr.hasNext())
+            return;
+        upGr.initialize();
+        upGr.setValue('category', 'customer');
+        upGr.setValue('name', this.manager.getUpdateName(gr));
+        upGr.setValue('update_domain','global');
+        var targetName;
+        if (gr.name)
+            targetName = gr.name;
+        else
+            targetName = gr.sys_id;
+
+        upGr.setValue('target_name', targetName);
+        upGr.setValue('update_set', updateSetId);
+        upGr.setValue('payload', gs.unloadRecordToXML(gr,false));
+        upGr.setValue('action', 'INSERT_OR_UPDATE');
+        var descriptor = GlideTableDescriptor.get(gr.getTableName());
+        upGr.setValue('type', descriptor.getLabel());
+        upGr.insert();
+    },
+    
+    type: 'CMDBUpdateSetPublisher'
+};
+
+
+/*Static function for delete */
+CMDBUpdateSetPublisher.deleteUpdateSet = function(updateSetToDelete) {
+        var gr = new GlideRecord('sys_update_xml');
+        gr.addQuery('update_set', updateSetToDelete);
+        gr.setWorkflow(false);
+        gr.deleteMultiple();
+        
+        var gr2 = new GlideRecord('sys_remote_update_set');
+        gr2.addQuery('remote_sys_id', updateSetToDelete);
+        gr2.query();
+        if(gr2.next()){
+            gr2.setWorkflow(false);
+            gr2.deleteRecord();  
+        }
+
+        var gr3 = new GlideRecord('sys_update_set');
+        gr3.addQuery('sys_id', updateSetToDelete);
+        gr3.query();
+        if(gr3.next()){
+            gr3.setWorkflow(false);
+            gr3.deleteRecord();  
+        }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-24 20:16:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;72ccaaf2b7002300ee0d3177ee11a96b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CMDBUpdateSetPublisher&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_72ccaaf2b7002300ee0d3177ee11a96b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-24 20:16:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4876&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:29</sys_created_on>
+        <sys_id>72cc053e2f331110d8a4d5f62799b637</sys_id>
+        <sys_name>CMDBUpdateSetPublisher</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_72cc053e2f331110d8a4d5f62799b637</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

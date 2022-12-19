@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4912c38beb0331003e97afcef106fe16</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CTIAjaxUtility&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CTIAjaxUtility&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CTIAjaxUtility = Class.create();
+CTIAjaxUtility.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    openframeInteractionUtility: (new sn_openframe.OpenframeInteractionUtility()),
+
+    getUserStates: function(){
+		var userID = gs.getUserID();
+		var ua = new GlideRecord('user_cti_status');
+		ua.addQuery("user",userID);
+		ua.query();
+		var currentStatus = "not_available";
+		var userStatusData = this.newItem("userStatusData");
+		if(ua.hasNext()){
+			ua.next();
+			currentStatus = ua.getValue('status');
+		}else{
+			ua.initialize();
+			ua.setValue('status',currentStatus);
+			ua.setDisplayValue('user',userID);
+			ua.insert();
+		}
+		var status_choice = GlideChoiceListGenerator.getChoiceList('user_cti_status', 'status');
+        for (var i = 0; i &lt; status_choice.size(); i++) {
+            var statesArr = this.newItem("statesArr");
+            statesArr.setAttribute("status", status_choice.get(i).getLabel());
+            statesArr.setAttribute("value", status_choice.get(i).getValue());
+            if (status_choice.get(i).getValue() == currentStatus)
+                statesArr.setAttribute("selected", true);
+            else
+                statesArr.setAttribute("selected", false);
+        }
+	},
+
+	getPhoneChannelStatus: function() {
+		var phone_id = 'f6281cc39335330090813a53177ffb32'; //this is the default Phone service channel sys_id
+		var service_channels = new GlideRecord('awa_service_channel');
+		service_channels.addQuery("sys_id", phone_id);
+		service_channels.addQuery("active", 1);
+		service_channels.query();
+		return service_channels.hasNext();
+    },
+
+	setUserStatus: function() {
+		//CTI status + value
+		var status = this.getParameter('status'); //Ex: 'Available, Not Available, Busy, Wrap Up, Away'
+		var value = this.getParameter('value'); //Ex: 'available, not_available, busy, wrap_up, away'
+		var source = this.getParameter('source');
+		var userID = gs.getUserID();
+		var phone_id = 'f6281cc39335330090813a53177ffb32'; //this is the default Phone service channel sys_id
+		//create record to update CTI Presence
+		var ua = new GlideRecord('user_cti_status');
+		ua.addQuery("user",userID);
+		ua.query();
+		
+		if(!ua.hasNext()){
+			ua.initialize();
+			ua.setValue('status',value);
+			ua.setDisplayValue('user',userID);
+			ua.insert();
+		}
+		else {
+			ua.next();
+			ua.setValue('status',value);
+			ua.update();
+		}
+		var userStatusData = this.newItem("userStatusData");
+		if(ua !== null){
+			userStatusData.setAttribute("user", userID);
+			userStatusData.setAttribute("status",status);
+			userStatusData.setAttribute("value",value);
+		}
+		if (source!='agentPresence') {
+			var currentPresence = awa_agent.getPresence().name;
+			//create record to update AWA Channel Presence
+			var agent_avl = new GlideRecord('awa_agent_channel_availability');
+			var awa_agent = sn_awa.Agent.get(userID);
+			if (status == 'Away') {
+				if (currentPresence != 'Offline') {
+					var presence = {"name":"Away","sys_id":"41f9b8dfb31313005baa6e5f26a8dcac","available":false,"channels":[]};
+					awa_agent.setPresence(presence);
+				}
+			} else if (status == 'Not Available') {
+				//updates the channel state
+				agent_avl.addQuery("agent", userID);
+				agent_avl.addQuery("service_channel", phone_id);
+				agent_avl.query();
+				if (currentPresence != 'Offline' &amp;&amp; currentPresence != 'Away') {
+					if (agent_avl.next()) {
+					agent_avl.setValue("available", false);
+					agent_avl.update();
+					}
+				}
+			} else if (status == 'Available') {
+				agent_avl.addQuery("agent", userID);
+				agent_avl.addQuery("service_channel", phone_id);
+				agent_avl.query();
+				if (agent_avl.next()) {
+					if (currentPresence != 'Offline') {
+						agent_avl.setValue("available", true);
+						agent_avl.update();
+						var avl_presence = {"name":"Available","sys_id":"0b10223c57a313005baaaa65ef94f970","available":true};
+						awa_agent.setPresence(avl_presence);
+					}
+				}
+			}
+		}
+	},
+	
+	getUserStatus: function() {
+		var userID = gs.getUserID();
+		var ua = new GlideRecord('user_cti_status');
+		ua.addQuery("user",userID);
+		ua.query();
+		var userStatusData = this.newItem("userStatusData");
+		if(ua.hasNext()){
+			ua.next();
+			userStatusData.setAttribute("user", userID);
+			userStatusData.setAttribute("status",ua.getDisplayValue('status'));
+			userStatusData.setAttribute("value",ua.getValue('status'));
+		}
+	},
+	
+	getAvailableAgents: function() {
+		var currentUser = gs.getUserID();
+		var gr = new GlideRecord('user_cti_status');
+		var agents = [];
+		var agent;
+		var i =0;
+		gr.addQuery("status","available");
+		gr.addQuery("user", "!=", currentUser);
+		gr.query();
+		var result = this.newItem("result");
+		while(gr.next()){
+			var callee = {};
+			callee.id = i;
+			agent = gr.user.getRefRecord();
+			callee.text = agent.getValue('name');
+			callee.value = agent.getValue('sys_id');
+			agents.push(callee);
+			i++;
+		}
+		result.setAttribute("agents", JSON.stringify(agents));
+	},
+	
+	getGlideRecordData: function() {
+		var json = new global.JSON();
+		var table_name;
+		var items =[];
+		var result = this.getDocument().createElement("result");
+		this.getRootElement().appendChild(result);
+		var input = JSON.parse(this.getParameter("input"));
+		var resultItems = [];
+		for(var i = 0; i &lt; input.length; i++) {
+				table_name = input[i].sysparm_table_name;
+				var sys_id = input[i].sysparm_sys_id;
+				var fields = input[i].sysparm_fields ? input[i].sysparm_fields.split(",") : [];
+					
+				var gr = new GlideRecordSecure(table_name);
+				if (!gr.get(sys_id)) {
+					result.setAttribute("error", "NOT_FOUND");
+					return;
+				}
+			
+				for(var j = 0; j &lt; fields.length; j++) {
+					var field = fields[j];
+					if (!field)
+						continue;
+					try {
+						
+						var el = gr.getElement(field);
+						if (el) {
+							var item ={};
+							item.field = field;
+							item.sys_id = gr.getValue(field);
+							item.value = gr.getDisplayValue(field);
+							if (el.getED().isReference()) {
+								item.isReference = "true";
+								item.label= el.getRefRecord().getLabel();
+								item.entity = el.getReferenceTable();
+							}
+							items.push(item);
+							
+						}
+					} 
+					catch (ex) {
+						gs.info("CTIAjaxUtility.getGlideRecordDatae : " + ex.message );
+					}
+					
+				}
+				resultItems.push({"tableName":table_name,"items": items});
+		}
+		result.setAttribute("items",json.encode(resultItems));
+	},
+	
+	
+	
+	/***  phoneNumber : Phone number for the contact
+ 	*  callId : Twilio child call id
+ 	*  wfId : Notify workflow input activity sys_id which has the IVR digits. The sys_id changes everytime you checkout and publish the workflow
+ 	*  taskSysClass: The sys_class in the task table to be queried with IVR input
+ 	*  prefixTask: The prefix to be used with the IVR input before quering.
+ 	*/
+	getCallDetails: function(phoneNumber,callId){
+		var result = this.newItem("result");
+		var phone = phoneNumber || this.getParameter('phoneNumber');
+		var callid = callId || this.getParameter('callid');
+		var data = this._getContext(callid,phone);
+        result.setAttribute('data',data);
+	},
+	
+	/*set the call details to notify_call table*/
+	setCallDetails: function(){
+		try{
+			var js = new global.JSON();
+			var result = this.newItem("result");
+			var task = this.getParameter('task');
+			var callid =this.getParameter('callid');
+			var parentSysId;
+			var data = this.getParameter('data');
+		 	//gs.log("callid : "+callid+" task: "+task+" result: "+result+" data: "+data+" , setCallDetails");
+			if(!JSUtil.nil(data) || !JSUtil.nil(task)){
+				var nc = new GlideRecord('notify_call');
+				nc.addQuery('call_id', callid);
+				nc.query();
+				if(nc.next()){
+					parentSysId = nc.getValue('sys_id');
+					if(!JSUtil.nil(data))
+						nc.call_context = data;
+					if(!JSUtil.nil(task))
+						nc.task = task;
+					nc.update();
+					var cc = new GlideRecord('notify_call');
+					cc.addQuery('parent_call', parentSysId);
+					cc.query();
+					if(cc.next()){
+						if(!JSUtil.nil(data))
+							cc.call_context = data;
+						if(!JSUtil.nil(task))
+							cc.task = task;
+						cc.update();
+					}
+				}
+			}
+        	result.setAttribute('updateResult',"success");
+        }
+        catch(e) {
+			result.setAttribute('data',"fail");
+		}
+	},
+	
+	_getContext: function(callid,phoneNumber){
+		var callContext;
+		var taskId;
+		var parentCallId = new SNC.Notify().getParentCallID(callid);
+        var nc = new GlideRecord('notify_call');
+		var js = new global.JSON();
+        nc.addQuery('call_id', parentCallId);
+        nc.query();
+        if(nc.next()){
+        	callContext = js.decode(nc.getValue('call_context'));
+        	taskId = nc.getValue('task');
+		}
+		if(!callContext || !taskId){
+			var superParentCallId = new SNC.Notify().getParentCallID(parentCallId);
+        	var pc = new GlideRecord('notify_call');
+			pc.addQuery('call_id', superParentCallId);
+        	pc.query();
+       	 	if(pc.next()){
+        		callContext = js.decode(pc.getValue('call_context'));
+        		taskId = pc.getValue('task');
+			}
+		}
+		var metaData = {"phoneNumber":phoneNumber,"taskId":taskId};
+		var data = {"metaData":metaData, "data": callContext};
+		return js.encode(data);
+	},
+	
+	
+	logPhoneCall: function(data,callId) {
+		var callid = callId || this.getParameter('callid');
+		var parentCallId;
+		var table = 'sn_openframe_phone_log';
+		var insertedRec = {};
+		var record = new GlideRecord(table);
+		var result = this.newItem("result");
+		data = this.getParameter('data') || data;
+		data = JSON.parse(data);
+		data.call_id = callid;
+        var phone = data.phone_number;
+        var altPhoneFormat;
+		if(phone.indexOf("+1") === 0)
+			altPhoneFormat = "(" + phone.substr(2,3) + "\)" +" "+ phone.substr(5,3) + '-' + phone.substr(8);
+		else
+			altPhoneFormat =  "+1" + (phone).replace(/[^0-9]/g, '');
+		var gr = new GlideRecord('sys_user');
+   	 	var qc = gr.addQuery('phone', phone);
+		qc.addOrCondition('phone',altPhoneFormat);
+    	gr.query();
+        if(gr.next()) {
+        	data.contact = gr.getValue('sys_id');
+		}
+		record.initialize();
+		try {
+			for (var property in data) {
+				if(property == "duration") {
+					var gd = new GlideDuration(parseFloat(data[property]));
+					record.setValue(property, gd.getValue());
+				}
+				else
+					record.setValue(property,data[property]);
+			}
+			insertedRec.sys_id = record.insert();
+			insertedRec.table = record.getTableName();
+		} catch(e) {
+			insertedRec.error = e.message;
+		}
+		result.setAttribute('data', JSON.stringify(insertedRec));
+	},
+	
+	getNotifyNumber: function() {
+		var result = this.newItem("result");
+		result.setAttribute('phoneNumber', '');
+		var gr = new GlideRecord('notify_number');
+		gr.addQuery('active', 'true');
+		gr.addQuery('owner', 'IN', 'Twilio,TwilioDirect');
+		gr.query();
+		if(gr.next())
+			result.setAttribute('phoneNumber', gr.getValue('phone_number'));
+	},
+	
+	holdCall : function() {
+		var result = this.newItem("result");
+		var callId = this.getParameter('callid');
+		try {
+			var callIDs = this._getCallIDs(callId);
+			parentCallID = callIDs.parentCallID;
+			childCallID = callIDs.childCallID;
+			this._holdResumeCall(parentCallID, childCallID, true);
+			result.setAttribute('data',"success");
+		}
+		catch(e) {
+			result.setAttribute('data',"fail");
+		}
+		
+	},
+	
+	resumeCall: function() {
+		var result = this.newItem("result");
+		var callId = this.getParameter('callid');
+		try {
+			var callIDs = this._getCallIDs(callId);
+			parentCallID = callIDs.parentCallID;
+			childCallID = callIDs.childCallID;
+			this._holdResumeCall(parentCallID, childCallID, false);
+			result.setAttribute('data',"success");
+		}
+		catch(e) {
+			result.setAttribute('data',"fail");
+		}
+		
+	},
+	
+	_getCallIDs : function(callId) {
+		var callIDs = {};
+		var parent_call;
+		var gr = new GlideRecord('notify_call');
+		gr.addQuery('call_id', callId);
+		gr.query();
+		if(gr.next()){
+			parent_call = gr.getValue('parent_call');
+			if(parent_call){
+				var cc = gr.parent_call.getRefRecord();
+				callIDs.childCallID = callId;
+				callIDs.parentCallID = cc.getValue('call_id');
+			} else {
+				parent_call = gr.getValue('sys_id');
+				var ccall = new GlideRecord('notify_call');
+				ccall.addQuery('parent_call.sys_id', parent_call);
+				ccall.query();
+				if(ccall.next()){
+					callIDs.parentCallID = callId;
+					callIDs.childCallID = ccall.getValue('call_id');
+				}
+			}
+		}
+		return callIDs;
+	},
+	
+	/**
+ 	* Hold or resume a call between two parties and play wait music.
+ 	*
+ 	* This logic places both legs of a phone call in a conference call.
+ 	* When on hold, the conference will never start so the participants
+ 	* hear wait music. When not on hold (= resumed) the conference will
+ 	* start. When any of the calls is dropped, the conference will end.
+ 	*
+ 	* @param parentCallID
+ 	* @param childCallID
+ 	* @param onHold
+ 	*/
+	_holdResumeCall: function(parentCallID, childCallID, onHold) {
+		var conferenceName = ((onHold) ? 'hold-' : 'resume-') + parentCallID + '-' + childCallID;
+		
+		// create the parent action
+		var parentAction = new SNC.NotifyAction();
+		var parentConference = parentAction.addConference();
+		parentConference.setName(conferenceName);
+		parentConference.setStartOnEnter(!onHold);
+		parentConference.setEndOnExit(true);
+		parentConference.setMuted(onHold);
+		
+		// create the child action
+		var childAction = new SNC.NotifyAction();
+		var childConference = childAction.addConference();
+		childConference.setName(conferenceName);
+		childConference.setStartOnEnter(!onHold);
+		childConference.setEndOnExit(true);
+		childConference.setMuted(onHold);
+		
+		// modify the calls
+		var notify = new SNC.Notify();
+		notify.modifyCall(childCallID, childAction);    // child call should go first...
+		notify.modifyCall(parentCallID, parentAction);  // ...and then the parent call
+	},
+	
+	notifyDequeueCall:function(callId) {
+		var call = new GlideRecord('notify_call');
+		call.get(callId);
+		new SNC.Notify().dequeueCall(call);
+	},
+	
+	
+	ctiOpenFrameInteraction: function(context) {
+		if(typeof context ==='object'){
+			context = context;
+		}else{
+			context = JSON.parse(this.getParameter('context')) || JSON.parse(context);
+		}
+        var result = this.openframeInteractionUtility.createOrUpdateInteractionForOpenframe(context);
+        var response = this.newItem("result");
+        response.setAttribute("data", JSON.stringify(result));
+        return result;
+	},
+	
+	ctiOpenFrameInteractionTransfer: function(context) {
+		if(typeof context ==='object'){
+			context = context;
+		}else{
+			context = JSON.parse(this.getParameter('context')) || JSON.parse(context);
+		}
+        var data = this.openframeInteractionUtility.interactionTransferForOpenframe(context);
+        var result = this.newItem("result");
+        result.setAttribute("data", js.encode(data));
+        return data;
+	},
+	
+	updateInteractionContextJson: function(contextSysId, contextJson) {
+		return this.openframeInteractionUtility.updateInteractionContextJson(contextSysId, contextJson);
+	},
+	
+	updateInteractionContext: function(interaction, key, value) {
+		return this.openframeInteractionUtility.updateInteractionContext(interaction, key, value);
+	},
+	
+	insertInteractionRelatedRecord : function(interaction, document_id, document_table){
+		this.openframeInteractionUtility.insertInteractionRelatedRecord(interaction, document_id, document_table);
+	},
+	
+	createInteractionWithPropertyCheck : function(context){
+		if(typeof context ==='object'){
+			context = context;
+		}else{
+			context = JSON.parse(this.getParameter('context')) || JSON.parse(context);
+		}
+        var result = this.openframeInteractionUtility.createInteractionWithPropertyCheck(context);
+		var response = this.newItem("result");
+		response.setAttribute("data", JSON.stringify(result));
+        return result;
+	},
+
+    type: 'CTIAjaxUtility'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-03-31 22:17:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4912c38beb0331003e97afcef106fe16&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;367&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CTIAjaxUtility&lt;/sys_name&gt;
+        &lt;sys_package display_value="CTI Softphone" source="com.snc.cti"&gt;4967b9452f140110d8a4d5f62799b6b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4912c38beb0331003e97afcef106fe16&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-12-01 20:56:22&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;15668&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:16</sys_created_on>
+        <sys_id>708c0dba2f331110d8a4d5f62799b6fa</sys_id>
+        <sys_name>CTIAjaxUtility</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_708c0dba2f331110d8a4d5f62799b6fa</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

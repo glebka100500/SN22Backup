@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>387779f2c3b1011074658cab3c40dd91</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KBLFTranslationProcessorSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Script that is used while processing or translating an artifact&lt;/description&gt;
+        &lt;name&gt;KBLFTranslationProcessorSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KBLFTranslationProcessorSNC = Class.create();
+KBLFTranslationProcessorSNC.prototype = Object.extendsObject(global.LFArtifactProcessorSNC, {
+    category: 'localization_framework', // DO NOT REMOVE THIS LINE!
+
+    /**********
+     * Extracts the translatable content for the artifact record
+     * 
+     * @param params.tableName The table name of the artifact record
+     * @param params.sysId The sys_id of the artifact record 
+     * @param params.language Language into which the artifact has to be translated (Target language)
+     * @return LFDocumentContent object
+     **********/
+    getTranslatableContent: function(params) {
+        var tableName = params.tableName;
+        var sysId = params.sysId;
+        var language = params.language;
+        var gr = new GlideRecord(tableName);
+        gr.get(sysId);
+        if (gr.isValidRecord()) {
+            var translationTask = new KBTranslationTask();
+            var sourceArticleObj = translationTask.prepareArticleObjectForTranslation(gr);
+            var lfDocumentContentBuilder = new global.LFCatalogDocumentContentBuilder("v1", language, sysId, tableName);
+            var detailsObj = {
+                groupName: gr.getDisplayValue()
+            };
+            detailsObj.type = 'STRING';
+            createAndProcessElement(sourceArticleObj.stringFieldArray, detailsObj);
+            detailsObj.type = 'HTML';
+            createAndProcessElement(sourceArticleObj.htmlFieldArray, detailsObj);
+        }
+
+        function createAndProcessElement(arr, detailsObj) {
+            for (var i = 0; i &lt; arr.length; i++) {
+                var elementObj = arr[i];
+                var fieldElement = LFDocumentContentHelper.createElement(detailsObj.groupName, elementObj.label);
+                var field = LFDocumentContentHelper.createField(elementObj.value);
+                switch (detailsObj.type) {
+                    case 'STRING':
+                        field.setTextType(LFDocumentContentHelper.PLAIN_TEXT_TYPE);
+                        break;
+                    case 'HTML':
+                        field.setTextType(LFDocumentContentHelper.HTML_TEXT_TYPE);
+                }
+                var additionalInfo = {
+                    label: elementObj.label,
+                    name: elementObj.name,
+                    canRead: elementObj.canRead
+                };
+                field.setAdditionalParameters(additionalInfo);
+                fieldElement.addField(field);
+                lfDocumentContentBuilder.processElement(fieldElement);
+            }
+        }
+
+        return lfDocumentContentBuilder.build();
+    },
+
+    /**********
+     * Uncomment the saveTranslatedContent function to override the default behavior of saving translations
+     * 
+     * @param documentContent LFDocumentContent object
+     * @return
+     **********/
+
+    saveTranslatedContent: function(documentContentObject) {
+        var targetLanguage = documentContentObject.getLanguage();
+        var sysId = documentContentObject.getSysId();
+        var tableName = documentContentObject.getTableName();
+        var version = documentContentObject.getVersion();
+        var source_article = new GlideRecord(tableName);
+        source_article.get(sysId);
+        var translationObj = {};
+        translationObj.stringFieldArray = [];
+        translationObj.htmlFieldArray = [];
+        translationObj.language = targetLanguage;
+        var elements = documentContentObject.getElements();
+        for (var elementIdx = 0; elementIdx &lt; elements.length; elementIdx++) {
+            var element = elements[elementIdx];
+            var fields = element.getFields();
+            for (var fieldIdx = 0; fieldIdx &lt; fields.length; fieldIdx++) {
+                var fieldObj = {};
+                var field = fields[fieldIdx];
+                var fieldType = field.getTextType();
+                var additionalParameters = field.getAdditionalParameters() || {};
+                var translatedValue = field.getTranslatedValue();
+                fieldObj.name = additionalParameters.name;
+                fieldObj.label = additionalParameters.label;
+                fieldObj.canRead = additionalParameters.canRead;
+                fieldObj.value = translatedValue;
+                if (fieldType == 'plain' &amp;&amp; fieldObj.value &amp;&amp; fieldObj.value !== '')
+                    translationObj.stringFieldArray.push(fieldObj);
+                else if (fieldType == 'html' &amp;&amp; fieldObj.value &amp;&amp; fieldObj.value !== '')
+                    translationObj.htmlFieldArray.push(fieldObj);
+            }
+        }
+        if (new KBCommon().isBlocksPluginActive() &amp;&amp; source_article.sys_class_name != 'kb_knowledge_block' &amp;&amp; new KBBlock().hasBlocks(source_article)) {
+            //Validate whether are there any blocks for this article.
+            replaceBlockContent(source_article, translationObj, targetLanguage);
+        }
+        var responseObj = new KBVersioning().createOrCheckout(source_article, targetLanguage, translationObj, false, true);
+        if (responseObj.status != 'SUCCESS') {
+            throw new Error(responseObj.errorMessage);
+        }
+
+        function replaceBlockContent(source_article, translationObj, targetLanguage) {
+			var kbBlock = new KBBlock();
+            var sourceBlockCounter = kbBlock.getBlocksAndItsCount(source_article);
+            //Get the translation
+            var translatedBlockContent = kbBlock.getTranslatedBlocks(Object.keys(sourceBlockCounter).join(","), targetLanguage);
+            for (var fieldIndex = 0; fieldIndex &lt; translationObj.htmlFieldArray.length; fieldIndex++) {
+                var fieldValue = translationObj.htmlFieldArray[fieldIndex].value;
+                //if fieldValue is not null
+                if (!gs.nil(fieldValue)) {
+                    var currentBlockIndex = 0;
+                    while (Object.keys(sourceBlockCounter).length &gt; 0 &amp;&amp; currentBlockIndex &lt; Object.keys(sourceBlockCounter).length) {
+                        var kbBlockNumber = Object.keys(sourceBlockCounter)[currentBlockIndex] + '';
+                        var searchBeginString = 'kbblock_' + kbBlockNumber;
+                        var searchEndString = '&lt;/div&gt;';
+                        var startPosition = fieldValue.indexOf(searchBeginString);
+                        var endPosition = -1;
+                        //Search for the next KB Number
+                        if (startPosition == -1) {
+                            currentBlockIndex++;
+                            continue;
+                        } else {
+                            endPosition = fieldValue.indexOf(searchEndString, startPosition);
+                            //To correct the starting postion of the string &lt;div id="kbblock_
+                            startPosition = startPosition - 9;
+                            //To accomdate the second closing &lt;/div&gt; tag
+                            endPosition = endPosition + 13;
+                            var re = new RegExp(searchBeginString, 'g');
+                            // matching the pattern
+                            var totalOccurrences = (fieldValue.match(re) || []).length;
+                            //Replace all such content
+                            var actualContent = fieldValue.substring(startPosition, endPosition);
+                            var translatedContent = translatedBlockContent[kbBlockNumber].blockdetails;
+                            fieldValue = fieldValue.replaceAll(actualContent, translatedContent);
+                            //Update the count
+                            sourceBlockCounter[kbBlockNumber] = sourceBlockCounter[kbBlockNumber] - totalOccurrences;
+                            if (sourceBlockCounter[kbBlockNumber] == 0) {
+                                delete sourceBlockCounter[kbBlockNumber];
+                            } else {
+                                currentBlockIndex++;
+                            }
+                        }
+                    }
+                    translationObj.htmlFieldArray[fieldIndex].value = fieldValue;
+                }
+            }
+        }
+    },
+
+    type: 'KBLFTranslationProcessorSNC'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-02-24 17:19:15&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;387779f2c3b1011074658cab3c40dd91&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KBLFTranslationProcessorSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Advanced" source="com.snc.knowledge_advanced"&gt;e36e64192f201110d8a4d5f62799b6e9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_387779f2c3b1011074658cab3c40dd91&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-23 12:16:27&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8120&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:54</sys_created_on>
+        <sys_id>af6c45ba2f331110d8a4d5f62799b6de</sys_id>
+        <sys_name>KBLFTranslationProcessorSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_af6c45ba2f331110d8a4d5f62799b6de</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

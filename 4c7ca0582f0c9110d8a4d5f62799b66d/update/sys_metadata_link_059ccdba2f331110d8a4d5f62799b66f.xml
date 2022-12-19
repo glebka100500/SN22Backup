@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5430bdf89313130079b5925cf67ffb04</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AttachmentActionErrorHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Handle errors in Attachment actions&lt;/description&gt;
+        &lt;name&gt;AttachmentActionErrorHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AttachmentActionErrorHandler = Class.create();
+AttachmentActionErrorHandler.prototype = {
+	initialize: function() {},
+
+	deleteErrorHandler: function(inputs) {
+		if ((!inputs.record || this.isEmpty(inputs.record)) &amp;&amp; !inputs.table)
+			throw "Cannot delete attachment from an empty record";
+
+		if (!inputs.fileName &amp;&amp; !inputs.deleteAll)
+			throw "Attachment File Name cannot be empty if Delete All is not set";
+	},
+
+	isEmpty: function(obj) {
+		for (var key in obj) {
+			if (obj.hasOwnProperty(key))
+				return false;
+		}
+		return true;
+	},
+
+	copyErrorHandler: function(inputs) {
+		if (!inputs.attachmentRec || this.isEmpty(inputs.attachmentRec))
+			throw "Empty Attachment Record.";
+		if ((!inputs.targetRec || this.isEmpty(inputs.targetRec)) &amp;&amp; !inputs.table)
+			throw "Empty Target Record.";
+		if (inputs.table == 'sys_attachment' || inputs.targetRec.getTableName() ==
+			"sys_attachment")
+			throw "Target Record cannot be of Attachment type.";
+		if (inputs.attachmentRec.getTableName() !== "sys_attachment")
+			throw "The Record type " + inputs.attachmentRec.getTableName() +
+				" does not match with Attachment table type.";
+	},
+
+
+	moveErrorHandler: function(inputs) {
+		this.copyErrorHandler(inputs);
+	},
+
+	type: 'AttachmentActionErrorHandler'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-07-12 04:03:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5430bdf89313130079b5925cf67ffb04&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AttachmentActionErrorHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Flow Designer System Level Actions" source="com.glide.hub.action_type.system"&gt;6314418b6da620100acb70b353433078&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5430bdf89313130079b5925cf67ffb04&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-12-03 07:50:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1255&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:33</sys_created_on>
+        <sys_id>059ccdba2f331110d8a4d5f62799b66f</sys_id>
+        <sys_name>AttachmentActionErrorHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_059ccdba2f331110d8a4d5f62799b66f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

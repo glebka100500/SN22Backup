@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4c1036f2f31222007b25ae4716612bc1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DiffAuditAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Ajax callable code that generate difference between old and new value in audit record&lt;/description&gt;
+        &lt;name&gt;DiffAuditAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/*
+ * This Ajax script was deprecated and it's not in use.
+ * The record kept for backward compatibility reasons on existing customer instances.
+ * If you want to use this Ajax, consider using 
+ * REST API /api/now/tracked_config_files/diff_audit instead.
+ */
+var DiffAuditAjax = Class.create();
+DiffAuditAjax.prototype = Object.extendsObject(DiffAjax, {
+	
+    getTemplate: function(html, left, right){
+        var jr = new GlideJellyRunner();
+        jr.setEscaping(false);
+        jr.setVariable("jvar_table", html);
+        jr.setVariable("jvar_left", left);
+        jr.setVariable("jvar_right", right);
+        return jr.runFromTemplate("diff_html_viewer.xml");
+    },
+
+
+	ajaxFunction_diffAudit: function () {
+		this.compressed_header = "COMPRESSEDDATA:";
+		var diffHelper = new DiffHelper();
+		var differ = new Differ();
+		
+		var sysId = this.getParameter("sysparm_sys_id");
+		var tableName = this.getParameter("sysparm_table");
+		var oldValueCaption = this.getParameter("sysparm_old_value_caption");
+		var newValueCaption = this.getParameter("sysparm_new_value_caption");
+		var oldValueField   = this.getParameter("sysparm_old_value_field");
+		var newValueField   = this.getParameter("sysparm_new_value_field");
+
+		var gr = new GlideRecord(tableName + '');
+		if (!gr.isValid()) {
+			gs.logWarning("Invalid table name: " + tableName, "DiffAuditAjax.ajaxFunction_diffAudit");
+			return;
+		}
+		if (!gr.isValidField(oldValueField + '')) {
+			gs.logWarning("The table " + tableName + " does not contain field " + oldValueField, "DiffAuditAjax.ajaxFunction_diffAudit");
+			return;			
+		}
+
+		if (!gr.isValidField(newValueField + '')) {
+			gs.logWarning("The table " + tableName + " does not contain field " + newValueField, "DiffAuditAjax.ajaxFunction_diffAudit");
+			return;			
+		}
+		
+		if (gr.get(sysId + '')) {
+			if (!gr.canRead()) {
+				gs.logWarning("Security restricted: cannot read", "DiffAuditAjax.ajaxFunction_diffAudit");
+				return;
+			}
+			var oldValue = this._getRealValue(gr.getValue(oldValueField + ''));
+			var newValue = this._getRealValue(gr.getValue(newValueField + ''));
+			if (JSUtil.nil(oldValue))
+				oldValue = ' ';
+			if (JSUtil.nil(newValue))
+				newValue = ' ';
+
+			var d = differ.diff(oldValue, newValue, '', true);
+			var html = this.getTemplate(d, oldValueCaption, newValueCaption);
+			return html;
+			
+		}else {
+			gs.logWarning("Record not found", "DiffAuditAjax.ajaxFunction_diffAudit");
+			return;
+			
+		}
+			
+	},
+	
+	_getRealValue: function(value) {
+		if (this._isCompressed(value))
+			return this._decompress(value);
+	
+		return value;
+	},
+	
+	_decompress: function(value) {
+		var encoded = value.substring(this.compressed_header.length, value.length);
+		var cs = GlideStringUtil.base64DecodeAsBytes(encoded);
+		return String(GlideCompressionUtil.expandToString(cs));
+	},
+
+	_isCompressed: function(value) {
+		if (GlideStringUtil.nil(value))
+			return false;
+
+		// sanity check one: does it start with compressed header
+		if (!value.startsWith(this.compressed_header))
+			return false;
+
+		// sanity check two: do the first 64 characters look like base64?
+		if (value.length &lt; this.compressed_header.length + 64)
+			return true; // trust it in this case
+
+		var nibble = value.substring(this.compressed_header.length, 64);
+		return GlideStringUtil.isBase64(nibble);
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-10 08:25:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4c1036f2f31222007b25ae4716612bc1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DiffAuditAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Service" source="com.snc.cmdb.it_service"&gt;72b4cdcf6da620100acb70b353433039&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4c1036f2f31222007b25ae4716612bc1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-01-01 15:29:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3302&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:20</sys_created_on>
+        <sys_id>4a8c4dba2f331110d8a4d5f62799b67f</sys_id>
+        <sys_name>DiffAuditAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4a8c4dba2f331110d8a4d5f62799b67f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>89a3878a0b000010ef49eaf1a3673a59</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CLEReplatformingWithKMF&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CLEReplatformingWithKMF&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CLEReplatformingWithKMF = Class.create();
+CLEReplatformingWithKMF.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	getCLEReplatformingWithKMFProperty: function() {
+		return gs.getProperty('glide_encryption.cle_replatforming_with_kmf');
+	},
+
+    type: 'CLEReplatformingWithKMF'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;roopa.gowda&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-24 06:21:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;89a3878a0b000010ef49eaf1a3673a59&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CLEReplatformingWithKMF&lt;/sys_name&gt;
+        &lt;sys_package display_value="Column Level Encryption" source="com.glide.encryption"&gt;b55dcb082f745110d8a4d5f62799b699&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_89a3878a0b000010ef49eaf1a3673a59&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;roopa.gowda&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-27 22:29:08&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;296&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:17</sys_created_on>
+        <sys_id>26fc457e2f331110d8a4d5f62799b6a7</sys_id>
+        <sys_name>CLEReplatformingWithKMF</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_26fc457e2f331110d8a4d5f62799b6a7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

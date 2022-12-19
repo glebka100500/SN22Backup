@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8403647bb712230026778d78ee11a93f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeAccessSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Figures out access to manage Knowledge Bases  Customers should not change this class directly This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KnowledgeAccessSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KnowledgeAccessSNC = Class.create();
+KnowledgeAccessSNC.prototype = {
+
+    initialize: function() {
+		this.knowledgeHelper = new SNC.KnowledgeHelper(); 
+    },
+	
+	/**
+	 * Determine if a user has the right to access a knowledge base
+	 *
+	 * @param GlideRecord kb_knowledge_base or kb_knowledge
+	 *
+	 * @return boolean
+	 */
+	managerRights: function(kb) {
+		if(!kb || gs.nil(kb))
+			return false;
+		
+		var owner, managers;
+		if(kb.getTableName() == "kb_knowledge" || kb.instanceOf("kb_knowledge")) {
+			owner = kb.kb_knowledge_base.owner;
+			managers = kb.kb_knowledge_base.kb_managers;
+		} else {
+			owner = kb.owner;
+			managers = kb.kb_managers;
+		}
+
+		// user has knowledge_admin role
+		if(this.knowledgeHelper.isAdminUser(kb))
+			return true;
+		
+		// user has manager role and is knowledge base owner
+		if(gs.hasRole("knowledge_manager") &amp;&amp; owner == gs.getUserID()) 
+			return true;
+		
+		// user is listed in knowledge base manager list
+		if(JSUtil.notNil(managers) &amp;&amp; managers.indexOf(gs.getUserID()) != -1)
+			return true;
+
+		return false;
+	},
+
+    /**
+	 * Determine if a user has the right to access kb_category record
+	 *
+	 * @param String kbCategoryId
+	 *
+	 * @return boolean
+	 */
+	managerRightToKnowledgeCategory: function(kbCategoryId) {
+		var rootId = this.knowledgeHelper.getRootKBId(kbCategoryId);
+
+		var kbKnowledgeBase = new GlideRecord("kb_knowledge_base");
+		kbKnowledgeBase.get(rootId);
+		
+        return this.managerRights(kbKnowledgeBase);
+	},
+	
+	/**
+	 * Determine if a user is a contributor of a knowledge base
+	 *
+	 * @param GlideRecord kb_knowledge_base or kb_knowledge
+	 *
+	 * @return boolean
+	 */
+	contributorRight: function(kb) {
+		if (kb.getTableName() == "kb_knowledge" || kb.getTableName() == "kb_knowledge_base" || kb.instanceOf("kb_knowledge")) {
+		    return this.knowledgeHelper.canContribute(kb);
+		}
+		
+		return false;
+	},
+
+	/**
+	* Determines if the user can read the article or knowledge base
+	*
+	* @param GlideRecord kb_knowledge or kb_knowledge_base
+	*
+	* @return boolean
+	*/
+	canReadArticle: function(kb) {
+		if (kb.getTableName() == "kb_knowledge" || kb.getTableName() == "kb_knowledge_base" || kb.instanceOf("kb_knowledge")) {
+			return this.knowledgeHelper.canRead(kb);
+        }
+
+		return false;
+	},
+	
+	/**
+	* Determines if a given knowledge category has children(categories or articles) or is empty
+	*
+	* @param String sys_id of a kb_category record
+	*
+	* @return boolean
+	*/
+	isEmptyCategory: function(kbCategoryId) {
+		var kbKnowledge = new GlideRecord("kb_knowledge");
+		var category = new GlideRecord("kb_category");
+		
+		// Check for any child categories or related knowledge articles
+		if (kbKnowledge.get("kb_category", kbCategoryId) || category.get("parent_id", kbCategoryId))
+			return false;
+		
+		return true;
+	},
+	
+	
+    type: 'KnowledgeAccessSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-12-17 09:07:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8403647bb712230026778d78ee11a93f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeAccessSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8403647bb712230026778d78ee11a93f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-10-25 12:53:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2808&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:03</sys_created_on>
+        <sys_id>0bec017e2f331110d8a4d5f62799b678</sys_id>
+        <sys_name>KnowledgeAccessSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0bec017e2f331110d8a4d5f62799b678</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

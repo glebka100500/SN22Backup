@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>20137fa0c33220104ef3c31b7940ddc0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CMDBDynamicIREMLInterface&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CMDBDynamicIREMLInterface&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CMDBDynamicIREMLInterface = Class.create();
+CMDBDynamicIREMLInterface.prototype = {
+
+    _CMDB_DYNAMIC_IRE_MATCH: "cmdb_dynamic_ire_match",
+    _LOG_PROPERTY: "glide.identification_engine.ire_dynamic.log.level",
+    _ML_SOLUTION: "ml_solution",
+    _SOLUTION_NAME: "solution_name",
+    _ML_MODEL_ARTIFACT: "ml_model_artifact",
+    _TABLE_REF_SOLUTION: "solution",
+    _MODEL_ID: "model_id",
+    _DOT: ".",
+    _VERSION: "version",
+    _ACTIVE: "active",
+    _SYS_CREATED_ON: 'sys_created_on',
+    _XML_TAG_SOLUTION_NAME: "solutionName",
+    _XML_TAG_ALIAS_NAMES: "actualColumnNameToAliasColumnName",
+    _XML_TAG_CLASSIFIER: "m__Classifier",
+    _XML_TAG_NOMINAL_TO_BINARY: "m__NominalToBinary",
+    _XML_TAG_OUTPUT_FORMAT: "m__OutputFormat",
+    _XML_TAG_ATTRIBTUES: "m__Attributes",
+    _XML_TAG_TYPE: "m__Type",
+    _XML_TAG_NAME: "m__Name",
+    _XML_TAG_INDEX: "m__Index",
+    _XML_TAG_MODEL_WIGHTS: "w",
+    _XML_TAG_ALIAS_CLASS_VALUE_TO_ACTUAL_VALUE: "aliasClassValueToActualClassValue",
+    _XML_TAG_LABEL: "label",
+    _XML_TAG_ATTRIBUTE_INFO: "m__AttributeInfo",
+    _XML_TAG_HASH_TABLE: "m__Hashtable",
+    _XML_TAG_STRING: "string",
+    _XML_TAG_INT: "int",
+    _XML_TAG_BIAS_CLASS_AND_PROBABILITY: "biasClassAndProbability",
+    _BIAS: "bias",
+    _NO_MATCH: "0",
+    _MATCH: "1",
+
+
+
+    initialize: function(logProperty) {
+
+        if (JSUtil.nil(logProperty))
+            logProperty = this._LOG_PROPERTY;
+
+        this.log = new GSLog(logProperty, this.type);
+    },
+
+    /*
+     * Return the model metadate of the trained model
+     * @param mlSolutionName the soution for which the weights are required
+     * @param mlSolutionVersion the solution version for which the weights are required
+     * @return weights {status: "SUCCESS", weights: "{["feature_name":"weight"]}"}
+     */
+
+    getModelMetaData: function(mlSolutionName, mlSolutionVersion) {
+
+        var result = {};
+        result.status = "SUCCESS";
+        try {
+
+            var gr = new GlideRecord(this._ML_SOLUTION);
+            gr.addQuery(this._SOLUTION_NAME, mlSolutionName);
+            gr.query();
+            if (!gr.next()) {
+                result.status = "FAILURE";
+                result.statusCode = "solution_unavailable";
+                return JSON.stringify(result);
+            }
+
+            this.log.logInfo(gs.getMessage("CMDBDynamicIREMLInterface::getModelMetaData The solution: {0} is availabe, successfully found.", [mlSolutionName]));
+
+            var solutionSysId = gr.getUniqueValue();
+
+            var modelFeatureNamesXML = this._getArtifact(solutionSysId, '0.gz', mlSolutionVersion);
+
+            if (gs.nil(modelFeatureNamesXML)) {
+                this.log.logErr(gs.getMessage("There was an issue while loading the model file from the ML platform tables for solution {0} and soutionVersion {1}", [mlSolutionName, mlSolutionVersion]));
+                result.status = "FAILURE";
+                result.status_code = "model_features_xml_was_null";
+                return JSON.stringify(result);
+            }
+            this.log.logInfo(gs.getMessage("CMDBDynamicIREMLInterface::getModelMetaData The modelFeatures XML was successfully loaded: {0}", [modelFeatureNamesXML]));
+
+            var weightsXML = this._getArtifact(solutionSysId, mlSolutionName + '.gz', mlSolutionVersion);
+
+            if (gs.nil(weightsXML)) {
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights file from the ML platform tables. {0} and soutionVersion {1}", [mlSolutionName, mlSolutionVersion]));
+
+                result.status = "FAILURE";
+                result.statusCode = "model_features_weights_xml_was_null";
+                return JSON.stringify(result);
+            }
+
+            this.log.logInfo(gs.getMessage("CMDBDynamicIREMLInterface::getModelMetaData The modelFeatureWeights XML was successfully loaded: {0}", [weightsXML]));
+
+            var weightsResponse = this._extractWeightsFromModelFiles(mlSolutionName, modelFeatureNamesXML, weightsXML);
+
+            if (gs.nil(weightsResponse)) {
+                result.status = "FAILURE";
+                result.statusCode = "model_features_weights_extraction_failed";
+                this.log.logErr(gs.getMessage("There was an issue while extracting the weights from the model file from the ML platform tables for solution {0} and soutionVersion {1}", [mlSolutionName, mlSolutionVersion]));
+                return JSON.stringify(result);
+            }
+
+
+            //check if the  status is Failure and update the main result response object
+            if (weightsResponse.status == 'FAILURE') {
+                result.status = "FAILURE";
+                result.statusCode = weightsResponse.statusCode;
+                this.log.logErr(gs.getMessage("There was an issue while extracting the weights from the model file from the ML platform tables for solution {0} and soutionVersion {1}", [mlSolutionName, mlSolutionVersion]));
+                return JSON.stringify(result);
+            }
+
+            if (weightsResponse.status == 'SUCCESS') {
+                result.weights = weightsResponse;
+            }
+
+        } catch (ex) {
+            this.log.logErr(gs.getMessage("CMDBDynamicIREMLInterface::getModelMetaData msg: {0}", [ex]));
+        }
+        return JSON.stringify(result);
+    },
+
+    /*
+    	@param mlSolutionName : The solution Name of the model
+    	@param modelFeatureNamesXML : featureNames XML
+    	@param weightsXML: the weights XML
+     */
+
+    _extractWeightsFromModelFiles: function(mlSolutionName, modelFeatureNamesXML, weightsXML) {
+
+        try {
+            var weights = {};
+
+            var featuresDoc = GlideXMLUtil.parse(modelFeatureNamesXML);
+
+            var solutionNameTag = GlideXMLUtil.getElementByTagName(featuresDoc, this._XML_TAG_SOLUTION_NAME);
+
+            if (gs.nil(solutionNameTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'solution_name_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var solutionName = GlideXMLUtil.getText(solutionNameTag);
+
+
+            if (solutionName != mlSolutionName) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'solution_name_passed_does_not_match_with_model_meta_data';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var aliasTag = GlideXMLUtil.getElementByTagName(featuresDoc, this._XML_TAG_ALIAS_NAMES);
+
+            if (gs.nil(aliasTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'alias_name_tag_not_present_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var aliasTagChildren = aliasTag.getChildNodes();
+
+            if (gs.nil(aliasTagChildren) || aliasTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'alias_name_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var columnMap = {};
+            var aliasTagChildNode = null;
+            var stringNodes = null;
+
+            for (var i = 0; i &lt; aliasTagChildren.getLength(); i++) {
+                aliasTagChildNode = aliasTagChildren.item(i);
+                if (gs.nil(aliasTagChildNode)) {
+                    weights.status = 'FAILURE';
+                    weights.statusCode = 'entry_tag_does_not_exists_for_item ' + (i + 1) + '_check_with_ml_platform';
+                    this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                    return weights;
+                }
+                stringNodes = aliasTagChildNode.getChildNodes();
+                if (gs.nil(stringNodes) || stringNodes.getLength() == 0) {
+                    weights.status = 'FAILURE';
+                    weights.statusCode = 'entry_tag_does_not_have_children_for_item' + (i + 1) + '_check_with_ml_platform';
+                    this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                    return weights;
+                }
+                if (gs.nil(GlideXMLUtil.getText(stringNodes.item(0))) || gs.nil(GlideXMLUtil.getText(stringNodes.item(1))) || GlideXMLUtil.getText(stringNodes.item(0)).trim() == '' || GlideXMLUtil.getText(stringNodes.item(1)).trim() == '') {
+                    weights.status = 'FAILURE';
+                    weights.statusCode = 'string_tag_does_not_have_value_for_item_check_with_ml_platform';
+                    this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                    return weights;
+
+                }
+
+                columnMap[GlideXMLUtil.getText(stringNodes.item(1))] = GlideXMLUtil.getText(stringNodes.item(0));
+            }
+
+            var weightsDoc = GlideXMLUtil.parse(weightsXML);
+
+            var firstClassifierTag = GlideXMLUtil.getElementByTagName(weightsDoc, this._XML_TAG_CLASSIFIER);
+
+            if (gs.nil(firstClassifierTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'first_classifier_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var firstClassifierTagChildren = firstClassifierTag.getChildNodes();
+
+            if (gs.nil(firstClassifierTagChildren) || firstClassifierTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'first_m__Classifier_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var secondClassifierTag = GlideXMLUtil.getElementByTagName(firstClassifierTag, this._XML_TAG_CLASSIFIER);
+
+            if (gs.nil(secondClassifierTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'second_classifier_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var secondClassifierTagChildren = secondClassifierTag.getChildNodes();
+
+            if (gs.nil(secondClassifierTagChildren) || secondClassifierTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'second_m__Classifier_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var thirdClassifierTag = GlideXMLUtil.getElementByTagName(secondClassifierTag, this._XML_TAG_CLASSIFIER);
+
+            if (gs.nil(thirdClassifierTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'third_classifier_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var thirdClassifierTagChildren = thirdClassifierTag.getChildNodes();
+
+            if (gs.nil(thirdClassifierTagChildren) || thirdClassifierTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'third_m__Classifier_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            //TODO assertion
+            //get the label index and get the corresponding values for each index.
+            var labelTag = GlideXMLUtil.getElementByTagName(thirdClassifierTag, this._XML_TAG_LABEL);
+            if (gs.nil(labelTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'label_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var intNodesOflabelTag = labelTag.getChildNodes();
+
+            //TODO assertion
+            if (gs.nil(intNodesOflabelTag) || intNodesOflabelTag.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'label_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var labelTagIntNode = null;
+            for (var i = 0; i &lt; intNodesOflabelTag.getLength(); i++) {
+                labelTagIntNode = intNodesOflabelTag.item(i);
+                columnMap['label_index_' + i] = GlideXMLUtil.getText(labelTagIntNode);
+            }
+
+
+            var nominalTOBinaryTag = GlideXMLUtil.getElementByTagName(thirdClassifierTag, this._XML_TAG_NOMINAL_TO_BINARY);
+
+            if (gs.nil(nominalTOBinaryTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__NominalToBinary_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var nominalTOBinaryTagChildren = nominalTOBinaryTag.getChildNodes();
+
+            if (gs.nil(nominalTOBinaryTagChildren) || nominalTOBinaryTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__NominalToBinary_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var outputFormatTag = GlideXMLUtil.getElementByTagName(nominalTOBinaryTag, this._XML_TAG_OUTPUT_FORMAT);
+
+            if (gs.nil(outputFormatTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__OutputFormat_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var outputFormatTagChildren = outputFormatTag.getChildNodes();
+
+            if (gs.nil(outputFormatTagChildren) || outputFormatTagChildren.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__OutputFormat_tag_does_not_have_children_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var attributesTag = GlideXMLUtil.getElementByTagName(outputFormatTag, this._XML_TAG_ATTRIBTUES);
+
+            if (gs.nil(attributesTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__Attributes_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var wekaAttributeList = attributesTag.getChildNodes();
+
+            if (gs.nil(wekaAttributeList) || wekaAttributeList.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'm__Attributes_tag_does_not_have_children_weka.core.Attribute_missing_check_with_ml_platform';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var indexToFeatureNameMap = {};
+            for (var i = 0; i &lt; wekaAttributeList.getLength(); i++) {
+                var wekaAttribute = wekaAttributeList.item(i);
+                if ('0' == (GlideXMLUtil.getElementValueByTagName(wekaAttribute, this._XML_TAG_TYPE))) {
+                    indexToFeatureNameMap[GlideXMLUtil.getElementValueByTagName(wekaAttribute, this._XML_TAG_INDEX)] =
+                        columnMap[GlideXMLUtil.getElementValueByTagName(wekaAttribute, this._XML_TAG_NAME)];
+                } else {
+                    //tag type is 1. Get the class 0 and class 1 mappings from here
+                    //TODO assertion
+                    var attributeInfo = GlideXMLUtil.getElementByTagName(wekaAttribute, this._XML_TAG_ATTRIBUTE_INFO);
+                    if (gs.nil(attributeInfo)) {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'm__AttributeInfo_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+
+                    //TODO assertion
+                    var attributeInfoChildren = attributeInfo.getChildNodes();
+
+                    if (gs.nil(attributeInfoChildren) || attributeInfoChildren.getLength() == 0) {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'm__AttributeInfo_tag_does_not_have_children_check_with_ml_platform';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                    //TODO assertion
+                    var hashtableTag = GlideXMLUtil.getElementByTagName(attributeInfo, this._XML_TAG_HASH_TABLE);
+                    if (gs.nil(hashtableTag)) {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'm__Hashtable_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                    //TODO assertion
+                    var hashtableEntries = hashtableTag.getChildNodes();
+                    if (gs.nil(hashtableEntries) || hashtableEntries.getLength() == 0) {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'm__Hashtable_tag_does_not_have_children_check_with_ml_platform';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+
+                    //TODO assertion
+                    if (hashtableEntries.getLength() != 2) {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'm__Hashtable_tag_does_not_have_2_children_check_with_ml_platform';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+
+                    for (var j = 0; j &lt; hashtableEntries.getLength(); j++) {
+                        //this should have the class0 and label and class1 and label appropriately
+                        var hashTableEntry = hashtableEntries.item(j);
+                        columnMap[GlideXMLUtil.getElementValueByTagName(hashTableEntry, this._XML_TAG_STRING)] =
+                            columnMap["label_index_" + GlideXMLUtil.getElementValueByTagName(hashTableEntry, this._XML_TAG_INT)];
+                    }
+                    indexToFeatureNameMap[GlideXMLUtil.getElementValueByTagName(wekaAttribute, this._XML_TAG_INDEX)] = 'outputLabel';
+                }
+            }
+
+            var model = GlideXMLUtil.getElementByTagName(weightsDoc, this._XML_TAG_MODEL_WIGHTS);
+
+            if (gs.nil(model)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'w_tag_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var weightsList = model.getChildNodes();
+            if (gs.nil(weightsList) || weightsList.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'w_tag_does_not_have_children_check_with_ml_platform_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            var featureCount = 0;
+            for (var i = 0; i &lt; weightsList.getLength(); i++) {
+                var feature = indexToFeatureNameMap[i];
+                if (!gs.nil(feature) &amp;&amp; feature != 'outputLabel') {
+                    weights[feature] = GlideXMLUtil.getText(weightsList.item(i));
+                    featureCount++;
+                }
+            }
+            weights.feature_count = featureCount;
+            //TODO assertion
+            var biasClassAndProbabiityTag = GlideXMLUtil.getElementByTagName(weightsDoc, this._XML_TAG_BIAS_CLASS_AND_PROBABILITY);
+            if (gs.nil(biasClassAndProbabiityTag)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'biasClassAndProbabiity_not_present_check_with_ml_platform_team_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+            //TODO add assertion
+            var biasClassAndProbabiityTagChildren = biasClassAndProbabiityTag.getChildNodes();
+
+            if (gs.nil(biasClassAndProbabiityTagChildren)) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'biasClassAndProbabiity_tag_does_not_have_children_check_with_ml_platform_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            //TODO add assertion
+            if (gs.nil(biasClassAndProbabiityTagChildren.item(0))) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'biasClassAndProbabiity_tag_first_child_null_check_with_ml_platform_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            //TODO add assertion
+            var biasClassAndProbabilityEntries = biasClassAndProbabiityTagChildren.item(0).getChildNodes();
+            if (gs.nil(biasClassAndProbabilityEntries) || biasClassAndProbabilityEntries.getLength() == 0) {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'biasClassAndProbabiity_tag_first_child_null_check_with_ml_platform_if_version_has_changed';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            //TODO add assertion
+            var biasClass = GlideXMLUtil.getText(biasClassAndProbabilityEntries.item(0));
+            var noMatchRecords = this._getRecordCount(this._NO_MATCH);
+            var matchRecords = this._getRecordCount(this._MATCH);
+            var biasClassLableFromData = matchRecords &gt; noMatchRecords ? this._MATCH : this._NO_MATCH;
+
+            if ("class0".equalsIgnoreCase(biasClass)) {
+                //bias class is class0
+                if (this._MATCH == biasClassLableFromData) {
+                    //class0 = 1 from labels
+                    if (this._MATCH == columnMap["class0"]) {
+                        //weka class0 is 1 in ARFF format
+                        //class0 = 1 from labels
+                        weights["rev"] = "false";
+                    } else if (this._NO_MATCH == columnMap["class0"]) {
+                        //class = 0 from weka
+                        weights["rev"] = "true";
+                    } else {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                } else if (this._NO_MATCH == biasClassLableFromData) {
+                    //class0 = 0 from labels
+                    if (this._MATCH == columnMap.get("class0")) {
+                        //weka class0 is 1 in ARFF format
+                        //class0 = 0 from labels
+                        weights["rev"] = "true";
+                    } else if (this._NO_MATCH == columnMap["class0"]) {
+                        //class = 0 from weka
+                        weights["rev"] = "false";
+                    } else {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                } else {
+                    weights.status = 'FAILURE';
+                    weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                    this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                    return weights;
+                }
+            } else if ("class1" == biasClass) {
+                //bias class is class1
+                if (this._MATCH == biasClassLableFromData) {
+                    //class1 = 1 from labels
+                    if (this._MATCH == columnMap["class1"]) {
+                        //class1 = 1 from weka
+                        weights["rev"] = "false";
+                    } else if (this._NO_MATCH == columnMap["class1"]) {
+                        //class1=0 from weka
+                        weights["rev"] = "true";
+                    } else {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                } else if (this._NO_MATCH == biasClassLableFromData) {
+                    //class1 = 0 from labels
+                    if (this._MATCH == columnMap["class1"]) {
+                        //class1 = 1 from weka
+                        weights["rev"] = "true";
+                    } else if (this._NO_MATCH == columnMap["class1"]) {
+                        //class1=0 from weka
+                        weights["rev"] = "false";
+                    } else {
+                        weights.status = 'FAILURE';
+                        weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                        this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                        return weights;
+                    }
+                } else {
+                    weights.status = 'FAILURE';
+                    weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                    this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                    return weights;
+                }
+            } else {
+                weights.status = 'FAILURE';
+                weights.statusCode = 'There_cannot_be_more_than_2_classes';
+                this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+                return weights;
+            }
+
+            weights[this._BIAS] = GlideXMLUtil.getText(model.item(model.getLength() - 1));
+            weights.status = "SUCCESS";
+        } catch (ex) {
+            weights.status = "FAILURE";
+            weights.statusCode = "UNHANDLED EXCEPTION";
+            this.log.logErr(gs.getMessage("There was an issue while loading the model weights from the ML platform tables. {0}, error {1}", [mlSolutionName, weights.statusCode]));
+        }
+        return weights;
+    },
+
+    _getRecordCount: function(label) {
+        var gr = new GlideAggregate(this._CMDB_DYNAMIC_IRE_MATCH);
+        gr.addQuery('expected_match', label);
+        gr.addAggregate('COUNT');
+        gr.query();
+        var records = 0;
+        if (gr.next()) {
+            records = gr.getAggregate('COUNT');
+        }
+        return records;
+    },
+
+
+    /**
+     * Helper method to fetch the modelXML from the
+     * ml platform tables
+     * @param the sysId of the solution.
+     * @param the version of the solution.
+     * @return XML string of the model.
+     */
+    _getArtifact: function(solutionSysId, id, mlSolutionVersion) {
+        var model = new GlideRecord(this._ML_MODEL_ARTIFACT);
+        model.addQuery(this._TABLE_REF_SOLUTION, solutionSysId);
+        model.addQuery(this._MODEL_ID, id);
+
+        if (!gs.nil(mlSolutionVersion))
+            model.addQuery(this._TABLE_REF_SOLUTION + this._DOT + this._VERSION, mlSolutionVersion);
+        else {
+            model.addQuery(this._TABLE_REF_SOLUTION + this._DOT + this._ACTIVE, 'true');
+            model.orderByDesc(this._TABLE_REF_SOLUTION + this._DOT + this._SYS_CREATED_ON);
+        }
+
+        model.query();
+
+        if (!model.next())
+            return null;
+
+        var xmlString = this._getModelXML(this._ML_MODEL_ARTIFACT, model.getUniqueValue());
+        return xmlString;
+    },
+
+    /**
+     * Helper method to fetch the model byte stream from the
+     * sys_attachment table.
+     * @param tableName Name of the table where the attachment is stored
+     * @param sysId of the solution.
+     * @return GlideScriptableInputStream.
+     */
+    _getModelXML: function(tableName, sysId) {
+
+        var attachment = new GlideSysAttachment();
+        var agr = attachment.getAttachments(tableName, sysId);
+        var attachmentContent = null;
+        if (agr.next()) {
+            var bytes = attachment.getBytes(agr);
+            var xmlString = GlideCompressionUtil.expandToString(bytes);
+        }
+        return xmlString;
+    },
+
+    type: 'CMDBDynamicIREMLInterface'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-03-07 03:12:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;20137fa0c33220104ef3c31b7940ddc0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CMDBDynamicIREMLInterface&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_20137fa0c33220104ef3c31b7940ddc0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-07 03:23:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;33996&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:22</sys_created_on>
+        <sys_id>bb4cc97a2f331110d8a4d5f62799b60b</sys_id>
+        <sys_name>CMDBDynamicIREMLInterface</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bb4cc97a2f331110d8a4d5f62799b60b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

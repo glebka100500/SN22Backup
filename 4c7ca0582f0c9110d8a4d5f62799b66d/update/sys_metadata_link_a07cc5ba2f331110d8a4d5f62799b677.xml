@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3bbe51319fa000103f50947f842e7048</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChatInteractionUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides a method to access the chat requester's language&lt;/description&gt;
+        &lt;name&gt;ChatInteractionUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChatInteractionUtil = Class.create();
+ChatInteractionUtil.prototype = {
+    initialize: function() {
+    }, 
+	
+	getInteractionByConversation: function(conversationID) {
+		var interaction = new GlideRecord('interaction');
+		interaction.get('channel_metadata_document', conversationID);
+		return interaction;
+	},
+	
+	getInteractionByGroup: function(groupID) {
+		var interactionMetaDataDocumentID = "";
+		var handOffGlideRecord = new GlideRecord('sys_cs_connect_handoff');
+		if(handOffGlideRecord.get('connect_group', groupID)) {
+			interactionMetaDataDocumentID = handOffGlideRecord.cs_conversation;
+		} else {
+			interactionMetaDataDocumentID = groupID;
+		}
+		var interaction = new GlideRecord('interaction');
+		interaction.get('channel_metadata_document', interactionMetaDataDocumentID);
+		return interaction;
+	},
+	
+	getRequesterLanguage: function(interaction) {
+        var requesterLanguage = gs.getSession().getLanguage()+'';
+		var contextGR = new GlideRecordSecure('interaction_context');
+		contextGR.addQuery('interaction', interaction.sys_id);
+		contextGR.addQuery('name', 'requester_session_language');
+		contextGR.query();
+		if(contextGR.next()){requesterLanguage = contextGR.getValue('value');}
+		return requesterLanguage;
+    },
+	
+	getAgentLanguage: function(interaction) {
+        var agentLanguage = gs.getSession().getLanguage()+'';
+		var contextGR = new GlideRecordSecure('interaction_context');
+		contextGR.addQuery('interaction', interaction.sys_id);
+		contextGR.addQuery('name', 'liveagent_session_language');
+		contextGR.query();
+		if(contextGR.next()){agentLanguage = contextGR.getValue('value');}
+		return agentLanguage;
+    },
+	
+	getDynamicTranslateLanguage: function(interaction) {
+		var dynamicTranslateProp = GlideProperties.get('com.glide.cs.dynamic.translation.enable.virtual_agent', false);
+		if(dynamicTranslateProp == 'true'){
+			return this.getAgentLanguage(interaction);
+		} else{
+			return this.getRequesterLanguage(interaction);
+		}
+	},
+	
+	updateInteractionContext: function(interactionID, jsonObj) {
+		var keys = [];
+		var contextVar = [];
+		var contextVarGr = new GlideRecord("interaction_context");
+		contextVarGr.addQuery("interaction", interactionID);
+		contextVarGr.query();
+		//store existing interaction_context records for this specific interaction
+		while (contextVarGr.next()) { 
+			contextVar[contextVarGr.name] = {
+				sysID: contextVarGr.getUniqueValue() + '',
+				value: contextVarGr.value + '',
+			};
+		}
+        // Add or update values for variables in the json
+		for (var key in jsonObj) {
+			keys.push(key);
+			var isSkillVariable =
+				(key==='liveagent_optional_skills' || key==='liveagent_mandatory_skills');
+
+			//if interaction_context record does not exist, add it
+			if(contextVar[key].value === undefined){ 
+				var newValGr = new GlideRecord("interaction_context");
+				newValGr.initialize();
+				newValGr.interaction = interactionID;
+				newValGr.name = key;
+				newValGr.value = jsonObj[key];
+				newValGr.setWorkflow(isSkillVariable);
+				newValGr.insert();
+			} else if(contextVar[key].value != jsonObj[key]){ //if value is different, update it
+				var oldValGr = new GlideRecord("interaction_context");
+				oldValGr.get(contextVar[key].sysID);
+				oldValGr.value = jsonObj[key];
+				oldValGr.setWorkflow(isSkillVariable);
+				oldValGr.update();
+			}		
+		}
+		return keys;
+    },
+	
+    /**
+     * Process skills when relevant changes occurred on interaction_context table that are linked to the 
+     * updates of context variables (liveagent_mandatory_skills or liveagent_optional_skills). As a result,
+     * skills will be updated (added or removed) in interaction_m2m_skill table. Skills stored as a value
+     * of aforementioned context varaibles, in the foramt of comma-delimited string (sys_id list).
+     *
+     * insert - skills will be added to interaction_m2m_skill
+     * update - skills new will be added to, skills non-existent previously will be removed from, interaction_m2m_skill
+     * delete - skills will be removed from interaction_m2m_skill
+     *
+     * @param current: current record of interaction_context, being inserted, updated or deleted
+     * @param previous: previous record of interaction_context to be updated; null if insert or delete
+     * @parem mandatory: true or false - whether the skills in consideration are mandatory
+     */
+	processSkills: function(current, previous, mandatory) {
+		if (current.operation() == 'insert') {
+			var interactionInsert = current.getValue('interaction');
+			var skillsInsert = current.getValue('value').split(',');
+			this.addSkills(interactionInsert, skillsInsert, mandatory);
+		} else if (current.operation() == 'update') {
+			var interactionUpdate = current.getValue('interaction');
+			var curSkills = current.getValue('value').split(',');
+			var prevSkills = previous.getValue('value').split(',');
+			var arrayUtil = new ArrayUtil();
+			var skillsToAdd = arrayUtil.diff(curSkills, prevSkills);
+			var skillsToDelete = arrayUtil.diff(prevSkills, curSkills);
+			this.addSkills(interactionUpdate, skillsToAdd, mandatory);
+			this.deleteSkills(interactionUpdate, skillsToDelete, mandatory);
+		} else if (current.operation() == 'delete') {
+			var interactionDelete = current.getValue('interaction');
+			var skillsDelete = current.getValue('value').split(',');
+			this.deleteSkills(interactionDelete, skillsDelete, mandatory);
+		}
+	},
+	
+	addSkills: function(interaction, skills, mandatory) {
+        for (var i = 0; i &lt; skills.length; i++) {
+            var skill = skills[i];
+            var interactionSkillGr = new GlideRecord('interaction_m2m_skill');
+            interactionSkillGr.addQuery('interaction', interaction);
+            interactionSkillGr.addQuery('skill', skill);
+            interactionSkillGr.addQuery('mandatory', mandatory);
+            if (!interactionSkillGr.get()) {
+                interactionSkillGr.initialize();
+                interactionSkillGr.interaction = interaction;
+                interactionSkillGr.skill = skill;
+                interactionSkillGr.mandatory = mandatory;
+                interactionSkillGr.insert();
+            }
+        }	
+	},
+
+	deleteSkills: function(interaction, skills, mandatory) {
+		var interactionSkillGr = new GlideRecord('interaction_m2m_skill');
+		interactionSkillGr.addQuery("interaction", interaction);
+		interactionSkillGr.addQuery("skill", "IN", skills.join(","));
+		interactionSkillGr.addQuery("mandatory", mandatory);
+		interactionSkillGr.query();
+		interactionSkillGr.deleteMultiple();
+	},
+		
+    type: 'ChatInteractionUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-10-18 01:06:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3bbe51319fa000103f50947f842e7048&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;29&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChatInteractionUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Interactions Management" source="com.glide.interaction"&gt;c6f449c36de620100acb70b35343307e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3bbe51319fa000103f50947f842e7048&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-16 00:12:34&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6539&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:58</sys_created_on>
+        <sys_id>a07cc5ba2f331110d8a4d5f62799b677</sys_id>
+        <sys_name>ChatInteractionUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a07cc5ba2f331110d8a4d5f62799b677</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

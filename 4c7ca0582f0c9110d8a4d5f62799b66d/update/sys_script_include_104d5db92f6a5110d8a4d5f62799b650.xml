@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.FunctionCollection</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>FunctionCollection</name>
+        <script><![CDATA[var FunctionCollection = Class.create();
+FunctionCollection.prototype = {
+    initialize: function() {
+		this.max = 15;
+    },
+	
+	[Symbol.iterator] : function () {
+		let i = 0;
+		
+		return {
+			next: () => ({
+				value: ++i,
+				done: i > this.max,
+			})
+		};
+	},
+    type: 'FunctionCollection'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-10-15 15:56:08</sys_created_on>
+        <sys_id>104d5db92f6a5110d8a4d5f62799b650</sys_id>
+        <sys_name>FunctionCollection</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_104d5db92f6a5110d8a4d5f62799b650</sys_update_name>
+        <u_script_length>314</u_script_length>
+    </sys_script_include>
+</record_update>

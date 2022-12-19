@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8ac49905eb5f011054009861eb522818</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionLanguageXHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AutoResolutionLanguageXHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionLanguageXHelper = Class.create();
+
+/**
+* Returns an array of the outputs found by the passed service name
+*
+* @param languageXResult: the result from LanguageX
+* @param serviceName : the service name to search with
+* @param logger : logger
+* @return An array of outputs
+*/
+AutoResolutionLanguageXHelper.getOutputsByServiceName = function(languageXResult, serviceName, logger) {
+	
+	if (gs.nil(languageXResult) || gs.nil(languageXResult.result) || gs.nil(languageXResult.result.length == 0)) {
+		logger.error('Invalid languageXResult for the service:{0}  LanguageXResult:{1}', serviceName, JSON.stringify(languageXResult));
+		return [];
+	}
+	
+	var results = languageXResult.result;
+	
+	var rtnArr = [];
+	
+	for (var i=0; i&lt;results.length; i++) {
+		
+		var outputs = results[i].output;
+		var found = findOutputByServiceName(outputs, serviceName);
+		rtnArr.push(found);
+	}
+	
+	return rtnArr;
+};
+
+/**
+* Returns an array of comma-separated search queries. The max number of queries can be limited by the property.
+* Also, the score of queries should be equal to or greater than the threshold in the config
+*
+* @param languageXResult: the result from LanguageX
+* @param threashold : the threashold for scores. Only queries that have a bigger score than this threshold will be returned.
+* @param logger : logger
+* @return An array of search queries
+*/
+AutoResolutionLanguageXHelper.getAllowedSearchTermArray = function(languageXResult, threashold, logger) {
+	
+	// read the property value and make sure it's a number
+	var propVal = gs.getProperty(global.AutoResolutionConstants.AI_SEARCH_TERMS_MAX_LIMIT, -1);
+	var maxNum = parseInt(propVal);
+	
+	// if the prop value is not number, use -1 instead.
+	if (isNaN(maxNum)) {
+		logger.warn('The property value:{0} for {1} is not number. The limit will be ignored', propVal, global.AutoResolutionConstants.AI_SEARCH_TERMS_MAX_LIMIT);
+		maxNum = -1;
+	}
+	
+	var outputs = AutoResolutionLanguageXHelper.getOutputsByServiceName(
+		languageXResult, AutoResolutionConstants.SEARCH_QUERY_GENERATION_SERVICE_NAME, logger);
+	
+	var rtnArr = [];
+	
+	for(var i=0; i&lt;outputs.length; i++) {
+		var searchTerms = getSearchTerms(maxNum, threashold, outputs[i]);
+		rtnArr.push(searchTerms);
+	}
+	return rtnArr;
+};
+
+function getSearchTerms(max, threashold, output, logger) {
+	
+	if (gs.nil(output.serviceOutputDetails)) {
+		logger.warn("Invalid data. no serviceOutputDetails found in output for searchQueryGeneration. output:{0}", JSON.stringify(output));
+		return '';
+	}
+	
+	if (gs.nil(threashold)) {
+		threashold = 0;
+		logger.warn("Search term threashold is null. 0 will be used instead");
+	}
+	
+	// make sure the threashold is number
+	threashold = parseFloat(threashold);
+	
+	var terms = [];
+	var details = JSON.parse(output.serviceOutputDetails);
+	
+	// decide the max for iteration
+	var limit = details.length;
+	
+	if(max&gt;0 &amp;&amp; max&lt;limit)
+		limit = max;
+	
+	for (var i=0; i&lt;limit; i++ ) {
+		
+		var found = details[i];
+		
+		var query = found.query;
+		var score = parseFloat(found.score);
+		
+		// if the score is below than the threashold, ignore.
+		if (score &lt; threashold)
+			continue;
+
+		terms.push(query);
+	}
+	
+	// return a concatenated string from the array.
+	return terms.length ==0 ? '' : terms.join(" "); // space delimited.
+}
+/**
+* Returns the output found by the serviceName
+*/
+function findOutputByServiceName (outputs, serviceName) {
+	
+	for (var i=0; i&lt;outputs.length; i++) {
+		
+		var output = outputs[i];
+		if (output.service == serviceName)
+			return output;
+	}
+	// if not found, return an empty block
+	return {};
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-05-04 17:51:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8ac49905eb5f011054009861eb522818&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;27&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionLanguageXHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8ac49905eb5f011054009861eb522818&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-25 22:43:01&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3549&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:21</sys_created_on>
+        <sys_id>6bfc857e2f331110d8a4d5f62799b6bd</sys_id>
+        <sys_name>AutoResolutionLanguageXHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6bfc857e2f331110d8a4d5f62799b6bd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

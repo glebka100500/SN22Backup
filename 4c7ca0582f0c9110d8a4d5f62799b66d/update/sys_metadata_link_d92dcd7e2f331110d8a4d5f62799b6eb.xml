@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>97a3e9b2ff331010df65c65e793bf191</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TemplateSlotProvider&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;TemplateSlotProvider&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TemplateSlotProvider = Class.create();
+TemplateSlotProvider.prototype = {
+    initialize: function() {
+    },
+    getFilteredSlotsByTemplateId: function() {
+		var templateId = current.view_config.template;
+		//return if the templateId value is empty (this causes all template slots to be returned)
+		if(!templateId)
+			return;
+
+		return 'view_template=' + templateId;
+    },
+    type: 'TemplateSlotProvider'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-10-15 13:30:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;97a3e9b2ff331010df65c65e793bf191&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TemplateSlotProvider&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile plugin" source="com.glide.sg"&gt;0ced34cb6d2220100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_97a3e9b2ff331010df65c65e793bf191&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-10-26 16:18:42&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;414&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:01</sys_created_on>
+        <sys_id>d92dcd7e2f331110d8a4d5f62799b6eb</sys_id>
+        <sys_name>TemplateSlotProvider</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d92dcd7e2f331110d8a4d5f62799b6eb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2e03b370530010102b12ddeeff7b12b5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Login_Locate_SSO_Google_Captcha&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Client callable public script include for server side validation of google captcha&lt;/description&gt;
+        &lt;name&gt;Login_Locate_SSO_Google_Captcha&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var Login_Locate_SSO_Google_Captcha = Class.create();
+Login_Locate_SSO_Google_Captcha.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    isPublic: function() {
+        return true;
+    },
+
+    verifyCaptcha: function() {
+        var grc = this.getParameter('sysparm_grc');
+        try {
+            if (!grc) {
+                return false;
+            }
+            // Create REST message to check the passed token with Google recaptcha service:
+            var r = new sn_ws.RESTMessageV2();
+            r.setHttpMethod('post');
+            r.setEndpoint('https://www.google.com/recaptcha/api/siteverify');
+
+            var secret = gs.getProperty('glide.login.locate.sso.google.captcha.secret');
+            if (!secret) {
+                gs.error("Google recaptcha secret property - 'glide.login.locate.sso.google.captcha.secret' not set");
+                return false;
+            }
+
+            var Encrypter = new GlideEncrypter();
+            r.setQueryParameter('secret', Encrypter.decrypt(secret));
+            r.setQueryParameter('response', grc);
+
+            var response = r.execute();
+            var responseBody = response.getBody();
+            var parser = new JSONParser();
+            var parsed = parser.parse(responseBody);
+            return parsed.success;
+        } catch (ex) {
+
+            var message = ex.message;
+            gs.error("Captcha validation failed. " + message);
+            return false;
+        }
+    },
+	
+    type: 'Login_Locate_SSO_Google_Captcha'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-04-06 08:48:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2e03b370530010102b12ddeeff7b12b5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Login_Locate_SSO_Google_Captcha&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2e03b370530010102b12ddeeff7b12b5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-08 13:04:37&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1512&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:38</sys_created_on>
+        <sys_id>775ccd7a2f331110d8a4d5f62799b6b1</sys_id>
+        <sys_name>Login_Locate_SSO_Google_Captcha</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_775ccd7a2f331110d8a4d5f62799b6b1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

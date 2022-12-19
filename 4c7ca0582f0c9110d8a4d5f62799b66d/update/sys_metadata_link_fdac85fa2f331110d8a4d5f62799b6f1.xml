@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5f1675d70f10330063bd64fd68767e6e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ParloEntityCoalescer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ParloEntityCoalescer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ParloEntityCoalescer = Class.create();
+ParloEntityCoalescer.prototype = Object.extendsObject(OpenNLUCoalescer, {
+	initialize: function() {
+		OpenNLUCoalescer.prototype.initialize.call(this);
+	},
+
+	type: 'ParloEntityCoalescer'
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-03-25 11:59:19&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5f1675d70f10330063bd64fd68767e6e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ParloEntityCoalescer&lt;/sys_name&gt;
+        &lt;sys_package display_value="Proxy Agent to the ServiceNow Natural Language Understanding server" source="com.glide.nlu.intent.discovery"&gt;3b377e0f2f400110d8a4d5f62799b6d1&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5f1675d70f10330063bd64fd68767e6e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-25 11:59:36&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;234&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:52</sys_created_on>
+        <sys_id>fdac85fa2f331110d8a4d5f62799b6f1</sys_id>
+        <sys_name>ParloEntityCoalescer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fdac85fa2f331110d8a4d5f62799b6f1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

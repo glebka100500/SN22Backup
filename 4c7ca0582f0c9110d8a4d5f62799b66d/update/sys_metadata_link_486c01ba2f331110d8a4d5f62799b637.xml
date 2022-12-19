@@ -1,0 +1,521 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2ede1183872031003706db5eb2e3ecf6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumAjaxTaskBoardDetailsProviderLegacy&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Legacy version of ScrumAjaxTaskBoardDetailsProvider to
+			support Planning board IE7/8 which doesn't support Heisenberg.
+		&lt;/description&gt;
+        &lt;name&gt;ScrumAjaxTaskBoardDetailsProviderLegacy&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumAjaxTaskBoardDetailsProviderLegacy = Class.create();
+		ScrumAjaxTaskBoardDetailsProviderLegacy.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+		   belongsToUser: function(user){
+		      return gs.getUser().getID() == user;
+		   },
+		
+		   isActiveTaskState: function(state){
+		      var states = gs.getProperty("com.snc.sdlc.scrum.pp.progress.task.state").split(",");
+		      for (var i = 0; i &lt; states.length; i++)
+		         if (states[i] == state)
+		            return true;
+		      return false;
+		   },
+		
+		   createStoryNode: function(gr, userLanguage, parentOnly){
+		      var id = gr["sys_id"];
+		      var name = gr["short_description"];
+		      var assignedTo = gr["assigned_to"];
+		      var assignedToName = this._getUserName(assignedTo);
+		      var stateName = this._getChoiceName("rm_story", gr["state"], userLanguage, "state");
+		      var points = gr["story_points"];
+		      var displayName = name;
+		      if (displayName.trim().length == 0)
+		         displayName = gs.getMessage("-- Empty --");
+		      var type = gr["type"];
+		      var typeLabel = this._getChoiceName("rm_story", type, userLanguage, "type");
+		      var classification = gr["classification"];
+		      var classificationLabel = this._getChoiceName("rm_story", classification, userLanguage, "classification");
+		      
+		      var item = this.newItem("story");
+		      if (parentOnly){
+		         var tasks = new GlideRecordSecure("rm_scrum_task");
+		         tasks.addQuery("parent", id);
+		         tasks.query();
+		         item.setAttribute('has_tasks', 'false');
+		         while(tasks.next()){
+		            var taskState = tasks["state"];
+		            if (!this.taskStateActiveMap || !this.taskStateActiveMap[taskState]){
+		               if (!this.taskStateActiveMap)
+		                  this.taskStateActiveMap = {};
+		               if (this.isActiveTaskState(taskState))
+		                  this.taskStateActiveMap[taskState] = "true";
+		               else
+		                  this.taskStateActiveMap[taskState] = "false";
+		            }
+		            if (this.taskStateActiveMap[taskState] == "true"){
+		               item.setAttribute('has_tasks', 'true');
+		               break;
+		            }
+		         }   
+		      }
+		
+		      item.setAttribute('belongs_to', this.belongsToUser(gr["assigned_to"]));
+		      item.setAttribute('blocked', gr["blocked"]);
+		      item.setAttribute('blocked_reason', escape(gr["blocked_reason"]));
+		      item.setAttribute('id', gr["sys_id"]);
+		      item.setAttribute('number', gr["number"]);
+		      item.setAttribute('points', points);
+		      item.setAttribute('assigned_to', gr["assigned_to"]);
+		      item.setAttribute('assigned_to_name', assignedToName);
+		      item.setAttribute('short_description', escape(gr["short_description"]));
+		      item.setAttribute('acceptance_criteria', escape(gr["acceptance_criteria"]));
+		      item.setAttribute('state', escape(gr["state"]));
+		      item.setAttribute('type', type);
+		      item.setAttribute("type_label", typeLabel);
+		      item.setAttribute('classification', classification);
+		      item.setAttribute("classification_label", classificationLabel);
+		
+		      item.setAttribute('index', gr["sprint_index"]);
+		      
+		      var adittional = '';
+		      if (!parentOnly) {
+		         adittional += '&lt;tr class="toggleItem"&gt;';
+		         adittional +=     '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+		         adittional +=         '&lt;span class="itemStateTitleCell"&gt;';
+		         adittional +=             gs.getMessage("Story State: ");
+		         adittional +=         '&lt;/span&gt;';
+		         adittional +=     '&lt;/td&gt;';
+		         adittional +=     '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+		         adittional +=         '&lt;span id="stateCell_'+id+'" class="itemStateCell"&gt;';
+		         adittional +=             GlideStringUtil.escapeHTML(stateName);
+		         adittional +=         '&lt;/span&gt;';
+		         adittional +=     '&lt;/td&gt;';
+		         adittional += '&lt;/tr&gt;';
+		      }
+		
+		      var markup = '&lt;table class="elemTable"&gt;';
+		         markup +=     '&lt;tr&gt;';
+		         markup +=         '&lt;td colspan="2" title="'+gs.getMessage("Short Description")+'" id="short_descriptionCell_'+id+'" class="itemNameCell" style="width: 100%"&gt;';
+		         markup +=             GlideStringUtil.escapeHTML(displayName);
+		         markup +=         '&lt;/td&gt;';
+		         markup +=     '&lt;/tr&gt;';
+		         markup +=     adittional;
+		         markup +=     '&lt;tr class="toggleItem"&gt;';
+		         markup +=         '&lt;td style="vertical-align: top; white-space: nowrap;"&gt;';
+		         markup +=             '&lt;span class="itemAssignedTitleCell"&gt;';
+		         markup +=                 gs.getMessage("Assigned To: ");
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=         '&lt;td style="vertical-align: top; width: 100%;"&gt;';
+		         markup +=             '&lt;span id="assigned_to_nameCell_'+id+'" class="itemAssignedCell"&gt;';
+		         markup +=                 GlideStringUtil.escapeHTML(assignedToName);
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=     '&lt;/tr&gt;';
+		         markup +=     '&lt;tr class="toggleItem"&gt;';
+		         markup +=         '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+		         markup +=             '&lt;span class="itemTypeCell"&gt;';
+		         markup +=                 gs.getMessage("Story Type: ");
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=         '&lt;td style="width: 100%; white-space: nowrap; vertical-align: top;"&gt;';
+		         markup +=             '&lt;span class="itemTypeLabelCell" id="type_labelCell_'+id+'"&gt;';
+		         markup +=                 GlideStringUtil.escapeHTML(typeLabel);
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=     '&lt;/tr&gt;';
+		         markup +=     '&lt;tr class="toggleItem"&gt;';
+		         markup +=         '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+		         markup +=             '&lt;span class="itemClassificationCell"&gt;';
+		         markup +=                 gs.getMessage("Classification: ");
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=         '&lt;td style="width: 100%; white-space: nowrap; vertical-align: top;"&gt;';
+		         markup +=             '&lt;span class="itemClassificationLabelCell" id="classification_labelCell_'+id+'"&gt;';
+		         markup +=                 GlideStringUtil.escapeHTML(classificationLabel);
+		         markup +=             '&lt;/span&gt;';
+		         markup +=         '&lt;/td&gt;';
+		         markup +=     '&lt;/tr&gt;';
+		         markup += '&lt;/table&gt;';
+		
+		      item.setAttribute('markup', escape(markup));
+		
+		      var controlsMarkup = '&lt;table  class="toggleItem" cellpadding="0" style="height: 100%;"&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+		         controlsMarkup +=         '&lt;td class="itemBlockedCell"&gt;';
+		         controlsMarkup +=         '&lt;/td&gt;';
+		         controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+		         controlsMarkup +=         '&lt;td class="itemPointsCell" style="white-space: nowrap; padding-top: 5px;"&gt;';
+		         controlsMarkup +=             '&lt;span title="'+gs.getMessage("Points")+'" id="pointsCell_'+id+'" class="input_span"&gt;';
+		         controlsMarkup +=                 GlideStringUtil.escapeHTML(points);
+		         controlsMarkup +=             '&lt;/span&gt;';
+		         controlsMarkup +=         '&lt;/td&gt;';
+		         controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+		         controlsMarkup +=         '&lt;td class="itemChildCell" style="padding-top: 4px;"&gt;';
+		         controlsMarkup +=         '&lt;/td&gt;';
+		         controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+		         controlsMarkup +=         '&lt;td class="itemCreateChildCell" style="padding-top: 4px;"&gt;';
+		         controlsMarkup +=         '&lt;/td&gt;';
+		         controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup += '&lt;/table&gt;';
+		
+		      item.setAttribute("controls_markup", escape(controlsMarkup));
+		      item.setAttribute('mod_count', escape(gr["sys_mod_count"]));
+		      return item;
+		   },
+		
+		   createTaskNode: function(gr, userLanguage, createTop, showActual){
+		      
+		      var type = gr["type"];
+		      var id = gr["sys_id"];
+		      var name = gr["short_description"];
+		      var displayName = name;
+		      if (displayName.trim().length == 0)
+		         displayName = gs.getMessage("-- Empty --");
+		      var assignedTo = gr["assigned_to"];
+		      var assignedToName = this._getUserName(assignedTo);
+		      var typeLabel = this._getChoiceName("rm_scrum_task", type, userLanguage, "type");
+		      var testResult = gr["test_result"];
+		      var testResultLabel = this._getChoiceName("rm_scrum_task", testResult,userLanguage , "test_result");
+		      var planned = gr["planned_hours"];
+		      var remaining = gr["remaining_hours"];
+		      var hours = gr["hours"];
+		
+		      var item;
+		      if (createTop)
+		         item = this.newItem("task");
+		      else
+		         item = this.getDocument().createElement("task");
+		      item.setAttribute("belongs_to", this.belongsToUser(gr["assigned_to"]));
+		      item.setAttribute("blocked", gr["blocked"]);
+		      item.setAttribute("blocked_reason", escape(gr["blocked_reason"]));
+		      item.setAttribute("id", id);
+		      item.setAttribute("number", gr["number"]);
+		      item.setAttribute("hours", hours);
+		      item.setAttribute("planned_hours", planned);
+		      item.setAttribute("remaining_hours", remaining);
+		      item.setAttribute("assigned_to", assignedTo);
+		      item.setAttribute("assigned_to_name", assignedToName);
+		      item.setAttribute("type_label", typeLabel);
+		      item.setAttribute("short_description", escape(name));
+		      item.setAttribute("test_result_label", testResultLabel);
+		      item.setAttribute("test_result", testResult);
+		      item.setAttribute("type", type);
+		      item.setAttribute("state", gr["state"]);
+		      item.setAttribute('mod_count', escape(gr["sys_mod_count"]));
+		
+		
+		      var resultRowDisplay = "";
+		      if (type != "4")
+		         resultRowDisplay = ' style="display: none;"';
+		      var markup = '&lt;table class="elemTable"&gt;';
+			     markup +=     '&lt;tr&gt;';
+			     markup +=         '&lt;td colspan="2" id="short_descriptionCell_'+id+'" class="itemNameCell" style="width: 100%" title="'+gs.getMessage("Short Description")+'"&gt;';
+			     markup +=             GlideStringUtil.escapeHTML(displayName);
+			     markup +=         '&lt;/td&gt;';
+			     markup +=     '&lt;/tr&gt;';
+		         markup +=     '&lt;tr class="toggleItem"&gt;';
+			     markup +=         '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemAssignedTitleCell" &gt;';
+			     markup +=                 gs.getMessage("Assigned To: ");
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=         '&lt;td style="width: 100%; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemAssignedCell" id="assigned_to_nameCell_'+id+'"&gt;';
+			     markup +=                 GlideStringUtil.escapeHTML(assignedToName);
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=     '&lt;/tr&gt;';
+		         markup +=     '&lt;tr class="toggleItem"&gt;';
+			     markup +=         '&lt;td style="white-space: nowrap; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemTypeCell"&gt;';
+			     markup +=                 gs.getMessage("Task Type: ");
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=         '&lt;td style="width: 100%; white-space: nowrap; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemTypeLabelCell" id="type_labelCell_'+id+'"&gt;';
+			     markup +=                 GlideStringUtil.escapeHTML(typeLabel);
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=     '&lt;/tr&gt;';
+		         markup +=     '&lt;tr class="itemTestResultRow" id="test_result_labelRow_'+id+'"'+resultRowDisplay+'&gt;';
+			     markup +=         '&lt;td class="toggleItem" style="white-space: nowrap; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemTestResultCell"&gt;';
+			     markup +=                 gs.getMessage("Test Result: ");
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=         '&lt;td  class="toggleItem" style="width: 100%; white-space: nowrap; vertical-align: top;"&gt;';
+			     markup +=             '&lt;span class="itemTestResultLabelCell" id="test_result_labelCell_'+id+'"&gt;';
+			     markup +=                 GlideStringUtil.escapeHTML(testResultLabel);
+			     markup +=             '&lt;/span&gt;';
+			     markup +=         '&lt;/td&gt;';
+			     markup +=     '&lt;/tr&gt;';
+			     markup += '&lt;/table&gt;';
+		
+		      item.setAttribute("markup", escape(markup));
+		
+		      var actualStyle = '';
+		      if (!showActual)
+		         actualStyle = ' style="display: none;"';
+		      var controlsMarkup = '&lt;table class="toggleItem" style="background: none; background-color: none; padding: 0px" cellPadding="0" cellSpacing="0"&gt;';
+			     controlsMarkup +=     '&lt;tr&gt;';
+			     controlsMarkup +=         '&lt;td nowrap="nowrap" class="itemBlockedCell"&gt;';
+			     controlsMarkup +=         '&lt;/td&gt;';
+			     controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+			     controlsMarkup +=         '&lt;td nowrap="nowrap" title="'+gs.getMessage("Planned hours")+'" style="white-space: nowrap; padding-top: 5px;" class="itemHoursPlannedCell"&gt;';
+			     controlsMarkup +=             '&lt;span style="white-space: nowrap;"&gt;P ';
+			     controlsMarkup +=                 '&lt;span title="'+gs.getMessage("Planned hours")+'" id="planned_hoursCell_'+id+'" class="input_span"&gt;';
+			     controlsMarkup +=                     GlideStringUtil.escapeHTML(planned);
+			     controlsMarkup +=                 '&lt;/span&gt;';
+			     controlsMarkup +=             '&lt;/span&gt;';
+			     controlsMarkup +=         '&lt;/td&gt;';
+			     controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr&gt;';
+			     controlsMarkup +=         '&lt;td nowrap="nowrap" title="'+gs.getMessage("Remaining hours")+'" style="white-space: nowrap; padding-top: 5px;" class="itemHoursRemainingCell"&gt;';
+			     controlsMarkup +=             '&lt;span style="white-space: nowrap;"&gt;R ';
+			     controlsMarkup +=                 '&lt;span title="'+gs.getMessage("Remaining hours")+'" id="remaining_hoursCell_'+id+'" class="input_span"&gt;';
+			     controlsMarkup +=                     GlideStringUtil.escapeHTML(remaining);
+			     controlsMarkup +=                 '&lt;/span&gt;';
+			     controlsMarkup +=             '&lt;/span&gt;';
+			     controlsMarkup +=         '&lt;/td&gt;';
+			     controlsMarkup +=     '&lt;/tr&gt;';
+		         controlsMarkup +=     '&lt;tr'+actualStyle+'&gt;';
+			     controlsMarkup +=         '&lt;td nowrap="nowrap" title="'+gs.getMessage("Actual hours")+'" style="white-space: nowrap; padding-top: 5px;" class="itemHoursCell"&gt;';
+			     controlsMarkup +=             '&lt;span style="white-space: nowrap;"&gt;A ';
+			     controlsMarkup +=                 '&lt;span title="'+gs.getMessage("Actual hours")+'" id="hoursCell_'+id+'" class="input_span"&gt;';
+			     controlsMarkup +=                     GlideStringUtil.escapeHTML(hours);
+			     controlsMarkup +=                 '&lt;/span&gt;';
+			     controlsMarkup +=             '&lt;/span&gt;';
+			     controlsMarkup +=         '&lt;/td&gt;';
+			     controlsMarkup +=     '&lt;/tr&gt;';
+			     controlsMarkup += '&lt;/table&gt;';
+		
+		      item.setAttribute("controls_markup", escape(controlsMarkup));
+		
+		      return item;
+		   },
+		
+		   getStringDate: function(str){
+		      return new GlideDateTime(str);
+		   },
+		
+		
+		   getLongDate: function(lng){
+		      return new GlideDateTime(new Packages.java.util.Date(lng));
+		   },
+		
+		   updateTaskBoardData: function() {
+			  var gr;
+			  var gr2;
+		      var rootID = this.getParameter('sysparm_root_id');
+		      var parentOnly = this.getParameter('sysparm_parent_only') == "true";
+		      var userLanguage = this.getParameter('sysparm_user_language');
+		      var lastUpdated  = this.getLongDate(Packages.java.lang.Long.parseLong(this.getParameter('sysparm_last_updated')));
+		      var showActual = gs.getProperty('com.snc.sdlc.scrum.pp.task_uses_actual_hours') == "true";
+		      var timeItem = this.newItem("time");
+		      timeItem.setAttribute("time", new Packages.java.util.Date().getTime());
+		
+		      var idsStr = "";
+		      if (parentOnly){
+		         gr = new GlideRecordSecure("rm_story");
+		         gr.addQuery("sprint", rootID);
+		         gr.orderBy("sprint_index");
+		         gr.orderBy("number");
+		         gr.query();
+		         while(gr.next()) { 
+		            if (this.getStringDate(gr["sys_updated_on"]).compareTo(lastUpdated) &gt; 0)
+		               this.createStoryNode(gr, userLanguage, parentOnly);
+		            else{
+		               gr2 = new GlideRecordSecure("rm_scrum_task");
+		               gr2.addQuery("parent", gr["sys_id"]);
+		               gr2.query();
+		               while(gr2.next())
+		                  if (this.getStringDate(gr2["sys_updated_on"]).compareTo(lastUpdated) &gt; 0){
+		                     this.createStoryNode(gr, userLanguage, parentOnly);
+		                     break;
+		                  }
+		            }
+		            idsStr += "|"+gr["sys_id"];
+		         }
+		      }else{
+		         gr = new GlideRecordSecure("rm_story");
+		         gr.addQuery("sprint", rootID);
+		         gr.orderBy("sprint_index");
+		         gr.orderBy("number");
+		         gr.query();
+		         var item = null;
+		         while(gr.next()) { 
+		            gr2 = new GlideRecordSecure("rm_scrum_task");
+		            gr2.addQuery("parent", gr["sys_id"]);
+		            gr2.query();
+		            while(gr2.next()) {
+		               var childUpdated  = this.getStringDate(gr2["sys_updated_on"]);
+		               if (childUpdated.compareTo(lastUpdated) &gt; 0){
+		                  if (!item || item == null)
+		                     item = this.createStoryNode(gr, userLanguage, parentOnly);
+		                  item.appendChild(this.createTaskNode(gr2, userLanguage, false, showActual));
+		               }
+		               idsStr += "|"+gr2["sys_id"];
+		            }
+		            if (!item || item == null)
+		               if (this.getStringDate(gr["sys_updated_on"]).compareTo(lastUpdated) &gt; 0)
+		                  this.createStoryNode(gr, userLanguage, parentOnly);
+		            idsStr += "|"+gr["sys_id"];
+		         }
+		      }
+		      var idsItem = this.newItem("ids");
+		      idsItem.setAttribute("ids", idsStr);
+		   },
+		
+		   getTaskBoardData: function() {
+		      var rootID = this.getParameter('sysparm_root_id');
+		      var parentOnly = this.getParameter('sysparm_parent_only') == "true";
+		      var userLanguage = this.getParameter('sysparm_user_language');
+		      var showActual = gs.getProperty('com.snc.sdlc.scrum.pp.task_uses_actual_hours') == "true";
+		
+		      //var userMap = {};
+		      //var gr = new GlideRecordSecure("sys_user_has_role");
+		      //gr.addQuery("role.name", "IN", "scrum_user,scrum_admin");
+		      //gr.addJoinQuery("sys_user", "user", "sys_id");
+		      //gr.query();
+		      //while(gr.next())
+		         //if (!userMap[gr.user.sys_id]){
+		            //var item = this.newItem("user");
+		            //item.setAttribute('name', gr.user.name);
+		            //item.setAttribute('id', gr.user.sys_id);
+		            //userMap[gr.user.sys_id] = gr.user.sys_id;
+		         //}
+		      //userMap = null;
+		
+		      var timeItem = this.newItem("time");
+		      timeItem.setAttribute("time", new Packages.java.util.Date().getTime());
+		
+		      var gr = new GlideRecordSecure("rm_story");
+		      gr.addQuery("sprint", rootID);
+		      gr.orderBy("sprint_index");
+		      gr.orderBy("number");
+		      gr.query();
+		      while (gr.next()){
+		         var item = this.createStoryNode(gr, userLanguage, parentOnly);
+		         if (!parentOnly){
+		            var gr2 = new GlideRecordSecure("rm_scrum_task");
+		            gr2.addQuery("parent", gr["sys_id"]);
+		            gr2.query();
+		            while (gr2.next())
+		               item.appendChild(this.createTaskNode(gr2, userLanguage, false, showActual));
+		         }
+		      }
+		   },
+		
+		   getTaskData: function() {
+		      var sysID = this.getParameter('sysparm_sys_id');
+		      var userLanguage = this.getParameter('sysparm_user_language');
+		      var showActual = gs.getProperty('com.snc.sdlc.scrum.pp.task_uses_actual_hours') == "true";
+		      var gr = new GlideRecordSecure("rm_scrum_task");
+		      gr.addQuery("sys_id", sysID);
+		      gr.query();
+		      if (gr.next())
+		         this.createTaskNode(gr, userLanguage, true, showActual);
+		   },
+		
+		   _getUserName: function(userID){
+		
+		      if (userID &amp;&amp; userID != ''){
+		         if (this.userNameMap &amp;&amp; this.userNameMap[userID]){
+		            return this.userNameMap[userID];
+		         }else{
+		            var gr = new GlideRecordSecure("sys_user");
+		            gr.addQuery("sys_id", userID);
+		            gr.query();
+		            if (gr.next()){
+		               if (!this.userNameMap)
+		                  this.userNameMap = {};
+		               this.userNameMap[userID] = gr.name;
+		               return gr.name;
+		            }
+		         }
+		      }
+		      return "-- None --";
+		   },
+		
+		   _getChoiceName: function(table, typeID, userLanguage, element){
+		      var key = table + "|" + typeID + "|" + userLanguage + "|" + element;
+		      if (this.choiceNameMap &amp;&amp; this.choiceNameMap[key]){
+		         return this.choiceNameMap[key];
+		      }else{
+		         if (!this.choiceNameMap)
+		            this.choiceNameMap = {};
+		         if (!typeID || typeID == ''){
+		            this.choiceNameMap[key] = "-- None --";
+		            return "-- None --";
+		         }
+		         var gr = new GlideRecordSecure("sys_choice");
+		         gr.addQuery("name", table);
+		         gr.addQuery("element", element);
+		         gr.addQuery("language", "en");
+		         gr.addQuery("value", typeID);
+		         gr.query();
+		         var label = "-- None --";
+		         if (gr.next()){
+		            label = gr["label"];
+		            if (userLanguage != "en"){
+		               var gr2 = new GlideRecordSecure("sys_choice");
+		               gr2.addQuery("name", table);
+		               gr2.addQuery("element", element);
+		               gr2.addQuery("language", userLanguage);
+		               gr2.addQuery("value", typeID);
+		               gr2.query();
+		               if (gr2.next())
+		                  label = gr2["label"];
+		            }
+		         }
+		         this.choiceNameMap[key] = label;
+		         return label;
+		      }
+		   },
+			
+			/**
+			 * Prevent public access to this processor
+			 */
+			isPublic: function() {
+				return false;
+			}    
+		});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-11-27 08:25:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2ede1183872031003706db5eb2e3ecf6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;8&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumAjaxTaskBoardDetailsProviderLegacy&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2ede1183872031003706db5eb2e3ecf6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-02-26 23:06:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;23005&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:39</sys_created_on>
+        <sys_id>486c01ba2f331110d8a4d5f62799b637</sys_id>
+        <sys_name>ScrumAjaxTaskBoardDetailsProviderLegacy</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_486c01ba2f331110d8a4d5f62799b637</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

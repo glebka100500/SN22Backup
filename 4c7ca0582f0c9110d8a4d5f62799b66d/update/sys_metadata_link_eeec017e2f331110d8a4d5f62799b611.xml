@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>830b38b787202300e0ef0cf888cb0b00</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CatalogPortalSettingsMigration&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;After Madrid, Catalog Item has portal settings. The script will help to migrate the following Item level settings for use_sc_layout=false to portal settings&amp;#13;
+&amp;#13;
+No cart -&amp;gt; Hide 'Add to Cart'&amp;#13;
+No quantity -&amp;gt; Hide Quantity&amp;#13;
+&amp;#13;
+Usage: &amp;#13;
+var standardUpdate = true;  &amp;#13;
+// true: Call business rules on catalog item table and send changes to updateset.&amp;#13;
+//false[DEFAULT]: Business rules on catalog item table will be skipped and no updateset changes&amp;#13;
+var psMigration = new CatalogPortalSettingsMigration();&amp;#13;
+psMigration.migrate(standardUpdate);&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;CatalogPortalSettingsMigration&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CatalogPortalSettingsMigration = Class.create();
+CatalogPortalSettingsMigration.prototype = {
+    initialize: function() {
+    },
+	migrate: function(standardUpdate) {
+		var gr = new GlideRecord('sc_cat_item');
+		gr.setWorkflow(standardUpdate);
+		gr.query();
+		while (gr.next()) {
+			var updated = false;
+			if (gr.no_cart == true) {
+				updated = true;
+				gr.no_cart_v2 = gr.no_cart;
+			}
+			if (gr.no_quantity == true) {
+				updated = true;
+				gr.no_quantity_v2 = gr.no_quantity;
+			}
+			if (updated)
+				gr.update();
+		}
+	},
+    type: 'CatalogPortalSettingsMigration'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-09-21 11:18:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;830b38b787202300e0ef0cf888cb0b00&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CatalogPortalSettingsMigration&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog - Portal Settings (do not activate...see plugin description)" source="com.glideapp.servicecatalog.portal_settings"&gt;131309cf6d6620100acb70b353433062&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_830b38b787202300e0ef0cf888cb0b00&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-27 09:16:31&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;578&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:00</sys_created_on>
+        <sys_id>eeec017e2f331110d8a4d5f62799b611</sys_id>
+        <sys_name>CatalogPortalSettingsMigration</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_eeec017e2f331110d8a4d5f62799b611</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

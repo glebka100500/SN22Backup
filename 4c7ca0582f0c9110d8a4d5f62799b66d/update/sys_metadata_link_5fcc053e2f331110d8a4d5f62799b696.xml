@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>73f731db9f35220088265bb0657fcf70</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProjectRelationsValidator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Project Relations Validator for Project Diagnosis&lt;/description&gt;
+        &lt;name&gt;ProjectRelationsValidator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProjectRelationsValidator = Class.create();
+ProjectRelationsValidator.prototype = {
+  initialize: function(projectData) {
+    this.projectData = projectData;
+    this.invalidRelations = [];
+	this.validateInvalidRelations();
+  },
+
+  validateInvalidRelations: function() {
+    var arrayUtil = new ArrayUtil();
+    var tasks = this.projectData.getTasks();
+    var taskSysIdes = tasks['sys_ids'];
+    var relations = this.projectData.getRelations();
+    var relationSysIdes = relations['sys_ids'];
+    for (var i = 0; i &lt; relationSysIdes.length; i++) {
+        var relation = relations[relationSysIdes[i]];
+        if( JSUtil.nil(relation.parent) ) {
+            relation.message = 'Empty predecessor';
+            this.invalidRelations.push(relation);
+        } else if(JSUtil.nil(relation.child)) {
+            relation.message = 'Empty successor';
+            this.invalidRelations.push(relation);
+        } else {
+            if(!arrayUtil.contains(taskSysIdes, relation.parent)) {
+                relation.message = 'Invalid predecessor';
+                this.invalidRelations.push(relation);
+            } else if(!arrayUtil.contains(taskSysIdes, relation.child)) {
+                relation.message = 'Invalid successor';
+                this.invalidRelations.push(relation);
+            } else if(relation.parent == relation.child) {
+                relation.message = 'Cyclic Relation';
+                this.invalidRelations.push(relation);
+            } else if(JSUtil.nil(relation.sub_type)) {
+                relation.message = 'Invalid Sub Type';
+                this.invalidRelations.push(relation);
+            }
+        }
+    }
+  },
+
+  getInvalidRelations: function() {
+    return this.invalidRelations;
+  },
+	
+  hasInvalidRelations: function() {
+	  if ( this.invalidRelations.length == 0 )
+		  return false;
+	  else
+		  return true;
+  },
+
+  type: 'ProjectRelationsValidator'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-09-16 20:46:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;73f731db9f35220088265bb0657fcf70&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProjectRelationsValidator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_73f731db9f35220088265bb0657fcf70&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-11-09 05:14:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1893&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:31</sys_created_on>
+        <sys_id>5fcc053e2f331110d8a4d5f62799b696</sys_id>
+        <sys_name>ProjectRelationsValidator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5fcc053e2f331110d8a4d5f62799b696</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

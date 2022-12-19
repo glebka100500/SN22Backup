@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>660a3bba77db0110d21bd84b8c5a99f0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SMGlobal&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SMGlobal&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SMGlobal = Class.create();
+SMGlobal.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    isPwd2Field: function() {
+		var table = this.getParameter("sysparm_table");
+		var column = this.getParameter("sysparm_column");
+		return this.isPwd2FieldHelper(table, column);
+	},
+	
+	isPwd2FieldHelper: function(table, column) {
+		var tableUtil = new TableUtils(table);
+		var tableArr = j2js(tableUtil.getTables());
+		
+		var gr = new GlideRecordSecure("sys_dictionary");
+		gr.addQuery("name" , "IN" , tableArr);
+		gr.addQuery("element", column);
+		gr.query();
+		
+		if (gr.next() &amp;&amp; gr.getValue("internal_type") == "password2")
+			return true;
+		return false;
+	},
+	type: 'SMGlobal'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-05-10 16:24:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;660a3bba77db0110d21bd84b8c5a99f0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SMGlobal&lt;/sys_name&gt;
+        &lt;sys_package display_value="Secrets Management" source="com.glide.sm.global"&gt;58931de12f221110d8a4d5f62799b6ab&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_660a3bba77db0110d21bd84b8c5a99f0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-12 00:45:11&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;685&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:05</sys_created_on>
+        <sys_id>70bc0dfa2f331110d8a4d5f62799b638</sys_id>
+        <sys_name>SMGlobal</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_70bc0dfa2f331110d8a4d5f62799b638</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

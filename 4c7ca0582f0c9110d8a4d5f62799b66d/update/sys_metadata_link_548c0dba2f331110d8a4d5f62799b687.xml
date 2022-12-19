@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>46f1db01eb2121003623666cd206fe75</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.cxs_TableActions&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Gets email search request records.&lt;/description&gt;
+        &lt;name&gt;cxs_TableActions&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var cxs_TableActions = Class.create();
+cxs_TableActions.prototype = {
+    DEFAULT_LIMIT: 10,
+
+    initialize: function(actionName, gr) {
+        this._gr = gr;
+    },
+
+    getTableConfig: function(tableName, recordSysId) {
+        var searchConfig = {};
+
+        if (!tableName)
+            return searchConfig;
+
+        var tableConfigGr = new GlideRecord("cxs_table_config");
+        tableConfigGr.addQuery("table", tableName);
+		tableConfigGr.addNullQuery("ui_type").addOrCondition("ui_type", "").addOrCondition("ui_type", "platform");
+        tableConfigGr.addActiveQuery();
+        tableConfigGr.query();
+        if (!tableConfigGr.next())
+            return searchConfig;
+
+        var tableConfig = cxs_App.getBusiness(tableConfigGr);
+
+        searchConfig = tableConfig.getTableConfigObject();
+        searchConfig.hasRequiredRoles = tableConfig.evaluateUserHasRole();
+        searchConfig.record_matches_condition = tableConfig.matchesCondition(recordSysId);
+        return searchConfig;
+    },
+	
+	getTableFilterConfig: function(tableConfigId) {
+        var searchFilterConfig = {};
+        
+        var isActive = GlidePluginManager.isActive('com.snc.contextual_search.dynamic_filters');
+		
+        if (!isActive || !tableConfigId)
+            return searchFilterConfig;
+		
+		searchFilterConfig.source = "cxs_TableActions";
+		searchFilterConfig.filters_configured = false;
+		searchFilterConfig.config_id = tableConfigId;
+
+        var tableConfigGr = new GlideRecord("cxs_filter_config");
+        tableConfigGr.addQuery("cxs_table_config", tableConfigId);
+        tableConfigGr.addActiveQuery();
+        tableConfigGr.query();
+		
+		while(tableConfigGr.next()) {
+			var tableConfig = cxs_App.getBusiness(tableConfigGr);
+			if(tableConfig.isFiltersConfigured()) {
+				searchFilterConfig.filters_configured = true;
+				break;
+			}
+		}
+        return searchFilterConfig;
+    },
+	
+	getFilters: function(tableConfigId, fieldValues) {
+		return SNC.SearchService.getTableFilters(tableConfigId, fieldValues);
+	},
+	
+    getEmailSearchRequest: function(emailActionGr) {
+        if (!this._gr || !this._gr.getTableName() || !emailActionGr)
+            return null;
+
+		var searchEmailConfigGr = new GlideRecord("cxs_table_email_config");
+        searchEmailConfigGr.addQuery("sysevent_email_action", emailActionGr.getUniqueValue());
+		searchEmailConfigGr.addQuery("cxs_table_config.table", this._gr.getTableName());
+        searchEmailConfigGr.query();
+
+		if (!searchEmailConfigGr.next())
+			return null;
+
+		var searchConfigGr = searchEmailConfigGr.cxs_table_config.getRefRecord();
+		if (!searchConfigGr)
+			return null;
+
+		var searchConfig = cxs_App.getBusiness(searchConfigGr);
+		var searchText = this._gr.getValue(searchConfig.getDefaultSearchField().field);
+		if (!searchText)
+			return null;
+
+		var searchLimit = parseInt(searchConfigGr.getValue("limit"), 10) || this.DEFAULT_LIMIT;
+		var searchRequestObj = {
+			meta: {
+				limit: searchLimit,
+				results_header_text: searchConfigGr.results_header_text.getDisplayValue()
+			},
+			context: searchConfigGr.getValue("cxs_context_config"),
+			query: {
+				freetext: searchText
+			}
+		};
+
+		var limit = searchEmailConfigGr.getValue("limit");
+
+		if (limit &amp;&amp; !isNaN(limit))
+			searchRequestObj.meta.limit = parseInt(limit, 10);
+
+		var userField = searchEmailConfigGr.getValue("user_field");
+		var runAsUser;
+		if (userField)
+			runAsUser = this._gr.getValue(userField);
+
+		if (runAsUser)
+			searchRequestObj.meta.runAsUser = runAsUser;
+
+        var searchRequestJSON = new JSON().encode(searchRequestObj);
+        return new SNC.SearchRequest().fromJSON(searchRequestJSON);
+    },
+
+    type: "cxs_TableActions"
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-06-25 10:35:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;46f1db01eb2121003623666cd206fe75&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;68&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;cxs_TableActions&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Search" source="com.snc.contextual_search"&gt;947281c76d6620100acb70b35343306d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_46f1db01eb2121003623666cd206fe75&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-06 10:02:34&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3659&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:13</sys_created_on>
+        <sys_id>548c0dba2f331110d8a4d5f62799b687</sys_id>
+        <sys_name>cxs_TableActions</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_548c0dba2f331110d8a4d5f62799b687</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1e2b1902c3012100c8b837659bba8f16</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_SectionAJAX&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;sc_ic_SectionAJAX&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_SectionAJAX = Class.create();
+sc_ic_SectionAJAX.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getNextPosition : function() {		
+		var itemStagingSysId = this.getParameter("sysparm_sc_ic_item_staging");
+
+		return sc_ic_Factory.getWrapperClass(sc_ic.SECTION).getNextPosition(itemStagingSysId, /* Display value */ true);		
+	},
+
+	getNextQuestionOrderNumber : function() {		
+		var sectionSysId = this.getParameter("sysparm_sc_ic_section");
+		if (JSUtil.nil(sectionSysId))
+			return 1;
+		
+		var sectionGr = new GlideRecord(sc_ic.SECTION);
+		if (!sectionGr.get(sectionSysId))
+			return 1;
+
+		return sc_ic_Factory.wrap(sectionGr).getNextQuestionOrderNumber();		
+	},
+
+	isPublic: function() {
+		return false;
+	},
+
+    type: 'sc_ic_SectionAJAX'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-06-03 05:57:18&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1e2b1902c3012100c8b837659bba8f16&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_SectionAJAX&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1e2b1902c3012100c8b837659bba8f16&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-06-25 03:47:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;759&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:19</sys_created_on>
+        <sys_id>4f4c497a2f331110d8a4d5f62799b6ce</sys_id>
+        <sys_name>sc_ic_SectionAJAX</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4f4c497a2f331110d8a4d5f62799b6ce</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

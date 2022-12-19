@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>74168ee49f2020008f88ed93ee4bcca4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RotaScheduleEntryValidation&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Specific Validation for Rota Schedule Entries&amp;#13;
+ &amp;#13;
+Called by&amp;#13;
+  Rota Schedule Item Validate (business rule)&amp;#13;
+  OCAddItem (script include)&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;RotaScheduleEntryValidation&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RotaScheduleEntryValidation = Class.create();
+
+/**
+ * Test validity of a Rota Schedule Entry
+ * - sets error messages, field error messages, accordingly
+ * - returns false if entry is not valid
+ */
+RotaScheduleEntryValidation.isValid = function(cmn_schedule_span) {
+	return new RotaScheduleEntryValidation(cmn_schedule_span).isValid();
+};
+
+RotaScheduleEntryValidation.prototype = {
+	initialize: function(cmn_schedule_span) {
+		this._log = new GSLog("com.snc.on_call_rotation.log.level", this.type);
+		this.cmn_schedule_span = cmn_schedule_span;
+		this._valid = true;
+		this._message = "";
+		this._showMessage = true;
+	},
+
+	setShowMessage: function(show) {
+		this._showMessage = show;
+		return this;
+	},
+
+	getMessage: function() {
+		return this._message;
+	},
+
+	isValid: function() {
+		this._ensureRosterNoGroup();
+		var onCallCommon = new OnCallCommon();
+		var groupId = this._getRotaGroupForSchedule(this.cmn_schedule_span.schedule + "");
+
+		if(!onCallCommon.isOverlapAllowed(groupId))
+			this._validateNoOverlapRota();
+		else if (this.cmn_schedule_span.type == 'on_call' &amp;&amp; JSUtil.nil(this.cmn_schedule_span.roster)) {
+			var rotaGr = new GlideRecord('cmn_rota');
+			rotaGr.addQuery('schedule', this.cmn_schedule_span.schedule);
+			rotaGr.query();
+			if (rotaGr.next()) {
+				this._validateNoOverlapRota(rotaGr.getUniqueValue());
+			}
+		}
+
+		this._validateNoOverlapTimeOff();
+		if ( this.cmn_schedule_span.type == 'time_off' || this.cmn_schedule_span.type == 'time_off_in_approval' || (this.cmn_schedule_span.type == 'on_call' &amp;&amp; !JSUtil.nil(this.cmn_schedule_span.roster))) {
+			this._validateCoverageTimeOffOverlap();
+		}
+		return this._valid;
+	},
+
+	_validateCoverageTimeOffOverlap: function() {
+		var rosterScheduleSpanGr = new GlideRecord('roster_schedule_span');
+		rosterScheduleSpanGr.addQuery("schedule.document", "sys_user");
+		rosterScheduleSpanGr.addQuery("schedule.document_key", this.cmn_schedule_span.schedule.document_key + "");
+		rosterScheduleSpanGr.addQuery("group", this.cmn_schedule_span.group);
+		if (this.cmn_schedule_span.type == 'time_off' || this.cmn_schedule_span.type == 'time_off_in_approval')
+			rosterScheduleSpanGr.addNotNullQuery('roster');
+		else
+			rosterScheduleSpanGr.addQuery("type", "!=", "on_call");
+
+		if (this.cmn_schedule_span.sys_id)
+			rosterScheduleSpanGr.addQuery("sys_id", "!=", this.cmn_schedule_span.sys_id + "");
+
+		var startDateTimeObj = new GlideScheduleDateTime(this.cmn_schedule_span.start_date_time.getGlideObject());
+		var endDateTimeObj = new GlideScheduleDateTime(this.cmn_schedule_span.end_date_time.getGlideObject());
+		startDateTimeObj.addSeconds(1);
+		endDateTimeObj.addSeconds(-1);
+
+		var startDateTime = startDateTimeObj.getValue() + "";
+		var endDateTime = endDateTimeObj.getValue() + "";
+
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[_validateCoverageTimeOffOverlap] startDateTime: " + startDateTime + " endDateTime: " + endDateTime);
+
+		rosterScheduleSpanGr.addEncodedQuery(this._getDateLimitedEncQuery(rosterScheduleSpanGr.getEncodedQuery(), startDateTime, endDateTime));
+		rosterScheduleSpanGr.query();
+
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[_validateCoverageTimeOffOverlap] encodedQuery: " + rosterScheduleSpanGr.getEncodedQuery());
+
+		if (rosterScheduleSpanGr.next()) {
+			var isInSchedule = this._isInSchedule(new GlideDateTime(startDateTime), new GlideDateTime(endDateTime), rosterScheduleSpanGr);
+			if (!isInSchedule)
+				return;
+			this._valid = false;
+			if (this.cmn_schedule_span.type == 'time_off')
+				this._displayMessage(gs.getMessage("Time off request for user overlaps with existing Coverage request"));
+			else if (this.cmn_schedule_span.type == 'time_off_in_approval')
+				this._displayMessage(gs.getMessage("Time off - In approval request for user overlaps with existing Coverage request"));
+			else if (rosterScheduleSpanGr.type == 'time_off_in_approval')
+				this._displayMessage(gs.getMessage("Coverage request for user overlaps with existing Time off - In approval request"));
+			else if (rosterScheduleSpanGr.type == 'time_off')
+				this._displayMessage(gs.getMessage("Coverage request for user overlaps with existing Time off request"));
+		}
+	},
+	
+	/**
+	 * @param startDateTime [GlideDateTime]: Start Date Time of the event
+	 * @param endDateTime [GlideDateTime]: End Date Time of the event
+	 * @param rosterScheduleSpanGr[GlideRecord]: Roster Schedule Span Record
+	 *
+	 * @return: isOverlapping[Boolean]
+	 */
+	_isInSchedule: function(startDateTime, endDateTime, rosterScheduleSpanGr) {
+		
+		// Initialize a GlideSchedule and load UserSchedule and exclude current span(To avoid current span overlap)
+		// Usage: new GlidSchedule().load(String&lt;scheduleSysID&gt;, String&lt;timeZone&gt;, String&lt;excludeSpanSysID&gt;);
+		var glideSchedule = new GlideSchedule();
+		glideSchedule.load(rosterScheduleSpanGr.getValue('schedule') + '', rosterScheduleSpanGr.schedule.time_zone, this.cmn_schedule_span.sys_id + '');
+		if (glideSchedule.isValid()) {
+			
+			// Check if the coverage is overlapping with any other span.
+			// Usage: new GlideSchedule().overlapsWith(GlideRecord&lt;cmn_schedule_span&gt;, String&lt;timeZone&gt;);
+			
+			var overlapSchedules = glideSchedule.overlapsWith(this.cmn_schedule_span, rosterScheduleSpanGr.schedule.time_zone);
+			if (overlapSchedules.hasNext())
+				return true;
+			else {
+				
+				// If there are no overlapping spans, check if start and end date times are in schedule
+				// Usage: new GlideSchedule().isInSchedule(GlideDateTime&lt;startDateTime&gt;, String&lt;timeZone&gt; /* Optional */);
+				return glideSchedule.isInSchedule(startDateTime) || glideSchedule.isInSchedule(endDateTime);
+			}
+		}
+		return false;
+	},
+
+	isValidExtraCoverage: function(rotaSysId) {
+		this._ensureRosterNoGroup();
+		this._validateNoOverlapRota(rotaSysId);
+		return this._valid;
+	},
+
+	_displayMessage: function(message) {
+		this._message = message;
+		if (this._showMessage)
+			gs.addErrorMessage(this._message);
+	},
+
+	// Remove any group value, for a "Roster Schedule Type" Schedule
+	_ensureRosterNoGroup: function() {
+		if (this.cmn_schedule_span.schedule.type + "" === "create_new_roster") {
+			if (JSUtil.notNil(this.cmn_schedule_span.group)) {
+				this._displayMessage(gs.getMessage("Group may not be specified for the 'create_new_roster' schedule type. Group removed."));
+				this.cmn_schedule_span.group = "";
+			}
+		}
+	},
+
+	// Ensure spans for a Rota Schedule do not overlap the spans in another Rota for the same Group
+	_validateNoOverlapRota: function(rotaSysId) {
+		if (this.cmn_schedule_span.schedule.type + "" === "roster") {
+			var groupID = this._getRotaGroupForSchedule(this.cmn_schedule_span.schedule) + "";
+			if (groupID) {
+				// test all other Rota schedules for this Schedule's Group
+				var rotaGR = new GlideRecord("cmn_rota");
+				rotaGR.initialize();
+				rotaGR.addQuery("group", groupID);
+				rotaGR.addActiveQuery();
+				if (rotaSysId)
+					rotaGR.addQuery('sys_id', rotaSysId);
+				rotaGR.query();
+
+				if (this._log.atLevel(global.GSLog.DEBUG))
+					this._log.debug("[_validateNoOverlapRota] encodedQuery: " + rotaGR.getEncodedQuery());
+
+				while (rotaGR.next() &amp;&amp; this._valid) {
+					if (this._rotaScheduleOverlaps(rotaGR)) {
+						this._valid = false;
+						var msg = gs.getMessage("Span overlaps rotation schedule '{0}'", rotaGR.name);
+						this._displayMessage(msg);
+					}
+				}
+			}
+		}
+	},
+
+	_validateNoOverlapTimeOff: function() {
+		var spanType = this.cmn_schedule_span.type + "";
+
+		if (this._log.atLevel(global.GSLog.DEBUG))
+			this._log.debug("[_validateNoOverlapTimeOff] spanType: " + spanType);
+
+		if (spanType === "time_off" || spanType === "time_off_in_approval") {
+			var gr = new GlideRecord("roster_schedule_span");
+			gr.initialize();
+			gr.addQuery("schedule.document", "sys_user");
+			gr.addQuery("schedule.document_key", this.cmn_schedule_span.schedule.document_key + "");
+			gr.addQuery("group", this.cmn_schedule_span.group);
+			gr.addQuery("type", "IN", "time_off,time_off_in_approval");
+			if (this.cmn_schedule_span.sys_id)
+				gr.addQuery("sys_id", "!=", this.cmn_schedule_span.sys_id + "");
+
+			var startDateTime = this.cmn_schedule_span.start_date_time.getGlideObject().getValue() + "";
+			var endDateTime = this.cmn_schedule_span.end_date_time.getGlideObject().getValue() + "";
+
+			if (this._log.atLevel(global.GSLog.DEBUG))
+				this._log.debug("[_validateNoOverlapTimeOff] startDateTime: " + startDateTime + " endDateTime: " + endDateTime);
+
+			gr.addEncodedQuery(this._getDateLimitedEncQuery(gr.getEncodedQuery(), startDateTime, endDateTime));
+			gr.query();
+
+			if (this._log.atLevel(global.GSLog.DEBUG))
+				this._log.debug("[_validateNoOverlapTimeOff] encodedQuery: " + gr.getEncodedQuery());
+
+			while (gr.next()) {
+				if (this._rosterScheduleSpanOverlaps(gr)) {
+					this._valid = false;
+					this._displayMessage(gs.getMessage("Time off request for the user overlaps existing request."));
+				}
+			}
+		}
+	},
+
+	/**
+	 * limitedBy is an encoded query itself
+	 * startDateTime and endDateTime are strings in format: yyyyMMddThhmmssZ
+	 * e.g. 20160802T000000Z
+	 */
+	_getDateLimitedEncQuery: function(limitedBy, startDateTime, endDateTime) {
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_getDateLimitedEncQuery] limitedBy: " + limitedBy + " startDateTime: " + startDateTime + " endDateTime: " + endDateTime);
+
+		if (!startDateTime || !endDateTime)
+			return limitedBy;
+
+		var NQ = "^NQ";
+		var startInEndIn = limitedBy + "^start_date_time&gt;=" + startDateTime + "^end_date_time&lt;=" + endDateTime;
+		var startOutEndIn = limitedBy + "^start_date_time&lt;=" + startDateTime + "^end_date_time&gt;=" + startDateTime + "^end_date_time&lt;=" + endDateTime;
+		var startInEndOut = limitedBy + "^start_date_time&gt;=" + startDateTime + "^start_date_time&lt;=" + endDateTime + "^end_date_time&gt;=" + endDateTime;
+		var startOutEndOut = limitedBy + "^start_date_time&lt;=" + startDateTime + "^end_date_time&gt;=" + endDateTime;
+		var repeatNotNull = limitedBy + "^repeat_type!=null" + "^repeat_until=00000000^ORrepeat_until=null^ORrepeat_until&gt;=" + startDateTime.split("T")[0];
+		var encodedQuery = startInEndIn + NQ + startOutEndIn + NQ + startInEndOut + NQ + startOutEndOut + NQ + repeatNotNull;
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_getDateLimitedEncQuery] encodedQuery: " + encodedQuery);
+
+		return encodedQuery;
+	},
+
+	_getRotaGroupForSchedule: function(cmnSchedule) {
+		// get the group that this schedule belongs to
+		var rotaGroupGR = new GlideRecord("cmn_rota");
+		rotaGroupGR.initialize();
+		rotaGroupGR.addQuery("schedule", cmnSchedule);
+		rotaGroupGR.query();
+		if (!rotaGroupGR.next())
+			return undefined;
+		return rotaGroupGR.group;
+	},
+
+	_rotaScheduleOverlaps: function(cmnRotaGr) {
+		var scheduleID = cmnRotaGr.schedule + "";
+		var schedule = this._getSchedule();
+		schedule.load(scheduleID, null, this.cmn_schedule_span.sys_id + "");
+		var tz = this.cmn_schedule_span.schedule.time_zone + "";
+		var overlaps = schedule.overlapsWith(this.cmn_schedule_span, tz);
+		if (!overlaps.isEmpty())
+			return true;
+		return false;
+	},
+
+	_rosterScheduleSpanOverlaps: function(rosterScheduleSpanGr) {
+		var scheduleID = rosterScheduleSpanGr.schedule + "";
+		var schedule = this._getSchedule();
+		schedule.load(scheduleID, null, this.cmn_schedule_span.sys_id + "");
+		var tz = this.cmn_schedule_span.schedule.time_zone + "";
+		var overlaps = schedule.overlapsWith(this.cmn_schedule_span, tz);
+		if (!overlaps.isEmpty())
+			return true;
+		return false;
+	},
+
+	//getter to ease override in test
+	_getSchedule: function() {
+		var schedule = new GlideSchedule();
+		return schedule;
+	},
+
+	type: 'RotaScheduleEntryValidation'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-03-28 10:18:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;74168ee49f2020008f88ed93ee4bcca4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;63&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RotaScheduleEntryValidation&lt;/sys_name&gt;
+        &lt;sys_package display_value="On-Call Scheduling" source="com.snc.on_call_rotation"&gt;37d4c9836de620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_74168ee49f2020008f88ed93ee4bcca4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-12 13:14:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;11610&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:32</sys_created_on>
+        <sys_id>27cc053e2f331110d8a4d5f62799b69b</sys_id>
+        <sys_name>RotaScheduleEntryValidation</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_27cc053e2f331110d8a4d5f62799b69b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

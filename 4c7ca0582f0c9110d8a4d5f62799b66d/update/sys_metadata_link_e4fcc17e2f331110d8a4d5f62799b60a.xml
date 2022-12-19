@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>86a9aff1c31210102c5b4e483c40dda7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.validateSysUserCertificateAttachment&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Validates  sys_user_certificate table for attachment. Returns false for no attachment, more than one attachment, attach format other than pem or cer.&lt;/description&gt;
+        &lt;name&gt;validateSysUserCertificateAttachment&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var validateSysUserCertificateAttachment = Class.create();
+validateSysUserCertificateAttachment.prototype = {
+    initialize: function(current) {
+        var attachments = new GlideRecord('sys_attachment');
+        attachments.addQuery('table_name', current.getTableName());
+        attachments.addQuery('table_sys_id', current.sys_id);
+        attachments.query();
+
+        this.count = attachments.getRowCount();
+
+        if (attachments.next()) {
+            this.fileName = attachments.file_name;
+        }
+
+        this.attachments = attachments;
+    },
+
+    type: 'validateSysUserCertificateAttachment',
+
+    deleteAttachments: function(current) {
+        try {
+            do {
+                this.attachments.deleteRecord();
+            } while (this.attachments.next())
+
+        } catch (e) {
+            gs.warn("Error while deleting attachments " + e);
+        }
+    },
+
+    hasAttachment: function() {
+        return !gs.nil(this.count) &amp;&amp; this.count != 0;
+    },
+
+    hasMoreThanOneAttachment: function() {
+        return !gs.nil(this.count) &amp;&amp; this.count &gt; 1;
+    },
+
+    validateExtensionForPem: function(current) {
+        if (!gs.nil(this.fileName) &amp;&amp; this.fileName.substr((this.fileName.lastIndexOf('.') + 1)).toLowerCase() !== "pem") {
+            return false;
+        }
+
+        return true;
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-07-30 07:17:50&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;86a9aff1c31210102c5b4e483c40dda7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;validateSysUserCertificateAttachment&lt;/sys_name&gt;
+        &lt;sys_package display_value="Certificate based authentication" source="com.glide.auth.mutual"&gt;0ee374852ff25110d8a4d5f62799b66e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_86a9aff1c31210102c5b4e483c40dda7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-08-03 08:19:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1322&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:09</sys_created_on>
+        <sys_id>e4fcc17e2f331110d8a4d5f62799b60a</sys_id>
+        <sys_name>validateSysUserCertificateAttachment</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e4fcc17e2f331110d8a4d5f62799b60a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

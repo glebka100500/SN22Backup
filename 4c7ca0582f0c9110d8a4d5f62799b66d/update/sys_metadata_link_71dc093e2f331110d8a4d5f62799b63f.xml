@@ -1,0 +1,697 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>77d8ed04871221002320f3beb2e3ec8e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sn_sdlc_PlanningAjaxProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;sn_sdlc_PlanningAjaxProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sn_sdlc_PlanningAjaxProcessor = Class.create();
+sn_sdlc_PlanningAjaxProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    entityInfo: function() {
+        // build new response xml element for result
+        var entity = this.newItem("entity");
+        var sysparm_entity_type = this.getParameter('sysparm_entity_type');
+        var sysparm_entity_id = this.getParameter('sysparm_entity_id');
+        var entityRecord;
+
+        if(sysparm_entity_type == 'product') {
+            entityRecord = new GlideRecord("cmdb_model");
+        } else if (sysparm_entity_type == 'project') {
+            entityRecord = new GlideRecord("pm_project");
+        } else if (sysparm_entity_type == 'release') {
+            entityRecord = new GlideRecord("rm_release");
+        }
+
+        entityRecord.get(sysparm_entity_id);
+        if (entityRecord) {
+            if(sysparm_entity_type == 'product') {
+                entity.setAttribute("name", entityRecord.name);
+                entity.setAttribute("display_name", entityRecord.display_name);
+            } else if (sysparm_entity_type == 'project') {
+                entity.setAttribute("name", entityRecord.number);
+                entity.setAttribute("display_name", entityRecord.short_description);
+            } else if (sysparm_entity_type == 'release') {
+                entity.setAttribute("name", entityRecord.number);
+                entity.setAttribute("display_name", entityRecord.short_description);
+            }
+
+            entity.setAttribute("sys_id", entityRecord.sys_id);
+        }
+        return entity;
+    },
+
+    //Gets aggregate story points from rm_story, based on the filter passed.
+    getStoryPoints: function() {
+        var result = this.newItem("result");
+        var filter = this.getParameter('sysparm_filter');
+
+        var storyGR  = new GlideAggregate("rm_story");
+        storyGR.addQuery(filter);
+        storyGR.addAggregate('SUM', 'story_points');
+        storyGR.groupBy('sprint');
+        storyGR.query();
+
+        if (storyGR.next()) {
+            var points = storyGR.getAggregate('SUM', 'story_points');
+            result.setAttribute('total_points', points &gt; 0 ? points : 0);
+        } else {
+            result.setAttribute('total_points', 0);
+        }
+        return result;
+    },
+
+    //Gets all projects for a given team and returns a JSON string.
+    getProjectsForTeam: function() {
+        var result = this.newItem("result");
+        var team = null;
+        var json = new JSON();
+        var jsonString = this.getParameter('sysparm_team');
+        var jsonInput = json.decode(jsonString);
+        if( jsonInput.pageContext &amp;&amp; (jsonInput.pageContext == 'team'|| jsonInput.pageContext == 'assignment_group')) {
+            team = jsonInput.pageContextId;
+        }
+        else {
+            // handle to support other calls
+            team = jsonString;
+        }
+
+        var projects = ppm_int_ProjectUtil.activeProjectsForTeam(team);
+        var projectList = [];
+        var project = {};
+        var value;
+        if( jsonInput.context &amp;&amp; jsonInput.context == 'project' &amp;&amp; (jsonInput.contextId == '' || jsonInput.contextId == '-1')) {
+            projectList.push({id: -1, value: gs.getMessage('All Projects'), focus: true });
+        }
+        else {
+            projectList.push({id: -1, value: gs.getMessage('All Projects'), focus: false });
+        }
+        
+        for ( var i=0; i&lt;projects.length; i++ ) {
+            value = gs.getMessage('{0} - {1}', [projects[i].number, projects[i].short_description]);
+            if( jsonInput.context &amp;&amp; jsonInput.context == 'project' &amp;&amp; jsonInput.contextId &amp;&amp; jsonInput.contextId == projects[i].id ) {
+                project = { id: projects[i].id, value: value, focus: true };
+            }
+            else {
+                project = { id: projects[i].id, value: value, focus: false };
+            }
+            projectList.push(project);
+        }
+        result.setAttribute('json_items', json.encode(projectList));
+        result.setAttribute('count', projects.length);
+        return result;
+    },
+
+    addItem: function(itemName, id, value) {
+        var project = this.newItem(itemName);
+        project.setAttribute("id", id);
+        project.setAttribute("value", value);
+    },
+
+    assignProjectToTeamStory: function() {
+        var result = this.newItem("result");
+        var team = this.getParameter('sysparm_team');
+        var story = this.getParameter('sysparm_story');
+
+        var gr = new GlideRecord('rm_story');
+        gr.get(story);
+
+        var projects = ppm_int_ProjectUtil.activeProjectsForTeam(team);
+        var defaultProject = null;
+        if ( projects.length &gt; 0 ) {
+            defaultProject = projects[0].id;
+        }
+
+        if( defaultProject != null ) {
+            gr.project = defaultProject;
+            gr.update();
+            result.setAttribute('status', 'success');
+        }
+        else {
+            gr.deleteRecord();
+            result.setAttribute('status', 'failure');
+        }
+        return result;
+    },
+
+    getSprintsForTeam: function() {
+        var result = this.newItem("result");
+        var team = null;
+        var json = new JSON();
+        var isFirstFoucs = false;
+        var jsonString = this.getParameter('sysparm_team');
+        var jsonInput = json.decode(jsonString);
+        if( jsonInput.pageContext &amp;&amp; (jsonInput.pageContext == 'team' || jsonInput.pageContext == 'assignment_group' )) {
+            team = jsonInput.pageContextId;
+        }
+        else {
+            // handle to support other calls
+            team = jsonString;
+        }
+
+        var sprints = (new sn_sdlc_InlinePlanningBoardUtil()).sprintsForTeam(team);
+        var sprintList = [];
+        var sprint = {};
+        var value;
+        for ( var i=0; i&lt;sprints.length; i++ ) {
+            value = gs.getMessage('{0} - {1}', [sprints[i].short_description, sprints[i].number]);
+            if( jsonInput.context &amp;&amp; jsonInput.context == 'sprint' &amp;&amp; jsonInput.contextId &amp;&amp; jsonInput.contextId == sprints[i].id ) {
+                sprint = { id: sprints[i].id, value: value, focus: true };
+            }
+            else {
+                if( !isFirstFoucs ) {
+                    sprint = { id: sprints[i].id, value: value, focus: true };
+                    isFirstFoucs = true;
+                }
+                else {
+                    sprint = { id: sprints[i].id, value: value, focus: false };    
+                }
+            }
+            sprintList.push(sprint);
+        }
+        result.setAttribute('json_items', json.encode(sprintList));
+        result.setAttribute('count', sprints.length);
+        return result;
+    },
+
+    getBacklogContextForTeam: function() {
+        var result = this.newItem("result");
+        var team = null;
+        var side = null;
+        var json = new JSON();
+        var isProjectsAvailable = false;
+        var includeSprint = false;
+        var jsonString = this.getParameter('sysparm_context');
+        var jsonInput = json.decode(jsonString);
+        if( jsonInput.pageContext &amp;&amp; (jsonInput.pageContext == 'team' || jsonInput.pageContext == 'assignment_group')) {
+            team = jsonInput.pageContextId;
+            side = jsonInput.side;
+            includeSprint = jsonInput.includeSprint;
+        }
+
+        var contextList = [];
+        var projects = ppm_int_ProjectUtil.activeProjectsForTeam(team);
+        if ( projects.length &gt; 0 ) {
+            isProjectsAvailable = true;
+        }
+        if( side == 'left' ) {
+            if ( isProjectsAvailable ) {
+                contextList.push({id: "project", value: gs.getMessage("Project"), focus: true});
+            }
+            if ( includeSprint &amp;&amp; isProjectsAvailable ) {
+                contextList.push({id: "sprint", value: gs.getMessage("Sprint"), focus: false});
+            }
+            else if( includeSprint &amp;&amp; !isProjectsAvailable ) {
+                contextList.push({id: "sprint", value: gs.getMessage("Sprint"), focus: true});   
+            }
+        }
+        else {
+            if ( isProjectsAvailable ) {
+                contextList.push({id: "project", value: gs.getMessage("Project"), focus: false});    
+            }
+            if ( includeSprint ) {
+                contextList.push({id: "sprint", value: gs.getMessage("Sprint"), focus: true});
+            }
+        }
+        if( isProjectsAvailable || includeSprint ) {
+            contextList.push({id: "oneoff", value: gs.getMessage("One-Off"), focus: false });
+        }
+        else  {
+            contextList.push({id: "oneoff", value: gs.getMessage("One-Off"), focus: true });
+        }
+
+        result.setAttribute('json_items', json.encode(contextList));
+        result.setAttribute('count', contextList.length);
+        return result;
+    },
+
+    addToSprint: function() {
+        var response = this.newItem('response');
+        var sysparm_story_ids = this.getParameter('sysparm_story_ids');
+        var sysparm_sprint_id = this.getParameter('sysparm_sprint_id');
+        var stories = sysparm_story_ids.split(",");
+        var gr = new GlideRecord('rm_story');
+        for (var i=0; i&lt;stories.length; i++) {
+            if (gr.get(stories[i])) {
+                gr.sprint = sysparm_sprint_id;
+                gr.update();
+            }
+        }
+        response.setAttribute('status', 'success');
+        response.setAttribute('sprintFinalPoints', this.getSprintStoryPoints(sysparm_sprint_id));
+        return response;
+    },
+
+    removeFromSprint: function() {
+        var response = this.newItem('response');
+        var sysparm_story_ids = this.getParameter('sysparm_story_ids');
+        var stories = sysparm_story_ids.split(",");
+        var gr = new GlideRecord('rm_story');
+        for (var i=0; i&lt;stories.length; i++) {
+            if (gr.get(stories[i])) {
+                gr.sprint = '';
+                gr.update();
+            }
+        }
+        response.setAttribute('status', 'success');
+        return response;
+
+    },
+
+    getSprintStoryPoints: function(sprint_id) {
+        var gr = new GlideRecord('rm_sprint');
+        gr.get(sprint_id);
+        return gr.getValue('story_points');
+    },
+
+    getActiveSprints: function() {
+        var sprints = this.newItem("sprints");
+        var team = this.getParameter('sysparm_team');
+        if(JSUtil.nil(team)) {
+            sprints.setAttribute("status", "ERROR");
+        }
+        else {
+            var gr = new GlideRecord('rm_sprint');
+            gr.addQuery('assignment_group', team);
+            gr.addQuery('active', 'true');
+            gr.query();
+            while( gr.next()) {
+                this._addSprint(gr);
+            }
+            sprints.setAttribute("status", "SUCCESS");
+        }
+	},
+	
+	getSprints: function() {
+        var sprints = this.newItem("sprints");
+        var team = this.getParameter('sysparm_team');
+		var orderBy = this.getParameter('sysparm_order_by');
+		var sortOrderDesc = this.getParameter('sysparm_sort_order_desc');
+		var showFutureSprints = this.getParameter('sysparm_show_future_sprints');
+
+        if(JSUtil.nil(team)) {
+            sprints.setAttribute("status", "ERROR");
+        }
+        else {
+			var gr = this.querySprints(team, orderBy, sortOrderDesc, showFutureSprints);
+			while( gr.next()) {
+                this._addSprint(gr);
+            }
+            sprints.setAttribute("status", "SUCCESS");
+        }
+	},
+	
+	querySprints: function(team, orderBy, sortOrderDesc, showFutureSprints) {
+		var gr = new GlideRecord('rm_sprint');
+		gr.addQuery('assignment_group', team);
+		if(JSUtil.notNil(orderBy)) {
+			if(sortOrderDesc == 'true')
+				gr.orderByDesc(orderBy);
+			else
+				gr.orderBy(orderBy);
+		}
+		if(showFutureSprints == 'false') {
+			var nowDateTime = new GlideDateTime();
+			gr.addQuery('start_date', '&lt;=', nowDateTime);
+		}
+		gr.query();
+		return gr;
+	},
+
+    _addSprint: function(sprintGR) {
+        var sprint = this.newItem("sprint");
+        sprint.setAttribute("name", sprintGR.getValue('short_description'));
+        sprint.setAttribute("id", sprintGR.getValue('sys_id'));
+    },
+	
+	getSprintPlanningPrefs: function() {
+		var userPreference = this.newItem("userPreference");
+        if( !JSUtil.nil(gs.getPreference('sdlc.sprint_planning.team')) ) {
+            userPreference.setAttribute("team", gs.getPreference('sdlc.sprint_planning.team'));
+        }	
+	},
+
+    getUserPreference: function() {
+        var userPreference = this.newItem("userPreference");
+        if( !JSUtil.nil(gs.getPreference('scrum.team')) ) {
+            userPreference.setAttribute("team", gs.getPreference('scrum.team'));
+            userPreference.setAttribute("sprint", gs.getPreference('scrum.sprint'));
+        }
+    },
+
+    saveUserPreference: function() {
+        var savePreference = this.newItem("savePreference");
+        var key = this.getParameter('sysparm_pref_key');
+        var value = this.getParameter('sysparm_pref_value');
+        if( JSUtil.nil(key) || JSUtil.nil(value)) {
+            savePreference.setAttribute("status", "ERROR");
+        }
+        else {
+            gs.getUser().savePreference(key, value);
+            savePreference.setAttribute("status", "SUCCESS");
+        }
+    },
+
+    sprintStoryPoints: function() {
+        var sprintStoryPoints = this.newItem("sprintStoryPoints");
+        var sprint = this.getParameter('sysparm_sprint');
+        if( !JSUtil.nil(sprint) ) {
+            var points = this.getSprintStoryPoints(sprint);
+            sprintStoryPoints.setAttribute("points", points);
+        }
+    },
+
+    teamCapacity: function() {
+        var teamCapacity = this.newItem("result");
+        var team = this.getParameter('sysparm_team');
+        if( !JSUtil.nil(team) ) {
+            var gr = new GlideRecord('sys_user_group');
+            gr.get(team);
+            teamCapacity.setAttribute("points", gr.getValue('points'));
+        }
+    },
+
+    contextCapacity: function() {
+        var contextCapacity = this.newItem("result");
+        var contextName = this.getParameter('sysparm_context_name');
+        var contextValue = this.getParameter('sysparm_context_value');
+        if( !JSUtil.nil(contextName) &amp;&amp; contextName == 'sprint') {
+            var points = (new sn_sdlc_InlinePlanningBoardUtil()).getSprintTeamCapacity(contextValue);
+            contextCapacity.setAttribute("points", points);
+        }
+    },
+
+    processStories: function() {
+        var result = this.newItem("result");
+        var jsonString = this.getParameter('sysparm_input');
+        var json = new JSON();
+        var jsonInput = json.decode(jsonString);
+        var isError = false;
+        var gr = GlideRecord('rm_story');
+        gr.addEncodedQuery('sys_idIN'+ jsonInput.stories);
+        gr.query();
+        if ( gr.getRowCount() &gt; 0 ) {
+            while( gr.next() ) {
+                var storyTaskStateUtil = new TaskStateUtil(gr);
+           
+                if( (jsonInput.from == 'project' &amp;&amp; jsonInput.to == 'sprint') || 
+                    (jsonInput.from == 'sprint' &amp;&amp; jsonInput.to == 'project') ) {
+                    // Check if the Story is complete before moving the same
+                    if( (gr.getValue('state') == storyTaskStateUtil.getDefaultCloseState() || 
+                            ( /*projectTaskStateUtil &amp;&amp; gr.getValue('project.state') == projectTaskStateUtil.getDefaultCloseState()*/
+                               gr.project.state == '3' ) ) 
+                            &amp;&amp; jsonInput.to == 'project' ) {
+                        // Dont Allow completed stories to move to project
+                        result.setAttribute("status", "error");
+                        result.setAttribute("status_msg", gs.getMessage("Cannot move completed stories to a project"));
+                        isError = true;
+                    }
+                    // move stories to backlog
+                    else if( jsonInput.toId == -1 ) {
+                        gr.setValue(jsonInput.from, 'NULL');
+                        gr.update();
+                    }
+                    // move stories from project-to-sprint or vice versa
+                    else if( jsonInput.toId != -1 &amp;&amp; this.validateStoryProject(gr, jsonInput.to, jsonInput.toId) ) {
+                        if( jsonInput.from == 'sprint' ) {
+                            gr.setValue(jsonInput.from, 'NULL');
+                        }
+                        gr.setValue(jsonInput.to, jsonInput.toId);
+                        gr.update();
+                    }
+                    else {
+                        result.setAttribute("status", "error");
+                        result.setAttribute("status_msg", gs.getMessage("Cannot move stories to a different project"));
+                        isError = true;
+                    }
+                }
+                else if(jsonInput.from == 'project' &amp;&amp; jsonInput.to == 'project') {
+                    // move across projects
+                    if( jsonInput.from != -1 &amp;&amp; jsonInput.toId != -1 &amp;&amp; jsonInput.fromId != jsonInput.toId) {
+                        gr.setValue(jsonInput.to, jsonInput.toId);
+                    }
+                    // move to
+                    else if( jsonInput.toId == -1 ) {
+                        isError = true;
+                        result.setAttribute("status", "error");
+                        result.setAttribute("status_msg", gs.getMessage("Invalid project selection"));
+                    }
+                    gr.update();
+                }
+				else if(jsonInput.from == 'sprint' &amp;&amp; jsonInput.to == 'sprint') {
+                    // move across sprints
+                    if( jsonInput.from != -1 &amp;&amp; jsonInput.toId != -1 &amp;&amp; jsonInput.fromId != jsonInput.toId) {
+                        gr.setValue(jsonInput.to, jsonInput.toId);
+                    }
+					else if (jsonInput.toId == -1)
+						gr.setValue(jsonInput.to, 'NULL');
+                    gr.update();
+                }
+                else if( jsonInput.from == 'oneoff' &amp;&amp; ( jsonInput.to == 'sprint' || jsonInput.to == 'project') ) {
+                    if( jsonInput.toId != -1 ) {
+                        gr.setValue(jsonInput.to, jsonInput.toId);
+                        gr.update();
+                    }
+                    else if( jsonInput.toId == -1 ) {
+                        // Default the project for all projects
+                        gr.setValue('backlog_type', 'project');
+                        gr.update();
+                    }
+                }
+                else if( ( jsonInput.from == 'sprint' || jsonInput.from == 'project') &amp;&amp; jsonInput.to == 'oneoff' ) {
+ 
+                    if( (gr.getValue('state') == storyTaskStateUtil.getDefaultCloseState() || 
+                            ( /*projectTaskStateUtil &amp;&amp; gr.getValue('project.state') == projectTaskStateUtil.getDefaultCloseState()*/
+                            gr.project.state == '3'  ) ) ) {
+                        // Dont Allow completed stories to move to oneoff
+                        result.setAttribute("status", "error");
+                        result.setAttribute("status_msg", gs.getMessage("Cannot move completed stories to a one-off"));
+                        isError = true;
+                    }
+                    else {
+                        gr.setValue('project', 'NULL');
+                        gr.setValue('product', 'NULL');
+                        gr.setValue('sprint', 'NULL');
+                        gr.setValue('backlog_type', 'oneoff');
+                        gr.update();
+                        gr.setValue('assignment_group', jsonInput.toId);
+                        gr.setValue('backlog_type', 'oneoff');
+                        gr.update();
+                    }
+                }
+                else {
+                    isError = true;
+                    result.setAttribute("status", "error");
+                    result.setAttribute("status_msg", gs.getMessage("Invalid selection"));
+                }
+            }
+        }
+        else {
+            isError = true;
+            result.setAttribute("status", "error");
+            result.setAttribute("status_msg", gs.getMessage("No stories selected"));
+        }
+        if( !isError ) {
+            result.setAttribute("status", "success");
+            result.setAttribute("status_msg", gs.getMessage("successfully processed the stories"));
+        }
+    },
+
+    validateStoryProject: function(glideRecord, context, contextId) {
+        // check if the story movement is allowed
+        if( context == 'project' ) {
+            var prefilled = glideRecord.getValue(context);
+            if( prefilled == contextId ) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return true;
+        }
+    },
+
+    getCardDetails: function() {
+        var result = this.newItem("result");
+        var pageContext = this.getParameter('sysparm_pageContext');
+        var pageContextId = this.getParameter('sysparm_pageContextId');
+        var subContext = this.getParameter('sysparm_subContext');
+        var subContextId = this.getParameter('sysparm_subContextId');
+        var resultJson = {};
+        var gr;
+        var storyGR = null;
+        var filter = '';
+        var points;
+        var count = 0;
+        if( pageContext &amp;&amp; pageContextId &amp;&amp; subContext &amp;&amp; subContextId ) {
+            if( subContext == 'sprint') {
+                // team capacity
+                if( pageContextId != -1 ) {
+                    gr = new GlideRecord('sys_user_group');
+                    gr.get(pageContextId);
+                    resultJson.capacity = gr.getValue('points');
+                }
+                else {
+                    resultJson.capacity = 0;   
+                }
+                
+                if( subContextId != -1 ) {
+                    var sprintGr = new GlideRecord('rm_sprint');
+                    sprintGr.get(subContextId);
+                    resultJson.title = sprintGr.getValue('short_description');
+                    // Dont Include the Cancelled Stories
+                    count = 0;
+                    filter = 'state!=4^' + pageContext + '=' + pageContextId;
+                    if( subContextId &amp;&amp; subContextId &amp;&amp; subContextId != -1 ) {
+                        filter += '^' + subContext + '=' + subContextId;
+                    }
+                    storyGR  = new GlideRecord("rm_story");
+                    storyGR.addEncodedQuery(filter);
+                    storyGR.query();
+                    count = storyGR.getRowCount();
+                    points = 0;
+                    while( storyGR.next() ) {
+                        points += parseInt( storyGR.getValue('story_points') ? storyGR.getValue('story_points') : 0 );
+                    }
+                    resultJson.allocated = points;
+					resultJson.isGroupBacklog = false;
+                }
+                else {
+                    resultJson.title = gs.getMessage('Group Backlog');
+					var requiredFilter = 'state!=4^' + pageContext + '=' + pageContextId+'^sprintISEMPTY';
+                    var storygr  = new GlideRecord("rm_story");
+                    storygr.addEncodedQuery(requiredFilter);
+                    storygr.query();
+                    var totalpoints = 0;
+                    while( storygr.next()) {
+                        totalpoints += parseInt( storygr.getValue('story_points') ? storygr.getValue('story_points') : 0 );
+                    }
+					resultJson.isGroupBacklog = true;
+                    resultJson.totalPoints = totalpoints;
+                    resultJson.allocated = 0;
+                    resultJson.reset = true;
+                }
+            }
+            else if( subContext == 'project' ) {
+                // backlog
+                count = 0;
+                filter = 'state!=4^state!=3^backlog_type=project^sprintISEMPTY^' + pageContext + '=' + pageContextId;
+                if( subContextId &amp;&amp; subContextId &amp;&amp; subContextId != -1 ) {
+                    filter += '^' + subContext + '=' + subContextId;
+                }
+                storyGR  = new GlideRecord("rm_story");
+                storyGR.addEncodedQuery(filter);
+                storyGR.query();
+                count = storyGR.getRowCount();
+                points = 0;
+                while( storyGR.next() ) {
+                    points += parseInt( storyGR.getValue('story_points') ? storyGR.getValue('story_points') : 0 );
+                }
+                resultJson.points = points;
+                resultJson.stories = count;
+                if( subContextId != -1) {
+                    var projectGr = new GlideRecord('pm_project');
+                    projectGr.get(subContextId);
+                    resultJson.title = projectGr.getValue('short_description');
+                } else {
+                    resultJson.title = 'All Project Backlog';
+                }
+            }
+            else if( subContext == 'oneoff' ) {
+                // backlog
+                count = 0;
+                filter = 'state!=4^state!=3^sprintISEMPTY^backlog_type=oneoff^' + pageContext + '=' + pageContextId;
+                storyGR  = new GlideRecord("rm_story");
+                storyGR.addEncodedQuery(filter);
+                storyGR.query();
+                count = storyGR.getRowCount();
+                points = 0;
+                while( storyGR.next() ) {
+                    points += parseInt( storyGR.getValue('story_points') ? storyGR.getValue('story_points') : 0 );
+                }
+                resultJson.points = points;
+                resultJson.stories = count;
+                resultJson.title = gs.getMessage('One Off');
+            }
+        }
+        else {
+            if( subContext == 'sprint') {
+                // team capacity
+                if( pageContextId ) {
+                    gr = new GlideRecord('sys_user_group');
+                    gr.get(pageContextId);
+                    resultJson.capacity = gr.getValue('points');    
+                }
+                else {
+                    resultJson.capacity = 0;
+                }
+                resultJson.allocated = 0;
+                resultJson.title = 'All Sprints';
+            }
+            else if( subContext == 'project' ) {
+                resultJson.points = 0;
+                resultJson.stories = 0;
+                resultJson.title = 'All Project Backlog';
+            }
+        }
+        var json = new JSON();
+        result.setAttribute('result_json', json.encode(resultJson));
+    },
+
+    checkDataAvailable: function() {
+        var result = this.newItem("result");
+        var inputString = this.getParameter('sysparm_input');
+        var json = new JSON();
+        var inputJson = json.decode(inputString);
+        if( inputJson.pageContext == 'team' || inputJson.pageContext == 'assignment_group') {
+            if( inputJson.pageContextId != -1 ) {
+                var sprints = (new sn_sdlc_InlinePlanningBoardUtil()).sprintsForTeam(inputJson.pageContextId);
+                if( sprints.length == 0) {
+                    result.setAttribute('status_json', json.encode({status: 'error', message: gs.getMessage('No Sprints created for the group')}));
+                }
+				if( sprints.length &gt; 0 ) {
+                    result.setAttribute('status_json', json.encode({status: 'success', message: gs.getMessage('Successful')}));
+                }        
+            }
+            else {
+                result.setAttribute('status_json', json.encode({status: 'error', message: gs.getMessage('Select a group')}));
+            }   
+        }
+    },
+    type: 'sn_sdlc_PlanningAjaxProcessor'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-07-29 05:14:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;77d8ed04871221002320f3beb2e3ec8e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;195&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sn_sdlc_PlanningAjaxProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="SDLC Scrum PPM Integration" source="com.snc.sdlc.scrum.ppm_int"&gt;0a159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_77d8ed04871221002320f3beb2e3ec8e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-11 10:35:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;27536&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:41</sys_created_on>
+        <sys_id>71dc093e2f331110d8a4d5f62799b63f</sys_id>
+        <sys_name>sn_sdlc_PlanningAjaxProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_71dc093e2f331110d8a4d5f62799b63f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

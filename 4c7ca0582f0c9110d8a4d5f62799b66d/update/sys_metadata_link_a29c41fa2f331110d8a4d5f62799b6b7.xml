@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>579981750b002300d08dae9863673aaa</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlanningConsoleServer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Serves planning console processor requests&lt;/description&gt;
+        &lt;name&gt;PlanningConsoleServer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlanningConsoleServer = Class.create();
+PlanningConsoleServer.prototype = {
+    initialize: function() {		
+		this.plannedTaskAPI = new SNC.PlannedTaskAPI();
+		this.ppmConfigAPI = SNC.PPMConfig;
+		this.PLANNED_TASK_TABLE = 'planned_task';
+    },
+	
+	fetchPlanningConsoleData: function(entity, sysClassName, sysId, consoleId, context, fiscalYearId, loadWithPermissions) {
+		
+		var metadata,
+			ganttData,
+			permissions,
+			schedule,
+			pcData = [];
+		
+		metadata = this.fetchMetadata(entity, sysClassName, sysId, consoleId, context, fiscalYearId);
+		pcData.push(metadata);
+		
+		if(entity == 'custom')
+			ganttData = this.fetchMultiTaskGanttData(consoleId);
+		else
+			ganttData = this.fetchTaskGanttData(entity, sysClassName, sysId, false, context, fiscalYearId, loadWithPermissions);
+		
+		ganttData = this.getJson().decode(ganttData);
+		pcData.push(ganttData);
+		
+		permissions = this.fetchPermissions(sysClassName, sysId, consoleId, context);
+		pcData.push(permissions);
+
+		schedule = this.fetchSchedule(sysClassName, sysId);
+		schedule = this.getJson().decode(schedule);
+		pcData.push(schedule);		
+		
+		return pcData;
+	},
+	
+	fetchMetadata: function(entity, sysClassName, sysId, consoleId, context, fiscalYearId) {
+        var planningConsoleContext = this.getCorrectContext(entity, context),
+			metadata,
+			glideRecord,
+			level = 0;				
+		
+		if(JSUtil.notNil(consoleId) &amp;&amp; consoleId !== '' &amp;&amp; planningConsoleContext == 'Investment Timeline View') {
+            metadata = new PlannedTaskConsoleMetadata(consoleId);
+            return metadata.portalMetadata(entity, planningConsoleContext);
+        }
+		
+        if(JSUtil.notNil(consoleId) &amp;&amp; consoleId !== '') {
+            metadata = new PlannedTaskConsoleMetadata(consoleId);
+            return metadata.metadata();
+        }
+		
+        if(!PmRecordAccessHelper.canReadRecord(sysClassName, sysId)) {
+            return {status: 'error', message: "User doesnot have access to the record"};
+        }
+		
+        if(PPMTableCheck.isPortfolio(sysClassName)) {
+            metadata = new PortfolioMetaData(sysClassName, planningConsoleContext);
+            return metadata.metadata(sysId, fiscalYearId);
+        }
+		
+        if(PPMTableCheck.isProgram(sysClassName)) {
+            metadata = new ProgramMetaData(sysClassName);
+            return metadata.metadata(sysId, fiscalYearId);
+        }
+		
+        if(PPMTableCheck.isRelease(sysClassName)) {
+            metadata = new ReleaseMetadata();
+            return metadata.metadata(sysClassName);
+        }
+		
+        if(PPMTableCheck.isProject(sysClassName)) {
+            metadata = new ProjectMetaData();
+            glideRecord = this.fetchProjectRecord(sysClassName, sysId);			
+            level = this.fetchMaxLevel(glideRecord.getValue('sys_id'));
+            return metadata.metadata(glideRecord, level);
+        }
+		
+        // Internally Check if the Seperate Metadata seeded for the table
+        if(PPMTableCheck.isPlannedTask(sysClassName)) {
+            metadata = new PlannedTaskMetadata(sysClassName, consoleId);
+            return metadata.metadata();
+        }
+    },
+	
+	fetchMultiTaskGanttData: function(consoleId) {
+		var plannedTaskAPI = this.plannedTaskAPI,
+			plannedTaskCustomConsole = new PlannedTaskCustomConsole(consoleId),			
+			matchingRecords,
+			matchingRecordIds,
+			readRecordIds = [],
+			multiTaskGanttDataStr;
+		
+		matchingRecords = plannedTaskCustomConsole.matchingRecordIds();
+		matchingRecordIds = this.filterDuplicates(matchingRecords);
+
+		readRecordIds = [];
+		for(i=0; i&lt;matchingRecordIds.length; i++) {
+			if(PmRecordAccessHelper.canReadRecord('planned_task', matchingRecordIds[i]))
+				readRecordIds.push(matchingRecordIds[i]);
+		}
+
+		multiTaskGanttDataStr = plannedTaskAPI.multiTaskGanttDataV2(plannedTaskCustomConsole.table(), readRecordIds);
+		
+		return multiTaskGanttDataStr;
+	},
+	
+	fetchTaskGanttData: function(entity, sysClassName, sysId, criticalPath, context, fiscalYearId, loadWithPermissions) {
+		var planningConsoleContext = this.getCorrectContext(entity, context),
+			contextObj,
+			queryConstraint,
+			loadPermissions,
+			errorStatus,
+			ganttDataStr;
+		
+		if(PmRecordAccessHelper.canReadRecord(sysClassName, sysId)) {
+			contextObj  = {
+				entity: entity,
+				sysClassName: sysClassName, 
+				context: planningConsoleContext,
+				sysId: sysId,
+				fiscalYearId: fiscalYearId
+			};
+			
+			queryConstraint = ConsoleConstraints.buildConstraintsFor(entity, fiscalYearId, contextObj);
+			loadPermissions = (loadWithPermissions === false) ? false : true;
+			var topTask = sysId;
+			var hasLinksOutside = false;
+			// **Support for sub project start**
+			//if its sub project build a query for sub project
+			if(sysId){
+				var _gr = new GlideRecord('planned_task');
+				if(_gr.get(sysId)){
+					topTask = _gr.getValue('top_task');
+					if(topTask != sysId){
+						//add wbs logic
+						var projectEncodedQuery ="";
+						if(queryConstraint){
+							projectEncodedQuery = queryConstraint.getNodeQueryCondition(sysClassName)|| "";
+						}else{
+							queryConstraint = new SNC.QueryConstraint();
+						}
+						var wbs = _gr.getValue('wbs');
+						//check links
+						var oLinkQuery = "child.ref_planned_task.wbs=" + wbs + "^ORchild.ref_planned_task.wbsSTARTSWITH" + wbs
+						+ ".^child.ref_planned_task.top_task="+ topTask
+						+ "^parent.ref_planned_task.wbs!="+ wbs + "^parent.ref_planned_task.wbsNOT LIKE"+wbs+".%";
+
+						var grRel = new GlideRecord('planned_task_rel_planned_task');
+						grRel.addEncodedQuery(oLinkQuery);
+						grRel.query();
+						hasLinksOutside = grRel.getRowCount() &gt; 0;
+						var outsideTasks = [topTask];
+						while(grRel.next()){
+							outsideTasks.push(grRel.getValue('parent'));
+						}
+						
+						projectEncodedQuery += "wbsSTARTSWITH"+wbs+".^ORwbs="+wbs+"^ORsys_idIN"+outsideTasks.join();
+						//append project query
+						queryConstraint.addNodeQueryCondition(sysClassName, projectEncodedQuery);
+						//project task query
+						var oPPMConfig = new SNC.PPMConfig();
+						var projTaskTable = 'pm_project_task';
+						var configId = oPPMConfig.getConfigId(sysClassName);
+						if(configId){
+							projTaskTable = oPPMConfig.getProjectTaskTable(configId);
+						}
+						queryConstraint.addNodeQueryCondition(projTaskTable, projectEncodedQuery);
+					}
+				}
+			}
+			// **Support for sub project end**
+			ganttDataStr = this.plannedTaskAPI.ganttDataV2(sysClassName, planningConsoleContext, topTask, queryConstraint, criticalPath, loadPermissions);
+			if (topTask != sysId) {
+				var ganttData = this.getJson().decode(ganttDataStr);
+				ganttData.hideTopTask = topTask;
+				ganttData.hasLinksOutside = hasLinksOutside;
+				if (ganttData &amp;&amp; ganttData.tasks) {
+					for (var t = 0; t &lt; ganttData.tasks.length; t++) {
+						if (ganttData.tasks[t].sys_id == sysId) {
+							ganttData.tasks[t].parent = "";
+							ganttData._project_sub_tree_wbs = ganttData.tasks[t].wbs;
+							break;
+						}
+					}
+				}
+				ganttDataStr = this.getJson().encode(ganttData);
+			}
+			
+		} else {
+			errorStatus = {
+				status: 'error',
+				message: 'User doesnot have access to the record'
+			};
+
+			ganttDataStr = this.getJson().encode(errorStatus);
+		}
+		
+		return ganttDataStr;
+	},
+	
+	fetchPermissions: function(sysClassName, sysId, consoleId, context) {
+		var ppmConsoleAccessStrategy = new PPMConsoleAccessStrategy(),
+			planningConsoleContext = !!context ? context : 'default',
+			accessConfig;
+		
+		accessConfig = ppmConsoleAccessStrategy.accessConfig(sysClassName, sysId, consoleId, planningConsoleContext);
+		
+		return accessConfig;
+    },
+	
+	fetchSchedule: function(sysClassName, sysId, scheduleId, scheduleTimezone, startYear, endYear, forward) {
+		var isScheduleId = !!scheduleId,
+			errorStatus,
+			scheduleStr;
+				
+        if(PmRecordAccessHelper.canReadRecord(sysClassName, sysId)) {
+			if(isScheduleId)
+				scheduleStr = this.plannedTaskAPI.getSchedule(scheduleId, scheduleTimezone, startYear, endYear, forward);
+			else
+				scheduleStr = this.plannedTaskAPI.getScheduleForTaskId(sysId);
+			if (JSUtil.nil(JSON.parse(scheduleStr))) {
+				errorStatus = {
+					status: 'error',
+					message: gs.getMessage('Could not fetch schedule')
+				};
+				scheduleStr = this.getJson().encode(errorStatus);
+			}
+		} else	{
+			errorStatus = {
+				status: 'error',
+				message: gs.getMessage('User does not have access to the record')
+			};
+			
+			scheduleStr = this.getJson().encode(errorStatus);
+		}					
+		
+		return scheduleStr;
+    },
+	
+	fetchNotifications: function(sysClassName, sysId) {
+		var notifications = [];
+		
+		if(!PPMTableCheck.isProject(sysClassName))
+			return notifications;
+		
+		var projectRecord,
+			isProjectClosed,
+			ptStateUtil,
+			projectNotifications;
+		
+		projectRecord = this.fetchProjectRecord(sysClassName, sysId);
+		ptStateUtil = new PlannedTaskStateUtil(projectRecord);
+		isProjectClosed = ptStateUtil.isStateInactive(projectRecord.state);
+		
+		if(isProjectClosed &amp;&amp; GlidePluginManager.isActive('com.snc.resource_management')) {
+			projectNotifications = new ProjectOpenNotifications();
+			notifications = notifications.concat(projectNotifications.addPlanningConsoleNotifications(sysClassName, sysId));
+		}
+		
+		return notifications;
+	},
+	
+	fetchProjectRecord: function(sysClassName, sysId) {
+		var ppmConfigAPI = this.ppmConfigAPI,
+			projectTableName = ppmConfigAPI.getProjectTable(sysClassName),
+			projectRecord;
+		
+        projectRecord = new GlideRecord(projectTableName);
+        projectRecord.get(sysId);
+		
+        return projectRecord;
+    },
+	
+	fetchMaxLevel: function(projectSysId) {
+		var plannedTaskTable = this.PLANNED_TASK_TABLE,
+			levelAggregates,
+			maxLevel;
+		
+        levelAggregates = new GlideAggregate(plannedTaskTable);
+        levelAggregates.addQuery('top_task', projectSysId);
+        levelAggregates.addAggregate('MAX', 'level');
+		levelAggregates.orderByAggregate('MAX', 'level'); //Descending order
+        levelAggregates.query();
+		
+        if(levelAggregates.next())
+			maxLevel = levelAggregates.getAggregate('MAX', 'level');		
+		
+        return maxLevel;
+    },
+	
+	filterDuplicates: function(matchingRecords) {
+        var ids = [],
+			parentIds = [],
+			arrayUtil = new ArrayUtil(),
+			childParents = [],
+			index,
+			i;
+		 
+        for(i=0; i&lt;matchingRecords.length; i++) {
+            ids.push(matchingRecords[i].sys_id);
+            if(JSUtil.notNil(matchingRecords[i].parent)) {
+                if(arrayUtil.contains(parentIds, matchingRecords[i].parent));
+                    parentIds.push(matchingRecords[i].parent);
+            }
+        }
+		
+        // Check if the parent(s) already exists in the ids
+        for(i=0; i&lt;parentIds.length; i++) {
+            if(arrayUtil.contains(ids, parentIds[i])) {
+                childParents.push(parentIds[i]);
+            }
+        }
+		
+        // Now remove all the children of that parent already exists in the ids
+        for(i=0; i&lt;matchingRecords.length; i++) {
+            if(arrayUtil.contains(childParents, matchingRecords[i].parent)) {
+                index = ids.indexOf(matchingRecords[i].sys_id);
+                ids.splice(index, 1);
+            }
+        }
+		 
+        // By this time, all the children of the parent(s) are removed.
+        // There might exists children whose parent(s) are not part of childParents
+        // Remove the same
+        for(i=0; i&lt;childParents.length; i++) {
+            index = parentIds.indexOf(childParents[i]);
+            parentIds.splice(index, 1);
+        }
+		
+        //gs.info("Left over parentIds: " + new JSON().encode(parentIds));
+        // Remove all the left over parent children
+        for(i=0; i&lt;matchingRecords.length; i++) {
+            if(arrayUtil.contains(parentIds, matchingRecords[i].parent)) {
+                index = ids.indexOf(matchingRecords[i].sys_id);
+                ids.splice(index, 1);
+            }
+        }
+		
+        return ids;
+    },
+	
+	getCorrectContext: function(entity, context) {
+		var correctContext = (entity == 'custom' ? 'my_gantt' : context);
+		
+		return correctContext;
+	},
+	
+	getJson: function() {
+        return new JSON();
+    },
+    
+    type: 'PlanningConsoleServer'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-21 10:29:47&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;579981750b002300d08dae9863673aaa&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;88&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlanningConsoleServer&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_579981750b002300d08dae9863673aaa&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-06-10 15:52:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;12069&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:39</sys_created_on>
+        <sys_id>a29c41fa2f331110d8a4d5f62799b6b7</sys_id>
+        <sys_name>PlanningConsoleServer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a29c41fa2f331110d8a4d5f62799b6b7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

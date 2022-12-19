@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6262ac20bf200100710071a7bf073940</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdVerifyQuestionsProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Extension for Question &amp;amp; Answers verification of user input on the second page.&lt;/description&gt;
+        &lt;name&gt;PwdVerifyQuestionsProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdVerifyQuestionsProcessor = Class.create();
+PwdVerifyQuestionsProcessor.prototype = {
+    category: 'password_reset.extension.verification_form_processor',   // DO NOT REMOVE THIS LINE!
+
+    /**********
+     * Initialization stuff here...
+     **********/
+    initialize: function() {
+    },
+    
+    /**********
+    * Process the verification form request, and return whether the user was successfully verified
+    * 
+    * @param params.resetRequestId The sys-id of the current password-reset request (table: pwd_reset_request)
+    * @param params.userId         The sys-id of the user trying to be verified (table: sys_user)
+    * @param params.verificationId The sys-id of the verification to be processed (table: pwd_verification)
+    * @param request               The form request object. fields in the form can be accessed using: request.getParameter('&lt;element-id&gt;')
+    * @return boolean telling whether the user is successfully verified
+    **********/
+    processForm: function(params, request) {
+       var isVerified = false;
+       try {
+           isVerified = this.verify(params.resetRequestId, params.userId, params.verificationId, request);
+       } catch (scriptErr) {
+           gs.logError("[PwdVerifyQuestionsProcessor.processForm]: '" + scriptErr + "'");
+           isVerified = false;
+       }
+       return isVerified;
+    },    
+    
+    /*********
+     * verify - returns true/false whether the user is verified for this verification method.
+     *
+     * Params: 
+	 * @enrolled_user_id
+	 * @verification_id
+	 * @request - the request object that was submitted by the user in the verification form
+     *********/
+    verify: function(reset_request_id, sys_user_id, verification_id, request) {
+		var LOG_ID="[PwdVerifyQuestionsProcessor] [request_id = " + reset_request_id + "]";
+
+		// Get number of questions to ask, and check for validity of this number:
+		var numReset = new SNC.PwdVerificationManager().getVerificationParamValue(verification_id, "num_reset");
+		
+		if (numReset == undefined) {
+            this._logError(LOG_ID + "Number of question for resetting password (num_reset) in verification " + verification_id + " is undefined");
+            return false;
+		}
+		numReset = parseInt(numReset);
+		if (numReset &lt;= 0) {
+            this._logError(LOG_ID + "Number of question for resetting password (num_reset) in verification " + verification_id + " is invalid (must be greater than 0)");
+            return false;
+		}
+		
+		// Iterate through all questions to ensure all pass successfully:
+        for (var i = 0; i &lt; numReset; i++) {
+			// Retrieve the question id and the user's answer from the input fields (passed in the request):
+            var active_question_id = request.getParameter("sysparm_question_" + i);
+            var user_answer = request.getParameter("sysparm_answer_" + i);
+            var isEncrypted = request.getParameter("isEncrypted");
+            // The flag is set to true if the answer is in encrypted format (Password1 type hashed with SHA-1)
+            // In Case of Virtual Agent the answers will be in password1 encrypted format.
+            if (isEncrypted == undefined)
+	            isEncrypted = false;
+
+            if(user_answer) {
+            	user_answer = user_answer.trim();
+            }
+			
+			if ((active_question_id == undefined) || (user_answer ==  undefined)) {
+	            this._logError("sysparm_question_" + i + " or sysparm_answer_" + i + " is undefined");
+				return false;
+			}
+            
+            if (!this._isAnswerOk(reset_request_id, verification_id, sys_user_id, active_question_id, user_answer, isEncrypted)) {
+				gs.log(LOG_ID + "Security Questions verification failed for [verificationId:" + verification_id +
+					   "][sys_user_id:"+sys_user_id + "][active_question_id:" + active_question_id + "]"); //For Debug + "[user_anser:"+user_answer+"]");
+	            return false;
+			}
+			//For Debug gs.log(LOG_ID+"answer " + user_answer + " ok");
+        }
+        
+		gs.log(LOG_ID + "Security Questions verification succeeded");
+		return true;
+    },
+        
+    /**********
+     * isAnswerOk - returns true/false if the submitted answer is correct
+     *
+	 * @enrolled_user_id
+     * @param - verification_id
+     * @param - sys_user_id
+     * @param - active_question_id
+     * @param - user_answer
+     **********/
+    _isAnswerOk : function(reset_request_id, verification_id, sys_user_id, active_question_id, user_answer, isEncrypted) {
+        
+		var LOG_ID="[PwdVerifyQuestionsProcessor._isAnswerOK] [request_id = " + reset_request_id + "]";
+        gs.log(LOG_ID + "Conditions [verificationId:"+verification_id+"][sys_user_id:"+sys_user_id+"][active_question_id:"+active_question_id+"]");
+        
+        var gr_answers = new GlideRecord('pwd_active_answer');
+        gr_answers.addJoinQuery('pwd_enrollment', 'enrollment', 'sys_id');
+        gr_answers.addQuery('enrollment.verification',  verification_id);
+        gr_answers.addQuery('enrollment.user', sys_user_id);
+        gr_answers.addQuery('active_question', active_question_id);
+        gr_answers.query();
+        
+        if (!gr_answers.next()) {
+            gs.log(LOG_ID+"Answer not found for question: '" + active_question_id + "'");
+            return false;
+		}
+		
+        gs.log(LOG_ID+"Found answer to question: '" + active_question_id + "' (enrollment: " + gr_answers.enrollment + ")");
+        
+        var same = new SNC.PwdQAManager().compareAnswers(gr_answers.sys_id, user_answer, isEncrypted);
+        
+        gs.log(LOG_ID+"Is provided answer correct?: '" + same + "'");
+        return same;
+    },
+    
+	_logError : function(message) {
+		gs.log("ERROR in PwdVerifyQuestionsProcessor: " + message);
+	},
+	
+    type: 'PwdVerifyQuestionsProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-04-01 21:03:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6262ac20bf200100710071a7bf073940&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;66&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdVerifyQuestionsProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6262ac20bf200100710071a7bf073940&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-08-16 20:04:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5745&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:58</sys_created_on>
+        <sys_id>13ac49fa2f331110d8a4d5f62799b6de</sys_id>
+        <sys_name>PwdVerifyQuestionsProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_13ac49fa2f331110d8a4d5f62799b6de</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

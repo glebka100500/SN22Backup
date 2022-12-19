@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>89c9ad23c30321000096dfdc64d3ae8f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KBWorkflow&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Override out-of-the-box calls for KBWorkflowSNC.&lt;/description&gt;
+        &lt;name&gt;KBWorkflow&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KBWorkflow = Class.create();
+KBWorkflow.prototype = Object.extendsObject(KBWorkflowSNC, {
+    initialize: function() {
+    },
+
+    type: 'KBWorkflow'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-09-15 08:56:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;89c9ad23c30321000096dfdc64d3ae8f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KBWorkflow&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_89c9ad23c30321000096dfdc64d3ae8f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-09-15 08:57:47&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;157&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:18</sys_created_on>
+        <sys_id>3efc857e2f331110d8a4d5f62799b615</sys_id>
+        <sys_name>KBWorkflow</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3efc857e2f331110d8a4d5f62799b615</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

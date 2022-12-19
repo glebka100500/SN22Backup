@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>90c87d229fa603000f51b7bda42e701d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PopulateManualServiceAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX for PopulateManualService Script Include&lt;/description&gt;
+        &lt;name&gt;PopulateManualServiceAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PopulateManualServiceAjax = Class.create();
+PopulateManualServiceAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	/**
+	 * This AJAX returns NULL on success.
+	 * On error, a JSON will be returned {error_source: String, error_msg: String}.
+	 * Use answer.evalJSON() on the receiving side, if answer is NOT NULL.
+	 */
+	process: function() {
+		var service_id = String(this.getParameter('sysparm_service_id'));
+		var levels = String(this.getParameter('sysparm_levels'));
+		var isDynamic = String(this.getParameter('sysparm_is_dynamic'));
+		
+		var pms = new PopulateManualService();
+		return pms.process(service_id, levels, isDynamic);
+	},
+	
+	type: 'PopulateManualServiceAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-11-23 12:19:58&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;90c87d229fa603000f51b7bda42e701d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;67&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PopulateManualServiceAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Service" source="com.snc.cmdb.it_service"&gt;72b4cdcf6da620100acb70b353433039&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_90c87d229fa603000f51b7bda42e701d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-05 20:02:07&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;693&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:37</sys_created_on>
+        <sys_id>6b0d497e2f331110d8a4d5f62799b6ca</sys_id>
+        <sys_name>PopulateManualServiceAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6b0d497e2f331110d8a4d5f62799b6ca</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

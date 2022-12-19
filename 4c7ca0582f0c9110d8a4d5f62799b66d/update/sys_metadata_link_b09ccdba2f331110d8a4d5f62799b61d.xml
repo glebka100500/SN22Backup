@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>53318bd82f730510d8a4d5f62799b6fd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PFGDevOpsAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PFGDevOpsAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PFGDevOpsAPI = Class.create();
+PFGevOpsAPI.prototype = {
+	ORCHESTRATION_MAPPING: { // pipeline
+		'payload_field' : 'table_field'
+	},
+	CODE_MAPPING: {}, // repository
+    initialize: function() {
+    },
+	/*
+	 payload :  pipeline data or repository data
+	 params : additional parameters like tool id, etc.
+	*/
+	checkAndInsert: function (TABLE_NAME, MAPPING, payload, params) {
+		// polymorphism example
+		// check if exists
+		var ga = new GlideAggregate(TABLE_NAME);
+		ga.addAggregate("COUNT");
+		for (var i in MAPPING){
+			ga.addQuery(MAPPING[i], payload[i]);
+		}
+		ga.query();
+		
+		if (ga.getAggregate("COUNT") == 0) {
+			// insert record
+			var gr = new GlideRecord(TABLE_NAME);
+			gr.initialize();
+			for (i in MAPPING) {
+				if (gr.isValidField(MAPPING[i])){
+					gr[MAPPING[i]] = payload[i];
+				}
+			}
+			gr.insert();
+			return true;
+		}
+		return false;
+			
+	},
+	
+    type: 'PFGDevOpsAPI'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-05-27 14:21:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;53318bd82f730510d8a4d5f62799b6fd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PFGDevOpsAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_53318bd82f730510d8a4d5f62799b6fd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-27 16:12:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;939&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:32</sys_created_on>
+        <sys_id>b09ccdba2f331110d8a4d5f62799b61d</sys_id>
+        <sys_name>PFGDevOpsAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b09ccdba2f331110d8a4d5f62799b61d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

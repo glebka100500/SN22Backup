@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8998a2500ab3015300e6ebbf8bc77f26</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.HostnameJS&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Formats hostnames according to property settings.&lt;/description&gt;
+        &lt;name&gt;HostnameJS&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// Discovery class
+
+/**
+ * Formats hostnames according to property settings.
+ * 
+ * Tom Dilatush tom.dilatush@service-now.com &amp; Aleck Lin aleck.lin@service-now.com
+ */
+var HostnameJS = Class.create();
+
+HostnameJS.prototype = {
+    initialize: function() {
+        this.sysName = "";
+        this.dnsDomain = "";
+		this.logger = null;
+    },
+
+    format: function(hostname, source) {
+        var sysName = hostname;
+        if ((sysName == null) || (typeof sysName == 'undefined') || gs.nil(sysName))
+            return null;
+
+        // Check to see if the case of the hostname needs to be manipulated
+        var change = gs.getProperty('glide.discovery.hostname.case', 'No change');
+        if (change == 'Lower case')
+            sysName = sysName.toLowerCase();
+        else if (change == 'Upper case') 
+            sysName = sysName.toUpperCase();
+
+        var inc_domain = gs.getProperty('glide.discovery.hostname.include_domain', 'false');
+		
+        // Parse the name and parse the hostname and domain name apart if the format is something like abc.domain.com
+        this._parseFQDN(sysName);
+        var sysName = this.getSysName();
+        var domainName = this.getDomainName();
+
+        if (this._isLocalhost(sysName)) {
+            if (inc_domain == "true")
+                return sysName + ( JSUtil.notNil(domainName) ? ('.' + domainName) : '' ) 
+                   + ( JSUtil.nil(source) ? '' : ('@' + source) );
+            else
+                return sysName + ( JSUtil.nil(source) ? '' : ('@' + source) );
+        } 
+
+        if (inc_domain == "true")
+            return sysName + ( JSUtil.notNil(domainName) ? ('.' + domainName) : '' );      
+
+        return sysName;
+    },
+
+    getSysName: function() {
+        return this.sysName;
+    },
+
+    // This method gets called for retrieving dns domain name
+    getDomainName: function() {
+        return this.dnsDomain;
+    },
+	
+	getFQDN: function() {
+		if (JSUtil.nil(this.dnsDomain))
+			return this.sysName;
+		else
+			return this.sysName + "." + this.dnsDomain;
+	},
+
+    _parseFQDN: function(sysName) {
+        this.sysName = sysName		
+			
+		// A fully qualified domain name should never have spaces in it. If it does, then we can't really parse it.
+		if (sysName.indexOf(" ") &gt; -1)
+			return;
+			
+        // If the hostname is an IP address, then there's really nothing to parse.
+        if (SncIPAddressV4.getIPAddressV4Instance(sysName))
+            return;
+
+        // In order to parse FQDN, the name must have at least 2 dots in it, such as mac1.snc.com
+        var parts = sysName.split('.');
+        if (parts.length &lt; 3)
+            return;
+
+        // Parse FQDN with regex. By default, we take the first one separated by dot as 
+        // the host name and the rest of at least two as the domain name.
+		try {
+			var regexStr = gs.getProperty('glide.discovery.fqdn.regex', "^([^.]+)\\.((?:[^.]+\\.)+[^.]+)$");
+			var fqdnRegex = new RegExp(regexStr);
+			var groups = fqdnRegex.exec(sysName);
+			if (groups.length != 3)
+				return;
+	
+			this.sysName = groups[1];
+			this.dnsDomain = groups[2];
+		} catch (e) {
+			this.log("FQDN parsing error! The regex " + regexStr + " was not able to parse '" + sysName + "'. The error is " + e.message, "warning");
+		}
+    },
+
+	setLogger: function(logger) {
+		this.logger = logger;
+	},
+	
+	log: function(msg, type) {
+		if (this.logger == null)
+			gs.log(msg);
+		else {
+			if (type == "information")
+				this.logger.info(msg);
+			else if (type == "warning")
+				this.logger.warn(msg);
+			else if (type == "error")
+				this.logger.error(msg);			
+		}
+	},
+	
+    /*
+     *  If the name starts with localhost or 127.0.0.1, that means it hasn't been configured 
+     *  and we should probably specially treat these because otherwise it become confusing.
+     */
+    
+    _isLocalhost: function(sysName) {
+        if (sysName.indexOf('localhost') &gt; -1)
+            return true;
+
+        if (sysName.indexOf("127.0.0.1") &gt; -1)
+            return true;
+
+        return false;
+    },
+
+    type: "HostnameJS"
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-12-13 19:51:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8998a2500ab3015300e6ebbf8bc77f26&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;80&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;HostnameJS&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8998a2500ab3015300e6ebbf8bc77f26&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-10-09 20:40:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4013&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:17</sys_created_on>
+        <sys_id>22fc457e2f331110d8a4d5f62799b6a5</sys_id>
+        <sys_name>HostnameJS</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_22fc457e2f331110d8a4d5f62799b6a5</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

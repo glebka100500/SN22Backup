@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>528a63d65b121010d9a5ce1a8581c755</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisQueryRuleConditionUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Validates that the given encoded query complies with AIS compatible conditions, which means only using the "=" (is) operator for any field except the query timestamp, and no dot walking.&lt;/description&gt;
+        &lt;name&gt;AisQueryRuleConditionUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisQueryRuleConditionUtils = Class.create();
+AisQueryRuleConditionUtils.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    validateEncodedQueryString: function() {
+        var encodedQuery = this.getParameter('sysparm_query');
+        var encodedQueryConditions = encodedQuery.toString().split("\\^");
+        for (var conditionNumber = 0; conditionNumber &lt; encodedQueryConditions.length; conditionNumber++) {
+            var encodedCondition = encodedQueryConditions[conditionNumber];
+            try {
+                var qs = new GlideQueryString('ais_result_improvement_rule_condition_builder_values', encodedCondition);
+                qs.deserialize();
+                var terms = qs.getTerms();
+                for (var i = 0; i &lt; terms.size(); i++) {
+                    var condition = terms.get(i);
+                    if (condition.getField() == "query" &amp;&amp; condition.getOperator() != "=" &amp;&amp;
+                        condition.getOperator() != "STARTSWITH" &amp;&amp; condition.getOperator() != "ENDSWITH" &amp;&amp;
+                        condition.getOperator() != "CONTAINS")
+                        return gs.getMessage('Conditions involving the query can only use the "IS", "CONTAINS", "STARTS WITH", or "ENDS WITH" operators.');
+                    else if (condition.getField() == "query_timestamp" &amp;&amp; condition.getOperator() != "&lt;" &amp;&amp;
+                        condition.getOperator() != "&gt;")
+                        return gs.getMessage('You can only use the "Before" and "After" operators for the Query Timestamp attribute.');
+                    else if (condition.getField() != "query_timestamp" &amp;&amp; condition.getField() != "query" &amp;&amp;
+                        condition.getOperator() != "=")
+                        return gs.getMessage('You can only use the "IS" operator for attributes other than the Query Timestamp');
+                    else if (condition.getField().indexOf(".") &gt; -1)
+                        return gs.getMessage('You can not dot walk for trigger conditions - please only use the base attributes list.');
+                    // Check For "Keywords" option
+                    else if (condition.getField() == "123TEXTQUERY321")
+                        return gs.getMessage("'Keywords' is not supported for trigger conditions");
+                }
+            } catch (e) {
+                gs.error(e);
+            }
+
+        }
+        return 'ok';
+    },
+
+    type: 'AisQueryRuleConditionUtils'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-07-31 20:56:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;528a63d65b121010d9a5ce1a8581c755&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisQueryRuleConditionUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_528a63d65b121010d9a5ce1a8581c755&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-08-03 21:40:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2438&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:31</sys_created_on>
+        <sys_id>e49c8dba2f331110d8a4d5f62799b6c7</sys_id>
+        <sys_name>AisQueryRuleConditionUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e49c8dba2f331110d8a4d5f62799b6c7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>742bf0fbc31011003d2ae219cdba8f1e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_BaseFactory&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;All customisations should be made in the sc_Factory class.&amp;#13;
+&amp;#13;
+See sc_Factory for more information on how to mount customisations.&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;sc_BaseFactory&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_BaseFactory = Class.create();
+sc_BaseFactory.prototype = {
+    initialize: function() {
+        this._log = (new GSLog(sc_.LOG_LEVEL, this.type)).setLog4J();
+
+        // Default Class Registrations
+        this.registerClass(sc_.SCRIPTABLE_ORDER_GUIDE_FAILURE, sc_ScriptableOrderGuideFailure);
+		this.registerClass(sc_.CATEGORY, sc_Category);
+    },
+
+    /**
+     * Registers a class against a table name
+     */
+    registerClass: function(tableName, clazz) {
+        this._classMap[tableName + ""] = clazz;
+    },
+
+    /**
+     * Wraps the provided GlideRecord in the defined wrapper class. Also passes
+     * through any other parameters
+     */
+    wrap: function() {
+        // For this to work we need to get rid of the automatic boostrap for the object
+        // clone everything else, then create the object and call the constructor manually
+        var cln = function() {};
+        cln.prototype = {};
+        var source = this.getWrapperClass(arguments[0].getTableName());
+        for (var property in source.prototype)
+            cln.prototype[property] = source.prototype[property];
+        var wrapped = new cln();
+        wrapped.initialize.apply(wrapped, arguments);
+        return wrapped;
+    },
+
+    /**
+     * Manages the defererencing of wrapper classes based on table name
+     */
+    getWrapperClass: function(tableName) {
+        tableName += "";
+
+        var parentList = (new TableUtils(tableName)).getTables();
+
+        for (var i = 0; i &lt; parentList.size(); i++) {
+            var clazz = this._classMap[parentList.get(i) + ""];
+            if (clazz !== "undefined") {
+                if (this._log.atLevel(GSLog.DEBUG))
+                    this._log.debug("[getWrapperClass] Returning class " + clazz.prototype.type + " for table " + tableName);
+                return clazz;
+            }
+        }
+
+        this._log.error("[getWrapperClass] Unknown object type for &lt;" + tableName + "&gt;");
+        throw new sc_FactoryException("[getWrapperClass] Unknown object type for &lt;" + tableName + "&gt;");
+    },
+
+    _classMap: {},
+
+    type: 'sc_BaseFactory'
+};
+
+//Namespaced methods for wrap and getWrapperClass.
+sc_BaseFactory.wrap = function() {
+    var fact = new sc_BaseFactory();
+    return fact.wrap.apply(fact,arguments);
+};
+
+sc_BaseFactory.getWrapperClass = function() {
+    var fact = new sc_BaseFactory();
+    return fact.getWrapperClass.apply(fact,arguments);
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-10-15 11:27:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;742bf0fbc31011003d2ae219cdba8f1e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_BaseFactory&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_742bf0fbc31011003d2ae219cdba8f1e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;nigel.bell&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-02-17 16:35:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2403&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:32</sys_created_on>
+        <sys_id>2fcc053e2f331110d8a4d5f62799b6d3</sys_id>
+        <sys_name>sc_BaseFactory</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2fcc053e2f331110d8a4d5f62799b6d3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

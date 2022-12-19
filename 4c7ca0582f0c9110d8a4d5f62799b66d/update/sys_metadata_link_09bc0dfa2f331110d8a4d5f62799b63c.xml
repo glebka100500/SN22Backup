@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>666260d48f1c2200c2fe0b5437bdee26</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VCenterVMNICsSensor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implementation of the "VMWare - vCenter VM NICs" sensor.  Create records for NICs installed in virtual machines.&lt;/description&gt;
+        &lt;name&gt;VCenterVMNICsSensor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/* jshint -W030 */
+
+var VCenterVMNICsSensor;
+
+// DiscoveryCMPUtils won't be available if cloud management isn't active.  Declaring
+// this ensures that we won't get an exception when we check to see if it's active.
+var DiscoveryCMPUtils;
+
+(function() {
+
+var vCenterSysId, vCenterUuid, datacenterMorId, datacenterSysId,esxSysId,
+	debug, _this, avoidIe,lookUpSysIds,
+	dsMap = { },
+	diskMap = { },
+	blockEndpoints = [ ],
+	nicEndpoints = [ ],
+	args = {
+		schema: {
+			cmdb_ci_storage_volume: {
+				index: [ [ 'computer', 'vdisk_id' ],
+						 [ 'computer', 'object_id' ]
+						],
+				fixup: fixupDisk,
+				preWrite: preWriteDisk,
+				parentOf: { cmdb_ci_vcenter_datacenter: 'Hosted on::Hosts' }
+			},
+			cmdb_ci_vmware_nic: {
+				index: [ 'cmdb_ci', 'mac_address' ],
+				fixup: fixupNic,
+				parentOf: { cmdb_ci_vcenter_datacenter: 'Hosted on::Hosts' }
+			},
+			cmdb_ci_endpoint_block: {
+				index: [ 'object_id', 'host' ],
+				childOf: {
+					host: 'Use End Point To::Use End Point From'
+				},
+				parentOf: {
+					volume: 'Implement End Point To::Implement End Point From'
+				}
+			},
+			cmdb_ci_endpoint_vnic: {
+				index: [ 'object_id', 'host' ],
+				childOf: {
+					host: 'Use End Point To::Use End Point From'
+				},
+				parentOf: {
+					nic: 'Implement End Point To::Implement End Point From'
+				}
+			}
+		}
+	};
+
+VCenterVMNICsSensor = {
+	process: process,
+    type: "DiscoverySensor"
+};
+
+/*
+Sample data.  Truncated for brevity.
+	{
+		"cmdb_ci_storage_volume": [
+		{
+		  "computer":"vm-2136",
+		  "label":"Hard disk 1",
+		  "name":"450-2000",
+		  "size_bytes":53687091200
+		}
+		],
+		"cmdb_ci_vmware_nic": [
+		{
+		  "mac_address": "00:50:56:a7:c2:27",
+		  "cmdb_ci": "vm-2394",
+		  "dns_server": [
+		  ],
+		  "ip_address": "172.16.4.135",
+		  "subnet_mask": "255.255.255.0"
+		},
+		{
+		  "mac_address": "00:50:56:a7:0d:c9",
+		  "cmdb_ci": "vm-2305",
+		  "dns_server": [
+		  ],
+		  "ip_address": "172.16.4.45",
+		  "subnet_mask": "255.255.255.0"
+		}
+	  ]
+	}
+*/
+//////////////////////////////////////////////////////////////////////////
+function process(result) {
+
+	getProbeParms();
+
+	_this = this;
+
+	args.location = this.getLocationID();
+	args.statusId = new DiscoveryStatus(g_probe.getParameter('agent_correlator')+'');
+	args.mutexPrefix = datacenterMorId || esxSysId ;
+	args.ignoreStaleness = true;
+	if (esxSysId)
+		lookUpSysIds = VMUtils.lookupSysIdsESX;
+	else
+		lookUpSysIds = VMUtils.lookupSysIds;
+
+	// During normal discovery g_probe_parameters should always be defined.
+	// It's only undefined during test execution.
+	if (typeof g_probe_parameters != 'undefined') {
+		g_probe_parameters.cidata = this.getParameter('cidata');
+		g_probe_parameters.source = this.getParameter('source');
+	}
+
+	output = JSON.parse(output);
+	args.results = output;
+
+	args.results.cmdb_ci_endpoint_block = blockEndpoints;
+	args.results.cmdb_ci_endpoint_vnic = nicEndpoints;
+	args.results = JsonCi.prepare(args);
+	JsonCi.writeJsObject(args);
+
+	postProcessDisks();
+
+	if (DiscoveryCMPUtils.isCmpActive()) {
+		JsonCi.updateRelationships(args);
+		avoidIe || DiscoveryCMPUtils.callCmpApi(args.results, vCenterUuid, datacenterMorId);
+	}
+}
+
+function getProbeParms() {
+	vCenterSysId = (g_probe.getParameter('vcenter_sys_id') || '') + '';
+	vCenterUuid =  (g_probe.getParameter('vcenter_uuid') || '') + '';
+	datacenterSysId =  (g_probe.getParameter('datacenter_sys_id') || '') + '';
+	datacenterMorId =  (g_probe.getParameter('datacenter_mor_id') || '') + '';
+	debug = '' + g_probe.getParameter('debug');
+	avoidIe = DiscoveryCMPUtils.isCmpActive() &amp;&amp; (('' + g_probe.getParameter('avoid_id_engine')) != 'false');
+	esxSysId = (g_probe.getParameter('esx_sys_id') || '') + '';
+}
+
+function postProcessDisks() {
+	var name, disks, gr,object_ids;
+
+	args.results.vm_without_disks.forEach(function(morid) {
+		var vm_sys_id = VMUtils.lookupSysIds(morid, "cmdb_ci_vmware_instance", vCenterSysId);
+		diskMap[vm_sys_id] = [];
+	});
+
+	for (name in diskMap) {
+		disks = diskMap[name];
+		disks.forEach(function(disk, idx) {
+			disks[idx] = disk.sys_id;
+		});
+		object_ids = [];
+		gr = new GlideRecord('cmdb_ci_storage_volume');
+		gr.addQuery('computer', name);
+		gr.addQuery('sys_id', 'NOT IN', disks);
+		gr.query();
+		while (gr.next()){
+			if(gr.getValue('object_id')) {
+				object_ids.push(gr.getValue('object_id'));
+				gr.deleteRecord();
+			}
+		}
+		if (DiscoveryCMPUtils.isCmpActive()) {
+			var endPointGR = new GlideRecord('cmdb_ci_endpoint_block');
+			endPointGR.addQuery('host',name);
+			endPointGR.addQuery('object_id','IN',object_ids);
+			endPointGR.deleteMultiple();
+		}
+	}
+}
+
+// If computer field is null then skip writing storage volume
+function preWriteDisk(disk, gr) {
+	if (disk.computer)
+		JsonCi.discoveryPreWrite(disk, gr);
+
+	return !!disk.computer;
+}
+
+function fixupDisk(disk) {
+	// Save what we need to call the cloud API
+	disk.vm_object_id = disk.computer;
+	disk.vm_table = 'cmdb_ci_vmware_instance';
+	disk.storage_type = 'VMware vdisk';
+
+	disk.computer = lookUpSysIds(disk.vm_object_id, 'cmdb_ci_vmware_instance', esxSysId || vCenterSysId);
+
+	if (!disk.computer &amp;&amp;  vCenterSysId) {
+		disk.computer = VMUtils.lookupSysIds(disk.vm_object_id, 'cmdb_ci_vmware_template', vCenterSysId);
+		disk.vm_table = 'cmdb_ci_vmware_template';
+	}
+
+	diskMap[disk.computer] = diskMap[disk.computer] || [ ];
+	diskMap[disk.computer].push(disk);
+
+	if (DiscoveryCMPUtils.isCmpActive()) {
+		disk.cmdb_ci_vcenter_datacenter = datacenterSysId;
+		disk.state = 'in_use';
+		if (avoidIe) {
+			blockEndpoints.push({
+				object_id: disk.object_id,
+				name: disk.name,
+				host: disk.computer,
+				volume: disk
+			});
+		}
+	}
+}
+
+function fixupNic(nic) {
+	nic.vm_object_id = nic.cmdb_ci;
+	nic.vm_table = 'cmdb_ci_vmware_instance';
+	nic.cmdb_ci = lookUpSysIds(nic.vm_object_id, 'cmdb_ci_vmware_instance', esxSysId || vCenterSysId);
+
+	if (!nic.cmdb_ci &amp;&amp; vCenterSysId ) {
+		nic.cmdb_ci = VMUtils.lookupSysIds(nic.vm_object_id, 'cmdb_ci_vmware_template', vCenterSysId);
+		nic.vm_table = 'cmdb_ci_vmware_template';
+	}
+
+	nic.vcenter_ref = vCenterSysId;
+	nic.vcenter_uuid = vCenterUuid;
+	
+	nic.name = nic.mac_address;
+	nic.object_id = nic.mac_address;
+
+	if (DiscoveryCMPUtils.isCmpActive()) {
+		nic.cmdb_ci_vcenter_datacenter = datacenterSysId;
+		if (avoidIe) {
+			nicEndpoints.push({
+				object_id: nic.object_id,
+				name: nic.name,
+				host: nic.cmdb_ci,
+				nic: nic
+			});
+		}
+	}
+}
+})();
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-06-24 17:16:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;666260d48f1c2200c2fe0b5437bdee26&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;92&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VCenterVMNICsSensor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_666260d48f1c2200c2fe0b5437bdee26&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;pooja.chugwani&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-11-17 11:19:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6325&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:05</sys_created_on>
+        <sys_id>09bc0dfa2f331110d8a4d5f62799b63c</sys_id>
+        <sys_name>VCenterVMNICsSensor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_09bc0dfa2f331110d8a4d5f62799b63c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4429ce5373c32300c1ad41244ef6a78c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KBTranslationTaskSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Customers should not change this class directly, rather override methods in the subclass.
+This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KBTranslationTaskSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KBTranslationTaskSNC = Class.create();
+KBTranslationTaskSNC.prototype = Object.extendsObject(KBCommon, {
+    KB_TRANSLATION_TASK: 'kb_translation_task',
+    DYNAMIC_TRANSLATION_PLUGIN: 'com.glide.dynamic_translation',
+
+    /**
+     * Can Write Translation Task record,
+     * if the user has write access to either Source or Translation Article
+     * Assigned or Opended users.
+     * @param GlideRecord: kb_translation_task record.
+     */
+    canWrite: function(translationTaskGr) {
+        if (translationTaskGr.state == this.TRANSLATION_TASK_NEW || translationTaskGr.state == this.TRANSLAITON_TASK_IN_PROGRESS) {
+            if (this.isOwnerOrMember(translationTaskGr))
+                return true;
+
+            var sourceArticle = translationTaskGr.source_article.getRefRecord();
+            if (sourceArticle.isValidRecord() &amp;&amp; this._knowledgeHelper.canContribute(this._getKnowledgeBase(sourceArticle)))
+                return true;
+
+            var translatedArticle = translationTaskGr.translated_article.getRefRecord();
+            if (translatedArticle.isValidRecord() &amp;&amp; this._knowledgeHelper.canContribute(translatedArticle))
+                return true;
+        }
+        return false;
+    },
+
+    /**
+     * Can Write Translation Task record,
+     * if the user has write access to either Source or Translation Article
+     * Assigned or Opended users.
+     * @param GlideRecord: kb_translation_task record.
+     */
+    canRead: function(translationTaskGr) {
+        if (this.isOwnerOrMember(translationTaskGr))
+            return true;
+
+        var sourceArticle = translationTaskGr.source_article.getRefRecord();
+        if (sourceArticle.isValidRecord() &amp;&amp; sourceArticle.canRead())
+            return true;
+
+        var translatedArticle = translationTaskGr.translated_article.getRefRecord();
+        if (translatedArticle.isValidRecord() &amp;&amp; translatedArticle.canRead())
+            return true;
+        return false;
+    },
+
+    /**
+     * Can Delete Translation Task record,
+     * Owner or Manager of Knowledge Base can delete the task.
+     * user with knowledge_admin role.
+     * @param GlideRecord: kb_translation_task record.
+     */
+    canDelete: function(translationTaskGr) {
+        var source_article = translationTaskGr.source_article.getRefRecord();
+        if (this.isAdminUser(source_article))
+            return true;
+        var article_kb = source_article.kb_knowledge_base.getRefRecord();
+        if (this.isKnowledgeBaseOwner(article_kb, 'owner')) {
+            return true;
+        }
+
+        if (this.isKnowledgeBaseManager(article_kb, 'kb_managers')) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * returns true if logged in user is a owner or assignee or a member of assignment group.
+     * @param GlideRecord: kb_translation_task record.
+     */
+    isOwnerOrMember: function(translationTask) {
+        var loggedInUser = gs.getUser();
+        var userID = loggedInUser.getID();
+        return translationTask.assigned_to == userID || translationTask.opened_by == userID || loggedInUser.isMemberOf(translationTask.assignment_group);
+    },
+
+    /**
+     * If source article is Published and Open translation exists, Update task's source to new version.
+     * If source article is Published and no Open translation exists, create Translation Task.
+     * @param GlideRecord: article record.
+     */
+    createOrUpdateTranslationTask: function(article, languageArray, requestMode) {
+        var taskCreated = false;
+        //Update the existing New tasks to associate to new version of source_article 
+        var updatedLanguages = this.updateSourceToNewArticle(article, languageArray);
+        var inProgressLanguagesForCurrentVersion = this.getInProgressLanguagesforCurrentVersion(article);
+        //Array of updated and in progress languages should be eliminated from creation list.
+        var eliminatedLanguages = updatedLanguages.concat(inProgressLanguagesForCurrentVersion);
+        //Create Tasks for remaining languages
+        for (var i = 0; i &lt; languageArray.length; i++) {
+            var translatedLanguage = languageArray[i] + '';
+            if (eliminatedLanguages.indexOf(translatedLanguage) == -1) {
+                var translationTaskObj = {};
+                translationTaskObj.source_article = article.sys_id;
+                translationTaskObj.translated_language = translatedLanguage;
+                translationTaskObj.state = this.TRANSLATION_TASK_NEW;
+                this.createTranslationTask(translationTaskObj);
+                taskCreated = true;
+            }
+        }
+        if (taskCreated &amp;&amp; requestMode!= 'ws') {
+            var taskLink = "kb_translation_task_list.do?sysparm_query=";
+            taskLink += "source_article%3D" + article.getUniqueValue();
+            taskLink += "%5Estate%3D1";
+            if (article.sys_class_name == "kb_knowledge_block")
+                gs.addInfoMessage(gs.getMessage("&lt;a href='{0}'&gt;Translation tasks&lt;/a&gt; have been created for this block", taskLink));
+            else
+                gs.addInfoMessage(gs.getMessage("&lt;a href='{0}'&gt;Translation tasks&lt;/a&gt; have been created for this article", taskLink));
+        }
+		return taskCreated;
+    },
+
+    /**
+     * returns true if there is a task exists for translated_article.
+     * closes the respective task.
+     * @param GlideRecord: translated_article record.
+     */
+    closeTranslationTask: function(translated_article) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.addQuery('state', '!=', this.TRANSLATION_TASK_CLOSED);
+        translationTask.addQuery('translated_article', translated_article.sys_id);
+        translationTask.query();
+        if (translationTask.next()) {
+            translationTask.state = this.TRANSLATION_TASK_CLOSED;
+            translationTask.update();
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Update Task's source_article to new version.
+     * returns array of updated languages.
+     * @param GlideRecord: source_article record.
+     */
+    updateSourceToNewArticle: function(source_article, languageArray) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.addQuery('state', this.TRANSLATION_TASK_NEW);
+        translationTask.addQuery('source_article.article_id', source_article.article_id);
+        translationTask.addQuery('translated_language', 'IN', languageArray.join());
+        translationTask.source_article = source_article.sys_id;
+        translationTask.updateMultiple();
+        translationTask.query();
+        var updatedLanguages = [];
+        while (translationTask.next()) {
+            updatedLanguages.push(translationTask.translated_language + '');
+        }
+        return updatedLanguages;
+    },
+
+    /**
+     * returns a language array of In Progress tasks for current version.
+     * @param GlideRecord: source_article record.
+     **/
+    getInProgressLanguagesforCurrentVersion: function(source_article) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.addQuery('source_article', source_article);
+        translationTask.addQuery('state', this.TRANSLAITON_TASK_IN_PROGRESS);
+        translationTask.query();
+        var inProgressTasksforCurrentVersion = [];
+        while (translationTask.next()) {
+            inProgressTasksforCurrentVersion.push(translationTask.translated_language + '');
+        }
+        return inProgressTasksforCurrentVersion;
+    },
+
+    /**
+     * creates a new Translation Task record with the given object.
+     * @param Obj: Translation Task Object.
+     */
+    createTranslationTask: function(translationTaskObj) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.initialize();
+        for (var field in translationTaskObj) {
+            if (translationTask.isValidField(field))
+                translationTask[field] = translationTaskObj[field];
+        }
+        return translationTask.insert();
+    },
+
+    /**
+     * returns a language array of Open tasks for current version.
+     * @param GlideRecord: source_article record.
+     **/
+    getLanguagesWithOpenTasks: function(source_article) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.addQuery('source_article', source_article.sys_id);
+        var closedStates = [this.TRANSLATION_TASK_CLOSED, this.TRANSLATION_TASK_CANCELLED];
+        translationTask.addQuery('state', 'NOT IN', closedStates.toString());
+        translationTask.query();
+        var languagesWithOpenTask = [];
+        languagesWithOpenTask.push(source_article.language + '');
+        while (translationTask.next()) {
+            languagesWithOpenTask.push(translationTask.translated_language + '');
+        }
+        return languagesWithOpenTask;
+    },
+
+    /**
+     * returns true if there are any languages pending translation
+     **/
+    isTranslationPending: function(article) {
+        var configuredLanguages = this.getConfiguredLanguages(article);
+        var inProgressLanguages = this.getLanguagesWithOpenTasks(article);
+        if (configuredLanguages.length == inProgressLanguages.length) {
+            return false;
+        }
+        return true;
+    },
+
+    /**
+     * Automatic Task creation is enabled when Create Translation Task flag is set.
+     * @param GlideRecord: source article.
+     **/
+    canCreateTranslationTask: function(article) {
+        if (this.isEnabled() &amp;&amp; this.isKnowledgeBaseConfigured(article.kb_knowledge_base.languages) &amp;&amp; article.kb_knowledge_base.create_translation_task) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Translation feature is enabled when Versioning and Enable Translation Task Properties are enabled.
+     **/
+    isEnabled: function() {
+        if (gs.getProperty('glide.knowman.translation.enable_translation_task', 'false') == 'true' &amp;&amp; gs.getProperty('glide.knowman.versioning.enabled', 'false') == 'true') {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * Check whether languages field contains minimum of 2 languages for Translating articles.
+     **/
+    isKnowledgeBaseConfigured: function(kb_languages) {
+        if (!gs.nil(kb_languages)) {
+            var languageArray = kb_languages.split(',');
+            if (languageArray.length &gt; 1) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    /**
+     * returns configured languages for translation
+     * returns installed languages if knowledge base is empty
+     * @param: GlideRecord 
+     */
+    getConfiguredLanguages: function(article) {
+        var languageArray = [];
+        if (gs.nil(article.kb_knowledge_base.languages)) {
+            var installedLanguages = new GlideRecord('sys_language');
+            installedLanguages.addActiveQuery();
+            installedLanguages.query();
+            while (installedLanguages.next()) {
+                languageArray.push(installedLanguages['id'].toString());
+            }
+        } else {
+            languageArray = article.kb_knowledge_base.languages.split(',');
+        }
+        return languageArray;
+    },
+
+    /**
+     * Request Translation action is enabled on article form based on this condition.
+     * @param GlideRecord: source article.
+     **/
+    canRequestTranslation: function(article) {
+        if (gs.getProperty('glide.knowman.allow_edit_global_articles') == 'false' &amp;&amp; this.isArticleReadOnlyBasedOnDomain(article))
+            return false;
+        if (this.isExternalArticle(article))
+            return false;
+        if (!article.canRead())
+            return false;
+        if (article.workflow_state != 'published')
+            return false;
+        if (!gs.nil(article.parent))
+            return false;
+        if (!this.isEnabled())
+            return false;
+        return true;
+    },
+
+    /**
+     * returns the latest translated article for the selected language
+     **/
+    getTranslatedArticleForLanguage: function(source_articleid, tableName, language) {
+        var translation = new GlideRecord(tableName);
+        translation.addQuery('parent', source_articleid + '');
+        translation.addQuery('language', language + '');
+        translation.orderByDesc('sys_created_on');
+        translation.setLimit(1);
+        translation.query();
+        translation.next();
+        return translation;
+    },
+
+    /**
+     * generates article object for translation
+     **/
+    prepareArticleObjectForTranslation: function(articleRecord) {
+        var articleObj = {};
+        if (!gs.nil(articleRecord)) {
+            var gr = new GlideRecord(articleRecord.sys_class_name);
+            gr.get(articleRecord.sys_id);
+            var fields = new KBVersioning().getArticleFieldsForTranslation(gr);
+            articleObj.htmlFieldArray = [];
+            articleObj.stringFieldArray = [];
+            var fieldArray = [];
+            for (var i = 0; i &lt; fields.length; i++) {
+                var fieldName = fields[i];
+                var fieldObj = {
+                    name: fieldName,
+                    value: gr[fieldName].toString(),
+                    label: gr[fieldName].getLabel(),
+                    canRead: gr[fieldName].canRead()
+                };
+                var fieldType = gr[fieldName].getED().getInternalType();
+                if (fieldType == 'html' || fieldType == 'translated_html')
+                    articleObj.htmlFieldArray.push(fieldObj);
+                else
+                    articleObj.stringFieldArray.push(fieldObj);
+            }
+            articleObj.language = articleRecord['language'].toString();
+        }
+        return articleObj;
+    },
+
+    /**
+     * Translate action on Task is available based on this conditions.
+     * @param GlideRecord: kb_translation_task record
+     */
+    canTranslateFromTask: function(translationTask) {
+        var sourceArticle = translationTask.source_article.getRefRecord();
+        if (sourceArticle.isValidRecord() &amp;&amp; this.canRequestTranslation(sourceArticle) &amp;&amp;
+            (translationTask.state == this.TRANSLATION_TASK_NEW || translationTask.state == this.TRANSLAITON_TASK_IN_PROGRESS)) {
+            var translatedArticle = translationTask.translated_article.getRefRecord();
+            if (translatedArticle.isValidRecord())
+                return this._knowledgeHelper.canContribute(translatedArticle);
+
+            var knowledgeBase = this._getKnowledgeBase(sourceArticle);
+            return this._knowledgeHelper.canContribute(knowledgeBase);
+        }
+        return false;
+    },
+
+    /**
+     * Translate action on article is available based on this conditions.
+     * @param GlideRecord: kb_knowledge record.
+     */
+    canTranslateFromArticle: function(article) {
+        if (this.canRequestTranslation(article)) {
+            var knowledgeBase = this._getKnowledgeBase(article);
+            return this._knowledgeHelper.canContribute(knowledgeBase);
+        }
+        return false;
+    },
+
+    /**
+     * returns an array of block numbers associated to source article.
+     * @param GlideRecord: kb_knowledge record.
+     */
+    getBlocksForArticle: function(article) {
+        var sourceBlocks = [];
+        if (pm.isActive(this.BLOCKS_PLUGIN)) {
+            var gr = new GlideRecord('m2m_kb_to_block_history');
+            gr.addQuery('knowledge', article.sys_id);
+            gr.query();
+            while (gr.next()) {
+                sourceBlocks.push(gr.knowledge_block.number + '');
+            }
+            sourceBlocks = new ArrayUtil().unique(sourceBlocks);
+        }
+        return sourceBlocks;
+    },
+
+    /**
+     * returns an array of block numbers and its state associated to source article.
+     * @param GlideRecord: kb_knowledge record.
+     */
+	getBlocksAndStatesForArticle: function(article) {
+        var sourceBlocks = {};
+        if (pm.isActive(this.BLOCKS_PLUGIN)) {
+            var gr = new GlideRecord('m2m_kb_to_block_history');
+            gr.addQuery('knowledge', article.sys_id);
+            gr.query();
+            while (gr.next()) {
+                sourceBlocks[gr.knowledge_block.number + '']=gr.block_state+'';
+            }
+        }
+        return JSON.stringify(sourceBlocks);
+    },
+
+    /**
+     * returns true if atleast one provider is enabled.
+     */
+    isDynamicTranslationEnabled: function() {
+        return pm.isActive(this.DYNAMIC_TRANSLATION_PLUGIN) &amp;&amp; sn_dt_api.DynamicTranslation.isEnabled({
+			"event": {"eventName":"KB - Platform"}
+		}).translation;
+    },
+
+
+    /**
+     * returns list of Languages available for translation
+     */
+    getAvailableLanguages: function(article) {
+        var configuredLanguageArray = this.getConfiguredLanguages(article);
+        var readOnlyLanguageArray = this.getLanguagesWithOpenTasks(article);
+        var languageList = new KBPortalServiceImpl().getAvailableLanguages(article.language).languages;
+        var languageObj = {};
+        languageList.forEach(function(obj) {
+            languageObj[obj.value] = obj.label;
+        });
+		var availableLanguages = [];
+		for (var i = 0; i &lt; readOnlyLanguageArray.length; i++) {
+            var indexOfLanguage = configuredLanguageArray.indexOf(readOnlyLanguageArray[i]);
+            configuredLanguageArray.splice(indexOfLanguage, 1);
+			var languageItem = {disabled:true};
+            languageItem.id = readOnlyLanguageArray[i];
+            languageItem.label = languageObj[languageItem.id];
+            availableLanguages.push(languageItem);
+        }
+        for (i = 0; i &lt; configuredLanguageArray.length; i++) {
+            languageItem = {disabled:false};
+            languageItem.id = configuredLanguageArray[i];
+            languageItem.label = languageObj[languageItem.id];
+            availableLanguages.push(languageItem);
+        }
+        return availableLanguages;
+    },
+    /**
+     * Can edit Language when
+     * 1. If Translation feature is enabled; article is parent article and its version &lt; 1.0.
+     * 2. If translation feature is disabled;
+     * 
+     * @param GlideRecord: kb_knowledge record.
+     */
+    canEditLanguage: function(articleGr) {
+        return this.isEnabled() ?
+            (gs.nil(articleGr.parent) &amp;&amp; articleGr.workflow_state == 'draft' &amp;&amp; gs.nil(articleGr.revised_by)) : true;
+    },
+	
+	/**
+     * returns true if Article has any atached Transaltion task which is not in cancelled state.
+     * 
+     * @param GlideRecord: kb_knowledge record.
+     */
+    hasAttachedTranslationTask: function(articleGr) {
+        var translationTask = new GlideRecord(this.KB_TRANSLATION_TASK);
+        translationTask.addQuery('source_article.article_id', articleGr.article_id);
+        translationTask.addQuery('state', '!=', this.TRANSLATION_TASK_CANCELLED);
+        translationTask.query();
+        if (translationTask.hasNext()) {
+            return true;
+        }
+        return false;
+    },
+
+	/**
+     * generates article object for translation
+     **/
+    getArticleObjectForComparision: function(articleRecord) {
+        if (!gs.nil(articleRecord)) {
+            var gr = new GlideRecord(articleRecord.sys_class_name);
+            gr.get(articleRecord.sys_id);
+            var fields = new KBVersioning().getArticleFieldsForTranslation(gr);
+
+			var fieldArray = [];
+            for (var i = 0; i &lt; fields.length; i++) {
+                var fieldName = fields[i];
+				if(gr[fieldName].canRead()){
+					var fieldObj = {
+						name: fieldName,
+						value: gr[fieldName].toString(),
+						label: gr[fieldName].getLabel(),
+						type : gr[fieldName].getED().getInternalType()
+					};
+
+					fieldArray.push(fieldObj);
+				}
+            }
+        }
+
+		new KBKnowledge().sortArticle(fieldArray);
+		var articleObj = {};
+
+		articleObj.language = articleRecord['language'].toString();
+		articleObj.fieldArray = fieldArray;
+		return articleObj;
+    },
+
+    type: 'KBTranslationTaskSNC'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-01-22 10:06:18&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4429ce5373c32300c1ad41244ef6a78c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KBTranslationTaskSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Advanced" source="com.snc.knowledge_advanced"&gt;e36e64192f201110d8a4d5f62799b6e9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4429ce5373c32300c1ad41244ef6a78c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-04 16:01:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;19913&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:09</sys_created_on>
+        <sys_id>177cc9ba2f331110d8a4d5f62799b60a</sys_id>
+        <sys_name>KBTranslationTaskSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_177cc9ba2f331110d8a4d5f62799b60a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

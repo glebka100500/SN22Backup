@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>740b11e5372331003e7d40ed9dbe5d45</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SLADefinitionSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Default implementation for SLA Definition functions.&amp;#13;
+&amp;#13;
+This class should not be changed. To change its behavior go to the script include SLADefinition and make the changes there.&amp;#13;
+&amp;#13;
+This class is never called directly. All calls are made to SLADefinition.&lt;/description&gt;
+        &lt;name&gt;SLADefinitionSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SLADefinitionSNC = Class.create();
+
+SLADefinitionSNC.SLA_DEF = "contract_sla";
+SLADefinitionSNC.SCHEDULE = "cmn_schedule";
+
+SLADefinitionSNC.prototype = {
+	FIELD_ADVANCED_COND_TYPE: "adv_condition_type",
+
+	initialize: function(slaDefGr) {
+		this.slaDefGr = null;
+		this.schedule = null;
+		this.duration = null;
+
+		if (slaDefGr &amp;&amp; slaDefGr instanceof GlideRecord &amp;&amp; slaDefGr.getRecordClassName() == "contract_sla") {
+			this.slaDefGr = slaDefGr;
+			this.duration = new GlideDuration(this.slaDefGr.duration.dateNumericValue());
+
+			if (!this.slaDefGr.schedule.nil())
+				this.schedule = new GlideSchedule(this.slaDefGr.getValue("schedule"));
+		}
+	},
+
+	/**
+	 * Generates a possible breach time for the given schedule and duration.
+	 *
+	 * This method does not generate a end date using relative durations.
+	 *
+	 * @param startTime - GlideDateTime
+	 * @returns GlideDateTime representing the breach time of an SLA
+	 */
+	getExampleBreachTime: function(startTime) {
+		if (!this.duration)
+			return null;
+
+		if (!startTime)
+			startTime = new GlideDateTime();
+
+		// Get a new duration every time to prevent issues with multiple calls without re-setting the duration
+		var duration = new GlideDuration(this.duration);
+		var endTimeGdt = new GlideDateTime(startTime);
+		if (!this.schedule) {
+			endTimeGdt.add(duration.getNumericValue());
+			return endTimeGdt;
+		}
+
+		return this.schedule.add(endTimeGdt, duration);
+	},
+
+	/**
+	 * Creates a new GlideSchedule object from the given scheduleId and sets it
+	 *
+	 * @param scheduleId
+	 * @returns Boolean whether the variable was set or not
+	 */
+	setSchedule: function(scheduleId) {
+		if (!scheduleId) {
+			this.schedule = null;
+			return false;
+		}
+
+		var scheduleGr = new GlideRecord(SLADefinitionSNC.SCHEDULE);
+		if (!scheduleGr.get(scheduleId)) {
+			this.schedule = null;
+			return false;
+		}
+
+		this.schedule = new GlideSchedule(scheduleId);
+		return true;
+	},
+
+	/**
+	 * Creates a new Duration object from the given duration and sets it
+	 *
+	 * @param duration
+	 * @returns Boolean whether the variable was set or not
+	 */
+	setDuration: function(duration) {
+		if (!duration)
+			return false;
+
+		this.duration = new GlideDuration(duration);
+	},
+
+	validateDurationValue: function() {
+		if (!this.duration)
+			return null;
+
+		var durationGD = new GlideDuration(this.duration);
+		var maxDuration = SLAProperties.getMaximumDurationAllowed();
+
+		if (durationGD.getNumericValue() &gt; (parseInt(maxDuration) * durationGD.A_DAY_IN_MS))
+			return gs.getMessage("Duration must not exceed {0} days", [maxDuration]);
+	},
+
+	setAdvancedConditionUsage: function(isRunUpdate /* boolean */ ) {
+		if (!this.slaDefGr)
+			return;
+
+		var slaUtil = new SLAUtil();
+		var advCondOperatorsRe = /VALCHANGES|CHANGESFROM|CHANGESTO/g;
+		var conditionFields = slaUtil.getSLAConditionFields();
+		var conditionFieldsWithAdvanced = []; // We'll populate this one with the condition fields that have Advanced Condition usage
+		var hasAdvancedCondition = false;
+		var hasAdvancedConditionAndJournal = false;
+		var hasAdvancedConditionAndSystem = false;
+
+		// Check all conditionf fields that have any advanced condition use
+		for (var i = 0; i &lt; conditionFields.length; i++) {
+			var conditionField = conditionFields[i];
+			var conditionValue = this.slaDefGr[conditionField].getValue();
+
+			if (slaUtil.skipConditionCheck(conditionField, conditionValue, this.slaDefGr))
+				continue;
+
+			if (advCondOperatorsRe.test(conditionValue)) {
+				hasAdvancedCondition = true;
+				conditionFieldsWithAdvanced.push(conditionField);
+			}
+		}
+
+		// Now that we know we have advanced condition usage, check if any Journal fields
+		if (hasAdvancedCondition) {
+			var journalFields = slaUtil.getJournalFields(this.slaDefGr.getValue("collection"));
+			var systemFields = slaUtil.getSystemFields();
+
+			if ((journalFields &amp;&amp; journalFields.length !== 0) || (systemFields &amp;&amp; systemFields.length !== 0)) {
+				for (var i = 0; i &lt; conditionFieldsWithAdvanced.length; i++) {
+					var conditionField = conditionFieldsWithAdvanced[i]; // Using the reduced (almost certainly) array to check for journals
+					var conditionValue = this.slaDefGr[conditionField].getValue();
+
+					if (slaUtil.skipConditionCheck(conditionField, conditionValue, this.slaDefGr))
+						continue;
+
+					if (journalFields &amp;&amp; journalFields.length !== 0)
+						for (var j = 0; j &lt; journalFields.length; j++) {
+							var condValue = journalFields[j] + "VALCHANGES";
+							if (conditionValue.indexOf(condValue) &gt;= 0) {
+								hasAdvancedConditionAndJournal = true;
+								break;
+							}
+						}
+
+					if (systemFields &amp;&amp; systemFields.length !== 0)
+						for (var l = 0; l &lt; systemFields.length; l++)
+							if (conditionValue.indexOf(systemFields[l] + "VALCHANGES") &gt; -1 ||
+								conditionValue.indexOf(systemFields[l] + "CHANGESFROM") &gt; -1 ||
+								conditionValue.indexOf(systemFields[l] + "CHANGESTO") &gt; -1) {
+								hasAdvancedConditionAndSystem = true;
+								break;
+							}
+
+					if (hasAdvancedConditionAndJournal &amp;&amp; hasAdvancedConditionAndSystem)
+						break;
+				}
+			}
+		}
+
+		if (hasAdvancedConditionAndJournal &amp;&amp; hasAdvancedConditionAndSystem)
+			this.slaDefGr.setValue(this.FIELD_ADVANCED_COND_TYPE, slaUtil.SLA_ADV_COND_ADV_WITH_JOURNAL_AND_SYSTEM);
+		else if (hasAdvancedConditionAndJournal)
+			this.slaDefGr.setValue(this.FIELD_ADVANCED_COND_TYPE, slaUtil.SLA_ADV_COND_ADV_WITH_JOURNAL);
+		else if (hasAdvancedConditionAndSystem)
+			this.slaDefGr.setValue(this.FIELD_ADVANCED_COND_TYPE, slaUtil.SLA_ADV_COND_ADV_WITH_SYSTEM);
+		else if (hasAdvancedCondition)
+			this.slaDefGr.setValue(this.FIELD_ADVANCED_COND_TYPE, slaUtil.SLA_ADV_COND_ADV_ONLY);
+		else
+			this.slaDefGr.setValue(this.FIELD_ADVANCED_COND_TYPE, slaUtil.SLA_ADV_COND_NONE);
+
+		if (isRunUpdate === true)
+			this.slaDefGr.update();
+	},
+
+	_skipConditionCheck: function(conditionField, conditionValue) {
+		new SLAUtil().skipConditionCheck(conditionField, conditionValue, this.slaDefGr);
+	},
+
+	getNoAuditFieldsinConditions: function() {
+		var noAuditFieldsInConditions = {};
+
+		if (!this.slaDefGr)
+			return noAuditFieldsInConditions;
+
+		var tableName = this.slaDefGr.getValue("collection");
+		if (!GlideTableDescriptor.isValid(tableName))
+			return noAuditFieldsInConditions;
+
+		var slaUtil = new SLAUtil();
+		var noAuditFieldsForTable = slaUtil.getNoAuditFields(tableName);
+		
+		if (!noAuditFieldsForTable)
+			return noAuditFieldsInConditions;
+		
+		var noAuditFieldNames = Object.keys(noAuditFieldsForTable);
+		if (noAuditFieldNames.length === 0)
+			return noAuditFieldsInConditions;
+
+		var conditionFields = slaUtil.getSLAConditionFields();
+		if (!conditionFields || !Array.isArray(conditionFields))
+			return noAuditFieldsInConditions;
+
+		var arrayUtil = new ArrayUtil();
+		for (var i = 0; i &lt; conditionFields[i].length; i++) {
+			var conditionFieldName = conditionFields[i];
+			if (!this.slaDefGr.isValidField(conditionFieldName))
+				continue;
+
+			var fieldsInCondition = slaUtil.getRelatedFieldsFromEncodedQuery(tableName, this.slaDefGr.getValue(conditionFieldName));
+			var noAuditFieldsInCondition = arrayUtil.intersect(fieldsInCondition, noAuditFieldNames);
+			if (noAuditFieldsInCondition.length === 0)
+				continue;
+
+			noAuditFieldsInConditions[conditionFieldName] = [];
+			noAuditFieldsInCondition.forEach(function(fieldName) {
+				noAuditFieldsInConditions[conditionFieldName].push({name: fieldName, label: noAuditFieldsForTable[fieldName].label})
+			});
+		}
+
+		return noAuditFieldsInConditions
+	},
+
+	type: 'SLADefinitionSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-04-20 19:26:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;740b11e5372331003e7d40ed9dbe5d45&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;71&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SLADefinitionSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service level management" source="com.snc.sla"&gt;367209c76d6620100acb70b35343304f&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_740b11e5372331003e7d40ed9dbe5d45&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-13 15:18:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7483&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:32</sys_created_on>
+        <sys_id>23cc053e2f331110d8a4d5f62799b699</sys_id>
+        <sys_name>SLADefinitionSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_23cc053e2f331110d8a4d5f62799b699</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>55a7483cbf00110032a0854b3f0739f3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.IndicatorTags&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Supports tagging of indicators in Performance Analytics.&lt;/description&gt;
+        &lt;name&gt;IndicatorTags&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var IndicatorTags = Class.create();
+IndicatorTags.prototype = {
+    initialize: function() {
+		this._log = (new GSLog(IndicatorTags.LOG_LEVEL_PROPERTY, this.type)).setLog4J();
+    },
+
+	/**
+     * getTag(label): Returns a GlideRecord representation of the appropriate Indicator Group.
+     *
+     * Searches for and creates if required.
+     */
+    getTag: function(label) {
+        // Should this also update the usage counts?
+        var tag = new GlideRecord("pa_tags");
+        tag.addQuery("label", label);
+        tag.query();
+
+        if (!tag.next()) {
+            if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[getTag] Creating new Indicator Group: " + label);
+
+            tag.initialize();
+            tag.label = label;
+			if (!tag.canCreate()) {
+				if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[getTag] Insufficient access to read Indicator Group: " + label);
+				return null;
+			}
+            tag.insert();
+        } else if (!tag.canRead()) {
+			if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[getTag] Insufficient access to read Indicator Group: " + label);
+			return null;
+		}
+
+        return tag;
+    },
+
+    /**
+     * getIndicatorTags(indicatorId): Returns a GlideRecord containing all of the indicator Indicator Group
+     *                          references for the given indicator.
+     */
+    getIndicatorTags: function(indicatorId) {
+
+        var tags = new GlideRecord("pa_m2m_indicator_tags");
+        tags.addQuery("indicator", indicatorId);
+        tags.orderBy("sys_created_on");
+        tags.query();
+
+        if (this._log.atLevel(GSLog.DEBUG))
+            this._log.debug("[getIndicatorTags] Found: " + tags.getRowCount() + " tags");
+
+        return tags;
+    },
+
+    /**
+     * addIndicatorTag(label,indicatorId): Adds a Indicator Group to a indicator and returns a GlideRecord containing,
+     *                              and set to, the indicator Indicator Group added.
+     */
+    addIndicatorTag: function(label, indicatorId) {
+        label = label + "";
+        if (label.length &lt; 2)
+            return null;
+
+        var tag = this.getTag(label);
+		
+		if (JSUtil.nil(tag))
+			return null;
+
+        var indicatorTag = new GlideRecord("pa_m2m_indicator_tags");
+        indicatorTag.addQuery("indicator", indicatorId);
+        indicatorTag.addQuery("tag", tag.sys_id);
+        indicatorTag.query();
+
+        if (!indicatorTag.next()) {
+            if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[addIndicatorTag] Adding Indicator Group " + label + " to " + indicatorId);
+
+            indicatorTag.newRecord();
+            indicatorTag.indicator = indicatorId;
+            indicatorTag.tag = tag.sys_id;
+			
+			if (!indicatorTag.canCreate()) {
+				if (this._log.atLevel(GSLog.DEBUG))
+                	this._log.debug("[addIndicatorTag] Insufficient access to Add Indicator Groups " + label + " to " + indicatorId);
+				return null;
+			}
+			
+            indicatorTag.insert();
+            return indicatorTag;
+        }
+
+        if (this._log.atLevel(GSLog.DEBUG))
+            this._log.debug("[addIndicatorTag] Duplicate Indicator Group "+ label +" found for indicator " + indicatorId + " Ignoring.");
+        return null;
+    },
+
+
+    /**
+     * removeIndicatorTag(sysId): Removed the indicator Indicator Group association represented by sysId
+     */
+    removeIndicatorTag:function(sysId) {
+        if (JSUtil.nil(sysId)) {
+            this._log.debug("[removeIndicatorTag] No sysid provided");
+            return false;
+        }
+
+        var tags = new GlideRecord("pa_m2m_indicator_tags");
+        if (!tags.get(sysId)) {
+            if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[removeIndicatorTag] Indicator Group relationship [" + sysId + "] not found");
+            
+        } else if (!tags.canDelete()) {
+			if (this._log.atLevel(GSLog.DEBUG))
+                this._log.debug("[removeIndicatorTag] insufficient access to delete Indicator Group relationship [" + sysId + "]");
+			return false;
+		}
+
+        tags.deleteRecord();
+        return true;
+    },
+
+	
+    type: 'IndicatorTags'
+};
+	
+IndicatorTags.LOG_LEVEL_PROPERTY = "com.snc.pa.indicator_tags.log";]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-09-23 13:25:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;55a7483cbf00110032a0854b3f0739f3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;20&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;IndicatorTags&lt;/sys_name&gt;
+        &lt;sys_package display_value="Performance Analytics" source="com.snc.pa"&gt;97a305876da620100acb70b353433004&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_55a7483cbf00110032a0854b3f0739f3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-03-13 14:24:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4225&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:36</sys_created_on>
+        <sys_id>fd9c01fa2f331110d8a4d5f62799b6e0</sys_id>
+        <sys_name>IndicatorTags</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fd9c01fa2f331110d8a4d5f62799b6e0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

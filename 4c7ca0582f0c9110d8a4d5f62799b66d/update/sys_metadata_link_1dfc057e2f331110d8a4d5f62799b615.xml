@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>87c609c20a0a0bb00023ca6d9e5f76f9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.StandardDiffer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Diff the entire content of an xml file..&lt;/description&gt;
+        &lt;name&gt;StandardDiffer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var StandardDiffer = Class.create();
+
+StandardDiffer.prototype = Object.extendsObject(Differ, {
+
+    diffXML: function(root1, root2){
+        var length1 = root1.getChildNodes().getLength();
+        var length2 = root2.getChildNodes().getLength();
+        var action =  this._getActionCompare(root1, root2);
+        if (root1.getTagName() != "record_update") {
+            var diff = this._diffUpdateXMLString(root1, root2, false);
+            if (diff == "") 
+                return this._noInfo();
+            return action + diff;
+        }
+        if (length1 &gt; length2) 
+            return action + this._diffAllNodes(root1, root2, length1, true);
+        else 
+            return action + this._diffAllNodes(root2, root1, length2, false);
+    },
+    
+    diffUpdateSet: function(root1){
+        var gr = this._getParentRecord(root1);
+        var root2;
+        if (gr.next()) {
+            var xmlSerializer = new GlideRecordXMLSerializer();
+            var xml = xmlSerializer.serialize(gr);
+            root2 = this._getRoot(xml);
+            return this.diffXML(root2, root1);
+        }
+        else {
+            return this._noInfo();
+        }
+    },
+    
+    getURL: function(root){
+        var sys_id = root.getElementsByTagName("sys_id").item(0).getFirstChild().getNodeValue();
+        return root.getTagName() + ".do?sys_id=" + sys_id;
+    },
+    
+    _diffAllNodes: function(root1, root2, length, left2right){
+        var result = "";
+        for (var i = 0; i &lt; length; i++) {
+            if (root1.getChildNodes().item(i).getNodeType() == 3) 
+                continue;
+            var element = root1.getChildNodes().item(i);
+            if (left2right) 
+                result += this._diffUpdateXMLString(element, this._getMatchingElement(element, root2), false);
+            else 
+                result += this._diffUpdateXMLString(this._getMatchingElement(element, root2), element, false);
+        }
+        if (result == "") 
+            return this._noInfo();
+        return result;
+    },
+    
+    _diffUpdateXMLString: function(item1, item2, showMatching){
+        if (showMatching == null) 
+            showMatching = false;
+        if ((item1 == null || item1.getChildNodes().getLength() == 0)
+            &amp;&amp; (item2 == null || item2.getChildNodes().getLength() == 0))
+            return "";
+        if (item1 == null || item1.getChildNodes().getLength() == 0)
+            return this._diffAddedElement(item2, true);
+        if (item2 == null || item2.getChildNodes().getLength() == 0)
+            return this._diffAddedElement(item1, false);
+        var elements1 = item1.getChildNodes();
+        var elements2 = item2.getChildNodes();
+        var result = "";
+        var multipleLineResults = "";
+        for (var i = 0; i &lt; elements1.getLength(); i++) {
+            var found = false;
+            var name = "";
+            for (var n = 0; n &lt; elements2.getLength(); n++) {
+                if (elements1.item(i).getNodeName() != elements2.item(n).getNodeName()) 
+                    continue;
+                else {
+                    var text1 = elements1.item(i).getFirstChild();
+                    var text2 = elements2.item(n).getFirstChild();
+                    name = elements1.item(i).getTagName();
+                    if (!this._ignoreField(name))
+                       found = true;
+                }
+            }
+            if (!found) 
+                continue;
+            var textValue1 = " ";
+            var textValue2 = " ";
+            if (text1 != null)
+               textValue1 = text1.getNodeValue() + "";
+            if (text2 != null) 
+               textValue2 = text2.getNodeValue() + "";
+            var diffResult = this.diff(textValue1, textValue2, name, showMatching) + "";
+            if (diffResult.match('&lt;td class="count"&gt;2:&lt;/td&gt;') != null) 
+               multipleLineResults += diffResult + "&lt;td class='zebra' colspan=5&gt;&lt;/td&gt;";
+            else 
+               result += diffResult;
+            
+        }
+        if (result == "" &amp;&amp; multipleLineResults == "" &amp;&amp; showMatching == false) 
+            return this._diffUpdateXMLString(item1, item2, true);
+        return result + multipleLineResults;
+    },
+
+    /*
+     * Ignore fields that give no value to the user.
+     * for example sys_mod_count always shows up because its always changed  
+     */
+    _ignoreField: function(name) {
+        if (name == "sys_mod_count")
+            return true;
+
+        return false;
+    },
+    
+    _getMatchingElement: function(item1, root2){
+        var sys_id1;
+        for (var i = 0; i &lt; item1.getChildNodes().getLength(); i++) 
+            if (item1.getChildNodes().item(i).getTagName() == "sys_id") 
+                sys_id1 = item1.getChildNodes().item(i).getFirstChild().getNodeValue();
+        var childNodes = root2.getChildNodes();
+        for (var i = 0; i &lt; childNodes.getLength(); i++) {
+            var element = childNodes.item(i);
+            for (var n = 0; n &lt; element.getChildNodes().getLength(); n++) 
+                if (element.item(n).getTagName() == "sys_id") {
+                    if (sys_id1 == element.item(n).getFirstChild().getNodeValue()) 
+                        return element;
+                }
+        }
+        return null;
+    },
+    
+    _diffAddedElement: function(item1, isSecond){
+	    var result = "";
+        var elements1 = item1.getChildNodes();
+        for (var i = 0; i &lt; elements1.getLength(); i++) {
+            var text1 = elements1.item(i).getChildNodes().item(0);
+            if (text1 != null) {
+				if (isSecond) {
+					result += this.diff("", text1.getNodeValue() + "", elements1.item(i).getTagName(), true) + "";
+				}
+				else {
+			    	result += this.diff(text1.getNodeValue() + "", "", elements1.item(i).getTagName(), true) + "";
+				}
+			}
+        }
+        return result;
+    },
+    _getParentRecord: function(root){
+        var sys_ids = root.getElementsByTagName("sys_id");
+        
+        if (sys_ids.getLength() &lt; 1) 
+            var sys_id = "";
+        else 
+            var sys_id = sys_ids.item(sys_ids.getLength() - 1).getFirstChild().getNodeValue();
+        var gr = new GlideRecord(root.getTagName());
+        gr.query("sys_id", sys_id + "");
+        return gr;
+    }
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;juell.solaegui&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-03-22 21:30:34&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;87c609c20a0a0bb00023ca6d9e5f76f9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;95&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;StandardDiffer&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_87c609c20a0a0bb00023ca6d9e5f76f9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-19 01:10:43&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6210&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:12</sys_created_on>
+        <sys_id>1dfc057e2f331110d8a4d5f62799b615</sys_id>
+        <sys_name>StandardDiffer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1dfc057e2f331110d8a4d5f62799b615</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

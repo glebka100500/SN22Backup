@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>69f573039f10010054005f29468ba388</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdAjaxRequestProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Base Ajax request processor for Password Reset application.&lt;/description&gt;
+        &lt;name&gt;PwdAjaxRequestProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdAjaxRequestProcessor = Class.create();
+PwdAjaxRequestProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+  
+  /**
+  * Tests if the security is good enough.
+  */
+  _validateSecurity: function() {
+    
+    //check if there's any csrf violation or not.
+    //now, we have only csrf validation.
+    if (!this._validateCSRF())
+      return false;
+    
+    // if csrf violation didn't get detected, then set response attributes and return.
+	var token = this.getParameter("sysparam_pwd_csrf_token");
+	this._setSecurityResponseMessage('ok','',token);
+    return true;
+  },
+    
+  /**
+  * Validates CSRF violation.
+  */
+  _validateCSRF: function() {
+    
+    var csrf_token = this.getParameter("sysparam_pwd_csrf_token");
+    var securityMgr = new SNC.PwdSecurityManager();
+    var result = securityMgr.validateSecureToken(csrf_token);
+    
+    
+    // if the result turns out bad, set the response and return the result. 
+    if (!result) {
+      //remove the stored security token.
+      securityMgr.removeSecurityToken();
+      
+      var msg = gs.getMessage('Security violation');
+      this._setSecurityResponseMessage('error',msg,'');
+    }
+    return result;
+  },
+  
+  /**
+  * Sets a security response and send it back.
+  */
+  _setSecurityResponseMessage: function(status, msg, token) {
+    
+    var response = this.newItem("security");
+    response.setAttribute("status", status);
+    response.setAttribute("message", msg);
+    response.setAttribute("pwd_csrf_token", token);
+  },
+	
+  _setResponseMessage: function(status, msg, value) {
+	var response = this.newItem("response");
+	response.setAttribute("status", status);
+	response.setAttribute("message", msg);
+	response.setAttribute("value", value);
+  }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-03-28 20:41:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;69f573039f10010054005f29468ba388&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdAjaxRequestProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_69f573039f10010054005f29468ba388&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-10-20 16:12:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1730&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:14</sys_created_on>
+        <sys_id>03bc8dfa2f331110d8a4d5f62799b6fb</sys_id>
+        <sys_name>PwdAjaxRequestProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_03bc8dfa2f331110d8a4d5f62799b6fb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

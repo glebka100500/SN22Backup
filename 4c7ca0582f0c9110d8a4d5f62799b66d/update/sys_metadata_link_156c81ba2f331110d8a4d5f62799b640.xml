@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>31872a20b3533200350086d256a8dcde</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RefConnectionCredential&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Show the right type of credentials based on connection type&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;RefConnectionCredential&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RefConnectionCredential = Class.create();
+
+RefConnectionCredential.showCredsbyConnectionType = function(connectionGr) {	
+	var connectionType = connectionGr.sys_class_name+"";	
+	var answer = "type=";
+	
+	if(connectionType == "jdbc_connection")
+		return answer+"jdbc";
+	else if(connectionType == "orch_jms_ds")
+		return answer+"jms";
+	else
+		return "";
+
+};
+
+RefConnectionCredential.showAliasbyConnectionType = function(connectionGr) {	
+	var connectionType = connectionGr.sys_class_name+"";	
+	return "type=connection^connection_type="+connectionType;
+	
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-06-08 20:56:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;31872a20b3533200350086d256a8dcde&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RefConnectionCredential&lt;/sys_name&gt;
+        &lt;sys_package display_value="Centralized Connection and Credential" source="com.snc.core.automation.connection_credential"&gt;d322c9476d6620100acb70b353433071&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_31872a20b3533200350086d256a8dcde&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-06-16 20:40:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;555&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:45</sys_created_on>
+        <sys_id>156c81ba2f331110d8a4d5f62799b640</sys_id>
+        <sys_name>RefConnectionCredential</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_156c81ba2f331110d8a4d5f62799b640</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

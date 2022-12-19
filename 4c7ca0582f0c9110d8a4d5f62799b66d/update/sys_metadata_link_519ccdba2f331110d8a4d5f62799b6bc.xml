@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>543567ca0a0a0aa700d0bda02f628a58</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ResourceSupport&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;gs.include('ResourceSupport');&amp;#13;
+var pat = new ResourceSupport();&amp;#13;
+pat.buildResources();&lt;/description&gt;
+        &lt;name&gt;ResourceSupport&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("RoleSupport");
+
+var ResourceSupport = Class.create();
+ResourceSupport.prototype = {
+	initialize : function() {
+		this.support = new RoleSupport();
+		// init our object ID
+		var gr = new GlideRecord('sys_security_type');
+		gr.addQuery('name', 'record');
+		gr.query();
+		if (gr.next())
+			this.objectID = gr.sys_id;
+		else {
+			gr.initialize();
+			gr.name = 'record';
+			this.objectID = gr.insert();
+		}
+		this.operation_read = this.getOperation('read');
+		this.operation_write = this.getOperation('write');
+		this.operation_delete = this.getOperation('delete');
+		this.operation_create = this.getOperation('create');
+	},
+	
+	getOperation : function (opName) {
+		var gr = new GlideRecord('sys_security_operation');
+		gr.addQuery('name', opName);
+		gr.query();
+		if (gr.next())
+			return gr.sys_id;
+		else {
+			gr.initialize();
+			gr.name = opName;
+			return gr.insert();
+		}
+		
+	},
+	
+	buildTableResources : function(tableName, elementQueryString) {
+		gs.print("Begin ResourceSupport.buildTableResources(" + tableName + ", " + elementQueryString + ")");
+		var gr = new GlideRecord('sys_dictionary');
+		gr.addQuery('name', tableName);
+		if (typeof elementQueryString !== 'undefined')
+			gr.addEncodedQuery(elementQueryString);
+		gr.query();
+		while (gr.next()) {
+			this.process(gr);
+		}
+		gs.print("End ResourceSupport.buildTableResources");
+	},
+	
+	buildResources : function() {
+		gs.print("Begin ResourceSupport.buildResources");
+		var gr = new GlideRecord('sys_dictionary');
+		gr.orderBy("name");
+		gr.query();
+		while (gr.next()) {
+			this.process(gr);
+		}
+		gs.print("End ResourceSupport.buildResources");
+	},
+	
+	process : function(gr) {
+		this.addACL(gr.name, gr.element, this.operation_read, gr.read_roles);
+		this.addACL(gr.name, gr.element, this.operation_write, gr.write_roles);
+		this.addACL(gr.name, gr.element, this.operation_delete, gr.delete_roles);
+		this.addACL(gr.name, gr.element, this.operation_create, gr.create_roles);
+	},
+	
+	addACL : function(tableName, fieldName, operation, roles) {		
+		if (roles == '' || roles == 'undefined' || roles == null)
+			return;
+		
+		var id;
+		var suffix = '.*';
+		// property is set by the com.glide.security.strict_read_roles plugin
+		var useStrictReadRoles = gs.getProperty('glide.security.strict_read_roles', 'false');
+		// old style create and delete rules are actually row rules
+		if (operation == this.operation_delete 
+			|| operation == this.operation_create 
+			|| (useStrictReadRoles == 'true' &amp;&amp; operation == this.operation_read))
+			suffix = '';
+		
+		// all ts_index_#_# are row rules
+		if (tableName.startsWith('ts_index_'))
+			suffix = '';
+		
+		if (fieldName == '' || fieldName == null)
+			id = tableName + suffix;
+		else
+			id = tableName + '.' + fieldName;
+				
+		var scope = "global";
+		var td = GlideTableDescriptor.get(tableName);		
+		if (td.isValid()) {
+			scope = td.getED().getScopeID();			
+			var ed = gs.nil(fieldName) ? td.getED() : td.getElementDescriptor(fieldName);
+			if (ed != null &amp;&amp; ed.getTableName() != ed.getSchemaTableName())
+				return;
+		}
+		
+		var aclID = this._createACLRecord(operation, id, roles, scope);
+		this._createACLRoleRecord(aclID, roles, scope);
+	},
+	
+	// create ACL records uniquely
+	_createACLRecord : function(operation, id, roles, scope) {
+		// check if roles contains maint
+		// if true set admin override false
+		var aov = true;
+		if(roles.indexOf("maint") &gt; -1 || roles.indexOf("nobody") &gt; -1)
+			aov = false;
+		
+		var acl = new GlideRecord('sys_security_acl');
+		acl.addQuery("type", this.objectID);
+		acl.addQuery("operation", operation);
+		acl.addQuery("name", id);
+		acl.addQuery("admin_overrides", aov);
+		acl.addEncodedQuery("scriptISEMPTY^conditionISEMPTY");
+		acl.query();
+		if (acl.next()) {
+			return acl.sys_id;
+		} else {
+			acl.initialize();
+			acl.type = this.objectID;
+			acl.operation = operation;
+			acl.name = id;
+			acl.admin_overrides = aov;
+			if (typeof scope != 'undefined' &amp;&amp; acl.isValidField('sys_scope'))
+				acl.sys_scope = scope;
+			acl.setWorkflow(false);
+			return acl.insert();
+		}
+	},
+	
+	// Create ACL Role records uniquely (also)
+	_createACLRoleRecord : function(aclID, roles, scope) {
+		var work = roles + '';
+		var ra = work.split(',');
+		for (var x=0; x &lt; ra.length; x++) {
+			var thisRole = ra[x];
+			var roleID = this.support.map(thisRole, scope);
+			var aclr = new GlideRecord('sys_security_acl_role');
+			aclr.addQuery('sys_security_acl', aclID);
+			aclr.addQuery('sys_user_role', roleID);
+			aclr.query();
+			if (!aclr.next()) {
+				aclr.initialize();
+				aclr.sys_security_acl = aclID;
+				aclr.sys_user_role = roleID;
+				if (typeof scope != 'undefined' &amp;&amp; aclr.isValidField('sys_scope'))
+					aclr.sys_scope = scope;
+				aclr.setWorkflow(false);
+				aclr.insert();
+			}
+		}
+	}
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-05-03 23:10:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;543567ca0a0a0aa700d0bda02f628a58&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;55&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ResourceSupport&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Security: Role Management" source="com.glide.role_management"&gt;46ccf0836d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_543567ca0a0a0aa700d0bda02f628a58&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-29 00:04:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4772&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:33</sys_created_on>
+        <sys_id>519ccdba2f331110d8a4d5f62799b6bc</sys_id>
+        <sys_name>ResourceSupport</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_519ccdba2f331110d8a4d5f62799b6bc</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

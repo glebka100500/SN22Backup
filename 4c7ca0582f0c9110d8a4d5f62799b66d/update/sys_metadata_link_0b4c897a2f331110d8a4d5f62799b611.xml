@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1e3d513f0ab3015836714beaac14fdeb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FNExtantDataJobUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Determines whether a data job is allowed to run.&lt;/description&gt;
+        &lt;name&gt;FNExtantDataJobUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// field normalization
+
+var FNExtantDataJobUtil = Class.create();
+
+FNExtantDataJobUtil.canRun = function(current) {
+   if (!(current.state == 'canceled' || current.state == 'not_started'))
+      return false;
+
+   var table = '' + current.fn_table;
+   var id = '' + current.fn_id;
+   var gr = new GlideRecord(table);
+   if (!gr.get(id))
+      return false;
+
+   var result = false;
+   if ((table == 'fn_normalize_config') || (table == 'fn_transform_config'))
+       result = (gr.mode == 'active');
+   else if ((table == 'fn_alias_value') || (table == 'fn_normal_value'))
+       result = (gr.config.mode == 'active');
+   else if (table == 'fn_rule')
+       result = (gr.normal.config.mode == 'active');
+
+   return result;
+}
+
+FNExtantDataJobUtil.prototype = {
+  initialize : function() {
+  }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-12-25 16:05:10&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1e3d513f0ab3015836714beaac14fdeb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FNExtantDataJobUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Field Normalization" source="com.snc.field_normalization"&gt;74d312912f730110d8a4d5f62799b6a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1e3d513f0ab3015836714beaac14fdeb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;tom.dilatush&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-02-01 15:47:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;817&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:19</sys_created_on>
+        <sys_id>0b4c897a2f331110d8a4d5f62799b611</sys_id>
+        <sys_name>FNExtantDataJobUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0b4c897a2f331110d8a4d5f62799b611</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>53f2247bb712230026778d78ee11a971</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeUIActionSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Common script include to handle  knowledge UI action   Customers should not change this class directly This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KnowledgeUIActionSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KnowledgeUIActionSNC = Class.create();
+KnowledgeUIActionSNC.prototype = {
+    initialize: function() {
+    },
+	
+	getEditableFields: function() {
+		return new KBVersioning().getEditableFields();
+	},
+	
+	articleExistsForSource: function(sourceId) {
+		var gr = new GlideRecord("kb_knowledge");
+		if(sourceId) {
+			gr.addQuery("source",sourceId);
+			gr.query();
+			if(gr.next())
+				return true;
+		}
+		return false;
+	},
+
+	tableMapExists: function(source,mapName) {
+		if(source) {
+			var mapUtil = new CSMTableMapUtil(source);
+			if(mapName &amp;&amp; mapName != '')
+				return (mapUtil.findMapByName(mapName) &amp;&amp; new KBKnowledge().canCreate());
+		}
+		return false;
+	},
+
+	showTemplateSelector: function() {
+            	if(new KBViewModel().isVersioningInstalled()) 
+                   	if(new ArticleTemplateUtil().canContributeToTemplates())
+                            	return true;
+            	return false;
+       	},
+	createKnowledgeAnyTemplateOnCase: function(){
+		return gs.getProperty("sn_customerservice.enable_knowledge_kcs") == 'true' &amp;&amp; gs.getProperty("sn_customerservice.kcs.enable_template_on_case_workspace") == 'true' &amp;&amp; !(this.articleExistsForSource(current.sys_id)) ;
+	},
+	
+	/**
+	* publishes an article given article id and tablename
+	*/
+	publishArticleById: function(tableName, articleId){
+		if(gs.nil(tableName) || gs.nil(articleId))
+			return false;
+		var articleGr = new GlideRecord(tableName);
+		if(!articleGr.get(articleId))
+			return false;
+		return this.publish(articleGr);
+	},
+	
+	/**
+	* publishes an article given article Gliderecord
+	*/
+	publish: function(articleGr) {
+		var prevValue = articleGr.workflow_state + '';
+		if(articleGr.getTableName() != articleGr.sys_class_name){
+			//update current to point to the table extended from kb_knowledge with specified sys_id.
+			articleGr  = new GlideRecordUtil().getGR("kb_knowledge", articleGr.getUniqueValue());
+		}
+		if (articleGr.kb_knowledge_base.kb_version == "3" &amp;&amp; new KBWorkflow().startWorkflow(articleGr, "workflow")) {
+		//If publish sub workflow is completed, workflow engine would have already done current.update()
+			if(articleGr.workflow_state!='published')
+				articleGr.update();
+			var knowledge = new GlideRecord("kb_knowledge");
+			if(knowledge.get(articleGr.sys_id) &amp;&amp; prevValue != knowledge.getValue("workflow_state")){
+				if(knowledge.sys_class_name == 'kb_knowledge_block')
+					gs.addInfoMessage(new KBBlock().getStateMessage(knowledge.getValue("workflow_state")));
+				else 
+					gs.addInfoMessage(new KBKnowledge().getStateMessage(knowledge.getValue("workflow_state")));
+			}
+		} 
+		else if (articleGr.kb_knowledge_base.kb_version == "2") {
+			articleGr.workflow_state = 'published';
+			articleGr.update();
+			gs.addInfoMessage(new KBKnowledge().getStateMessage(articleGr.getValue("workflow_state")));
+		}
+		return true;
+	},
+	
+	showModal: function(articleGr){
+		if(articleGr.sys_class_name != 'kb_knowledge_block' &amp;&amp;  new KBCommon().checkGuestUserHasAccess(articleGr.getUniqueValue()))
+			return true;
+		return false;
+	},
+	
+    type: 'KnowledgeUIActionSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-12-17 09:07:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;53f2247bb712230026778d78ee11a971&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeUIActionSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_53f2247bb712230026778d78ee11a971&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-29 09:43:59&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3052&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:33</sys_created_on>
+        <sys_id>899ccdba2f331110d8a4d5f62799b668</sys_id>
+        <sys_name>KnowledgeUIActionSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_899ccdba2f331110d8a4d5f62799b668</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

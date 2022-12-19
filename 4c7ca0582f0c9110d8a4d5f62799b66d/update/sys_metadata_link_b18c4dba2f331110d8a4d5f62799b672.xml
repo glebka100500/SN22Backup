@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4b8f322f0a0a0b3d6c47d20c1b9bbfdb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AbstractTimelineSchedulePage&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Abstract timeline script include for all schedule pages. Each schedule page should reference a script include that extends from this base class. At a minimum, extending classes should override the getItems() method. Note that the script include will automatically receive all Uri parameters from the original Url whose prefix begins with "sysparm_timeline_". To access the values of these, use: [ this.getParameter("sysparm_timeline_VARIABLE"); ] inside your implementing class. This is useful if you need to display a schedule page from a dynamic element, such as from a context menu from a list. By passing in dynamic data via the Url the schedule page will auto-include these parameters inside the Ajax calls and therefore will be accessible inside the AbstractSchedulePage script includes. Additionally note that the private methods inside this class are denoted with a double underscore prefix. This is done as the extending classes have capability to potentially overwrite core methods of this base class because of the prototype/rhino implementation.&amp;#13;
+&amp;#13;
+The following sections describe how data is processed by the GlideTimeline after receiving the AJAX response from the script include.&amp;#13;
+&amp;#13;
+// :::::::::::::::: PHASE 1 :: RETURN CLIENT PROCESSING - RE-RENDERING ::::::::::::::::&amp;#13;
+The timeline will first check to see if any items need to be updated before doing anything else. There are three options for manipulating the timeline data.&amp;#13;
+   1. Action :: No updating (Leave existing items on timeline).&amp;#13;
+        --&amp;gt; How?-  No action required. Do not set any &amp;lt;item&amp;gt; nodes and do not set the rerender true.&amp;#13;
+   2. Action :: Update with specific items (e.g. These items may not be set in database ... a "preview" mode).&amp;#13;
+        --&amp;gt; How?-  Append to the XML document TimelineItem schedule items as implemented in the getItems() method.&amp;#13;
+   3. Action :: Re-render the timeline data (This will call the getItems()).&amp;#13;
+        --&amp;gt; How?-  this.setDoReRenderTimeline(true)&amp;#13;
+&amp;#13;
+Note: If both TimelineItems are returned and setDoReRenderTimeline is set to true, the system will ignore the DoReRenderTimeline and explicitly show only the TimelineItems returned in the XML response.&amp;#13;
+&amp;#13;
+// :::::::::::::::: PHASE 2 :: RETURN CLIENT PROCESSING - DIALOG ::::::::::::::::&amp;#13;
+After potentially updating timeline items on the screen, a second phase can be used to perform additional functionality&amp;#13;
+and message popups. The following options are available:&amp;#13;
+  1. Action :: Display nothing (No dialog) [ Note the loading will stop automatically ].&amp;#13;
+       --&amp;gt; How?-  Do nothing ... especially do not set any status setters below!&amp;#13;
+  2. Action :: Display a SUCCESS dialog box.&amp;#13;
+       --&amp;gt; How?-  this.setStatusSuccess(strTitle, strMessage);&amp;#13;
+  3. Action :: Display an ERROR dialog box.&amp;#13;
+       --&amp;gt; How?-  this.setStatusError(strTitle, strMessage);&amp;#13;
+  4. Action :: Display a question with "Yes"/"No" buttons that can perform additional functionality.&amp;#13;
+       --&amp;gt; How?-  this.setStatusPrompt(strDialogTitle, // Specifies the title for the dialog prompt&amp;#13;
+                                                       strDialogMessage, // Specifies the message for the dialog&amp;#13;
+                                                       "this._yesScriptIncludeFunction", // Function to execute if the user clicks "Yes"&amp;#13;
+                                                       "this._noScriptIncludeFunction", // Function to execute if the user clicks "No"&amp;#13;
+                                                       "this._cancelScriptIncludeFunction" // Function to execute if the user clicks "X/Close"&amp;#13;
+                       );&lt;/description&gt;
+        &lt;name&gt;AbstractTimelineSchedulePage&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// Class Imports
+var TimelineFrameSeparator = GlideTimelineFrameSeparator;
+
+var AbstractTimelineSchedulePage = Class.create();
+AbstractTimelineSchedulePage.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+  ERROR_TITLE: gs.getMessage('Error'),
+  ERROR_INVALID_FUNC_MSG: gs.getMessage('You specified an invalid event: '),
+  ERROR_NO_FUNC_MSG: gs.getMessage('No script include function defined for the specified event: '),
+  AJAXRESPONSE: { NODE_PAGE_TITLE: 'pagetitle',
+                  NODE_STATUS: 'statusresult',
+                  NODE_ITEM: 'item',
+                  ATTR_RENDER: 'render',
+                  ATTR_STATUS: 'status',
+                  ATTR_MESSAGE: 'message',
+                  ATTR_TITLE: 'title',
+                  ATTR_OK_FUNC: 'ok_func',
+                  ATTR_CANCEL_FUNC: 'cancel_func',
+                  ATTR_CLOSE_FUNC: 'close_func',
+                  CUSTOM_FUNC: 'sysparm_custom_func',
+                  PROMPT: 'prompt',
+                  SUCCESS: 'success',
+                  ERROR: 'error' },
+
+  /**
+   * Core function that obtains AJAX parameters and calls appropriate script include. This
+   * method should NOT be overriden by any sub classes.
+   */
+  process: function() {
+    if (this.getName() == 'getItems') {
+      return this.__getItems();
+    } else if (this.getName() == 'elementMoveX') {
+      return this.__elementMoveX();
+    } else if (this.getName() == 'elementMoveY') {
+      return this.__elementMoveY();
+    } else if (this.getName() == 'elementMoveXY') {
+      return this.__elementMoveXY();
+    } else if (this.getName() == 'elementSuccessor') {
+      return this.__elementSuccessor();
+    } else if (this.getName() == 'elementTimeAdjustStart') {
+      return this.__elementTimeAdjustStart();
+    } else if (this.getName() == 'elementTimeAdjustEnd') {
+      return this.__elementTimeAdjustEnd();
+    } else if (this.getName() == 'inputBox') {
+      return this.__inputBox();
+    } else if (this.getName() == 'itemMove') {
+      return this.__itemMove();
+    } else {
+      return this.setStatusError(this.ERROR_TITLE, this.ERROR_INVALID_FUNC_MSG + this.getName());
+    }
+  },
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  // PUBLIC METHODS
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  add: function(node) {
+    node.appendXML(this.getDocument(), this.getRootElement());
+  },
+
+  addSeparator: function() {
+    var node = new TimelineFrameSeparator();
+    node.appendXML(this.getDocument(), this.getRootElement());
+  },
+
+  setPageTitle: function(strTitle) {
+    var e = this.__getNode(this.AJAXRESPONSE.NODE_PAGE_TITLE);
+    if (strTitle != '') 
+      e.setAttribute(this.AJAXRESPONSE.ATTR_TITLE, strTitle);
+  },
+  
+  setDoReRenderTimeline: function(bool) {
+    var e = this.__getNode(this.AJAXRESPONSE.NODE_STATUS);
+    e.setAttribute(this.AJAXRESPONSE.ATTR_RENDER, bool);
+  },
+
+  setStatusError: function(strTitle, strMsg) {
+    this.__setStatus(this.AJAXRESPONSE.ERROR, strTitle, strMsg);
+  },
+
+  setStatusSuccess: function(strTitle, strMsg) {
+    this.__setStatus(this.AJAXRESPONSE.SUCCESS, strTitle, strMsg);
+  },
+
+  setStatusPrompt: function(strTitle, strMsg, strOkFunc, strCancelFunc, strCloseFunc) {
+    this.__setStatus(this.AJAXRESPONSE.PROMPT, strTitle, strMsg, strOkFunc, strCancelFunc, strCloseFunc);
+  },
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  // PRIVATE
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  __setStatus: function(strType, strTitle, strMsg, strOkFunc, strCancelFunc, strCloseFunc) {
+    var e = this.__getNode(this.AJAXRESPONSE.NODE_STATUS);
+    e.setAttribute(this.AJAXRESPONSE.ATTR_STATUS, strType);
+    if (strMsg != '')
+      e.setAttribute(this.AJAXRESPONSE.ATTR_MESSAGE, strMsg);
+    if (strTitle != '')
+      e.setAttribute(this.AJAXRESPONSE.ATTR_TITLE, strTitle);
+    if (strOkFunc != '')
+      e.setAttribute(this.AJAXRESPONSE.ATTR_OK_FUNC, strOkFunc);
+    if (strCancelFunc != '')
+      e.setAttribute(this.AJAXRESPONSE.ATTR_CANCEL_FUNC, strCancelFunc);
+    if (strCloseFunc != '')
+      e.setAttribute(this.AJAXRESPONSE.ATTR_CLOSE_FUNC, strCloseFunc);
+  },
+
+  __getNode: function(node) {
+    var nodes = this.getDocument().getElementsByTagName(node);
+    if (nodes.getLength() &gt; 0)
+      return nodes.item(0);
+    else {
+      var e = this.getDocument().createElement(node);
+      this.getRootElement().appendChild(e);
+      return e;
+    }
+  },
+	
+	__functionExistsString: function(f) {
+		return typeof this[f] == 'function';
+	},
+
+  __functionExists: function(f) {
+    return typeof f == 'function';
+  },
+															 
+	__getFunctionName: function(f) {
+		var func = f.toString();
+		if (func.length() &gt; 5 &amp;&amp; func.substring(0, 5) == "this.")
+			return func.substring(5, f.length());
+		return func;
+	},
+
+  __getItems: function() { 
+    if (this.__functionExists(this.getItems)) {
+      this.getItems();
+      
+      // Generate a hash code against the current XML document
+      var transformer = Packages.javax.xml.transform.TransformerFactory.newInstance().newTransformer();
+      var result = new Packages.javax.xml.transform.stream.StreamResult(new Packages.java.io.StringWriter());
+      var source = new Packages.javax.xml.transform.dom.DOMSource(this.getDocument());
+      transformer.transform(source, result);
+      var hashCode = result.getWriter().toString().hashCode();
+      this.getRootElement().setAttribute('sysparm_hashcode', hashCode);
+
+      if (this.getParameter("sysparm_hashcode") == hashCode)
+        this.getRootElement().setTextContent('');
+  
+      return;
+    }
+    
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG  + this.getName());
+  },
+  
+  __elementMoveX: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'), 
+					 this.getParameter('sysparm_new_start_date_time_ms'));
+    else if (this.__functionExists(this.elementMoveX))
+      return this.elementMoveX(this.getParameter('sysparm_span_id'),
+                               this.getParameter('sysparm_new_start_date_time_ms'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __elementMoveY: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'),
+                               this.getParameter('sysparm_item_id'),
+                               this.getParameter('sysparm_new_item_id'));
+    else if (this.__functionExists(this.elementMoveY))
+      return this.elementMoveY(this.getParameter('sysparm_span_id'),
+                               this.getParameter('sysparm_item_id'),
+                               this.getParameter('sysparm_new_item_id'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __elementMoveXY: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'), 
+					 this.getParameter('sysparm_item_id'), 
+					 this.getParameter('sysparm_new_item_id'), 
+					 this.getParameter('sysparm_new_start_date_time_ms'));
+    else if (this.__functionExists(this.elementMoveXY))
+      return this.elementMoveXY(this.getParameter('sysparm_span_id'),
+                                this.getParameter('sysparm_item_id'),
+                                this.getParameter('sysparm_new_item_id'),
+                                this.getParameter('sysparm_new_start_date_time_ms'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+  
+  __elementSuccessor: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'),
+					 this.getParameter('sysparm_new_succ_span_id'));
+    else if (this.__functionExists(this.elementSuccessor))
+      return this.elementSuccessor(this.getParameter('sysparm_span_id'),
+                                   this.getParameter('sysparm_new_succ_span_id'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __elementTimeAdjustStart: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'),
+					 this.getParameter('sysparm_new_start_date_time_ms'));
+    else if (this.__functionExists(this.elementTimeAdjustStart))
+      return this.elementTimeAdjustStart(this.getParameter('sysparm_span_id'),
+                                         this.getParameter('sysparm_new_start_date_time_ms'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __elementTimeAdjustEnd: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_span_id'),
+                      this.getParameter('sysparm_new_end_date_time_ms'));
+    else if (this.__functionExists(this.elementTimeAdjustEnd))
+      return this.elementTimeAdjustEnd(this.getParameter('sysparm_span_id'),
+                                       this.getParameter('sysparm_new_end_date_time_ms'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __inputBox: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+      return this[f](this.getParameter('sysparm_input_text'));
+    else if (this.__functionExists(this.inputBox))
+      return this.inputBox(this.getParameter('sysparm_input_text'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  },
+
+  __itemMove: function() {
+    var f = this.getParameter(this.AJAXRESPONSE.CUSTOM_FUNC);
+	if (f != null)
+		f = this.__getFunctionName(f);
+    if (this.__functionExistsString(f))
+	  return this[f](this.getParameter('sysparm_item_sys_id'), this.getParameter('sysparm_new_item_sys_id'));
+    else if (this.__functionExists(this.itemMove))
+      return this.itemMove(this.getParameter('sysparm_item_sys_id'), this.getParameter('sysparm_new_item_sys_id'));
+
+    this.setStatusError(this.ERROR_TITLE, this.ERROR_NO_FUNC_MSG + this.getName());
+  }
+  
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;mark.johnson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-04-29 22:15:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4b8f322f0a0a0b3d6c47d20c1b9bbfdb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;213&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AbstractTimelineSchedulePage&lt;/sys_name&gt;
+        &lt;sys_package display_value="Advanced Schedules Support" source="com.glide.schedules"&gt;92a009c76d2620100acb70b353433070&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4b8f322f0a0a0b3d6c47d20c1b9bbfdb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-06-20 20:52:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10879&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:19</sys_created_on>
+        <sys_id>b18c4dba2f331110d8a4d5f62799b672</sys_id>
+        <sys_name>AbstractTimelineSchedulePage</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b18c4dba2f331110d8a4d5f62799b672</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

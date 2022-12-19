@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>943d0ed5c3402000b959fd251eba8fb7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PreAllocatedAssets&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;functions needed for pre-allocated assets&lt;/description&gt;
+        &lt;name&gt;PreAllocatedAssets&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PreAllocatedAssets = Class.create();
+PreAllocatedAssets.prototype = {
+	initialize : function() {
+	},
+
+	/*
+	 * splits the record given by the sys_id by the amount passed
+	 */
+	splitRecord : function(sys_id, amount) {
+		var record = new GlideRecord('alm_asset');
+		record.get(sys_id);
+		record.quantity = record.quantity - amount;
+		record.update();
+
+		var duplicate = new GlideRecord(record.sys_class_name);
+		duplicate.initialize();
+		duplicate.model_category = record.model_category;
+		duplicate.model = record.model;
+		duplicate.install_status = record.install_status;
+		duplicate.substatus = record.substatus;
+		duplicate.stockroom = record.stockroom;
+		duplicate.location = record.location;
+		duplicate.managed_by = record.managed_by;
+		duplicate.assigned_to = record.assigned_to;
+		duplicate.company = record.company;
+		duplicate.parent = record.parent;
+		duplicate.quantity = amount;
+		duplicate.cost = record.cost;
+		return duplicate.insert();
+	},
+
+	type : 'PreAllocatedAssets'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-02-07 00:22:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;943d0ed5c3402000b959fd251eba8fb7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PreAllocatedAssets&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_943d0ed5c3402000b959fd251eba8fb7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-27 10:21:59&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;991&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:45</sys_created_on>
+        <sys_id>991d0d7e2f331110d8a4d5f62799b6cc</sys_id>
+        <sys_name>PreAllocatedAssets</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_991d0d7e2f331110d8a4d5f62799b6cc</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

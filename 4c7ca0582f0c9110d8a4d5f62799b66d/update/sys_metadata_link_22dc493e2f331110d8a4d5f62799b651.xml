@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>796f26cdff1331002b7dffffffffff6b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CanRevert&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;The logic for when Revert to Store App, or Revert to Out of Box should appear&lt;/description&gt;
+        &lt;name&gt;CanRevert&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CanRevert = Class.create();
+CanRevert.prototype = {
+	current: null,
+
+	initialize: function(cur) {
+		this.current = cur;
+	},
+
+	// condition ensures current is sys_metadata, if desired
+	canRevertToStoreApp: function() {
+		if (!this.current.isInStoreScope())
+			return false;
+
+		return this._canRevertTo('sys_store_app');
+	},
+
+	// condition ensures current is sys_metadata, if desired
+	canRevertToOutOfBox: function() {
+		return this._canRevertTo('sys_upgrade_history');
+	},
+
+	// returns true if there's an appropriate version to revert to, 
+	// and it's not already current.
+	_canRevertTo: function(sourceTable) {
+		// Look at current's last-updated UpdateVersion from the soureTable
+		var gr = new GlideRecord('sys_update_version');
+		gr.addQuery('name', this.current.sys_update_name);
+		gr.addQuery('source_table', sourceTable);
+		gr.orderByDesc('sys_updated_on');
+		gr.setLimit(1);
+		gr.query();
+		if (!gr.next())
+			return false; // none found, customer created it
+
+		if (gr.state.toString() === 'current')
+			return false; // it's already current, no need for revert
+
+		return true;
+	},
+
+	type: 'CanRevert'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-04-07 02:37:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;796f26cdff1331002b7dffffffffff6b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CanRevert&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Metadata" source="com.snc.metadata"&gt;042d34076d2220100acb70b353433099&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_796f26cdff1331002b7dffffffffff6b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-04-07 02:41:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1115&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:44</sys_created_on>
+        <sys_id>22dc493e2f331110d8a4d5f62799b651</sys_id>
+        <sys_name>CanRevert</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_22dc493e2f331110d8a4d5f62799b651</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

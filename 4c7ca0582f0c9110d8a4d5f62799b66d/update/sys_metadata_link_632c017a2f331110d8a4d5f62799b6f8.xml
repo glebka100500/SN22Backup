@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>04a8fa13c36d2010559d74c3e540dd40</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SaveAccountRecoveryConfig&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SaveAccountRecoveryConfig&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SaveAccountRecoveryConfig = Class.create();
+SaveAccountRecoveryConfig.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+
+    saveFeature: function() {
+        var password = this.getParameter("sysparm_password");
+        if (password) {
+		var jsonResponse = SNC.PasswordPolicyEvaluator.isValidAcrPassword(password);
+          var validationResponse = JSON.parse(jsonResponse);
+          if(validationResponse.success == false) {
+           return validationResponse.message;
+          }
+        }
+        var responseMessage = JSON.parse(SNC.ACRUtil.saveUserACRConfiguration(password));
+
+        var result = this.newItem("result");
+        if (responseMessage.type == 500) {
+            return responseMessage.message;
+        } else if (responseMessage.type == 200) {
+            var InfoMsg = responseMessage.message + ' Local Logins will be controlled. Refer to the Policy &lt;span style="color: #008000;"&gt;&lt;a href="sys_auth_policy_context.do?sys_id=54020f70730220103a5b0dd43cf6a754" target="_blank" title="here" &gt;&lt;span style="text-decoration: underline;"&gt; here &lt;/span&gt;&lt;/a&gt;&lt;/span&gt;.'
+			gs.addInfoMessage(gs.getMessage('{0}', InfoMsg));
+            return true;
+        }
+    },
+
+    isPasswordSet: function() {
+        return SNC.ACRUtil.isPasswordConfigured(gs.getUserID());
+    },
+
+    showEnableButton: function() {
+        return gs.hasRole("admin") &amp;&amp; gs.getProperty('glide.sso.acr.enabled') == 'true' &amp;&amp; !this.isUserACRRegistered();
+    },
+
+    showDisableButton: function() {
+        return gs.hasRole("admin") &amp;&amp; gs.getProperty('glide.sso.acr.enabled') == 'true' &amp;&amp; this.isUserACRRegistered();
+    },
+
+    isUserACRRegistered: function() {
+        return SNC.ACRUtil.isUserACRRegistered(gs.getUserID()) &amp;&amp; this.isPasswordSet() &amp;&amp; this.isMFARegistered();
+    },
+		
+    isMFARegistered: function() {
+        return SNC.ACRUtil.isMFARegistered(gs.getUserID());
+    },
+
+    type: 'SaveAccountRecoveryConfig'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-01-12 08:58:33&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;04a8fa13c36d2010559d74c3e540dd40&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SaveAccountRecoveryConfig&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_04a8fa13c36d2010559d74c3e540dd40&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-12-07 17:53:56&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1928&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:48</sys_created_on>
+        <sys_id>632c017a2f331110d8a4d5f62799b6f8</sys_id>
+        <sys_name>SaveAccountRecoveryConfig</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_632c017a2f331110d8a4d5f62799b6f8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

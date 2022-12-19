@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7667c95e5be210103a9b51d11581c715</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NotificationProviderUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;NotificationProviderUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NotificationProviderUtil = Class.create();
+NotificationProviderUtil.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    initialize: function(request, responseXML, gc) {
+        global.AbstractAjaxProcessor.prototype.initialize.call(this, request, responseXML, gc);
+    },
+
+    doesContentHaveDestinationTypeEnabled: function() {
+        var result = {};
+
+        var notificationSysId = this.getParameter('sysparm_notification_id');
+        var tableNameArray = this._fetchProviderContentTableNames(notificationSysId);
+
+        // If array is empty, then it may contain shared content, so no need to throw error. 
+        // If there is no content at all, then another client script takes care of that condition.
+        if (tableNameArray.length == 0)
+            return this._createResponse(result, true, "", "");
+
+        var provider = new GlideRecord("sys_notification_provider");
+        provider.addQuery("content_table", "IN", tableNameArray.toString());
+        provider.query();
+        if (!provider.hasNext())
+            return this._createResponse(result, false, tableNameArray.toString(), "provider_not_exists");
+
+        while (provider.next()) {
+			var providerName = provider.getValue("name");
+            var tableName = String(provider.content_table);
+            if (!provider.active)
+                return this._createResponse(result, false, providerName, "provider_not_active");
+			
+            var channel = new GlideRecord("sys_notification_channel");
+            channel.addQuery("provider", provider.getUniqueValue());
+            channel.addActiveQuery();
+            channel.query();
+            if (!channel.hasNext())
+                return this._createResponse(result, false, providerName, "channel_not_exist");
+
+            while (channel.next()) {
+                var destinationType = new GlideRecord('sys_notif_destination_type');
+                destinationType.addQuery('channel', channel.getUniqueValue());
+                destinationType.addActiveQuery();
+                destinationType.query();
+                if (!destinationType.hasNext())
+                    return this._createResponse(result, false, providerName, "destination_type_not_exist");
+
+                while (destinationType.next()) {
+                    var destinationTypeSetting = new GlideRecord('sys_notif_dest_type_setting');
+                    destinationTypeSetting.addQuery('destination_type', destinationType.getUniqueValue());
+                    destinationTypeSetting.addQuery('notification', notificationSysId);
+                    destinationTypeSetting.query();
+                    //if not destination type setting record exists then response will be the send_by_Default flag of setting record else dig into destination setting record.
+                    if (!destinationTypeSetting.hasNext()) {
+                        var sendByDefault = destinationType.getValue("send_by_default");
+                        return this._createResponse(result, sendByDefault == "1", providerName, sendByDefault == "1" ? "" : "destination_type_send_by_default_false");
+                    } else if (destinationTypeSetting.next()) {
+                        var send = destinationTypeSetting.getValue("send");
+                        return this._createResponse(result, destinationTypeSetting.getValue("send") == "1", providerName, send == "1" ? "" : "destination_type_setting_send_false");
+                    }
+                }
+            }
+        }
+        //for no notification content, default is ture as the warning message will be taken care by another client script
+        return this._createResponse(result, true, "", "");
+    },
+
+    _createResponse: function(result, enabled, providerName, reason) {
+        result.isEnabled = enabled;
+        result.reason = reason;
+        result.provider_name = providerName;
+        return JSON.stringify(result);
+    },
+
+    _fetchProviderContentTableNames: function(notificationId) {
+        var contentTableNameArray = [];
+        var notificationContent = new GlideRecord("sys_notification_content");
+        notificationContent.addQuery("notification", notificationId);
+        notificationContent.addNotNullQuery("notification");
+        notificationContent.addQuery("sys_class_name", "NOT IN", "sys_notification_actionable_prompt,sys_notification_common_content");
+        notificationContent.query();
+        while (notificationContent.next() &amp;&amp; notificationContent.canRead()) {
+            contentTableNameArray.push(notificationContent.getRecordClassName());
+        }
+        return contentTableNameArray;
+    },
+
+    type: 'NotificationProviderUtil'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-08-12 18:45:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7667c95e5be210103a9b51d11581c715&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;50&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NotificationProviderUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Notification Providers" source="com.glide.notification.provider"&gt;eb5305c36da620100acb70b3534330d4&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7667c95e5be210103a9b51d11581c715&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-20 08:53:27&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4643&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:37</sys_created_on>
+        <sys_id>a8dc853e2f331110d8a4d5f62799b671</sys_id>
+        <sys_name>NotificationProviderUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a8dc853e2f331110d8a4d5f62799b671</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>77fd7e35b3232300290ea943c6a8dcf8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UniqueCodeGenerator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This class handles the logic to generate a unique code value for the given filed and table.&amp;#13;
+By default, it generates the unique code for the table 'cmn_skill_category' and the field 'code'.&lt;/description&gt;
+        &lt;name&gt;UniqueCodeGenerator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UniqueCodeGenerator = Class.create();
+UniqueCodeGenerator.prototype = {
+    initialize: function() {
+		this.CHARS = "!#$&amp;()*+,-.0123456789:;&lt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]`}|{~";
+		this.DEFAULT_TABLE = 'cmn_skill_category';
+		this.DEFAULT_FIELD = 'code';
+    },
+
+	generateUniqueCode : function(table, field) {
+		table = table || this.DEFAULT_TABLE;
+		field = field || this.DEFAULT_FIELD;
+		var property = table + '.' + field + '.' + 'last_generated';
+		var mutexName = table + '.' + field + '.lock';
+		var mutex = new GlideMutex(mutexName, mutexName);
+		mutex.setSpinWait(100);
+		mutex.setMaxSpins(1000);
+		var newCode;
+		if (mutex.get()) {
+			try{
+				var lastUsedCode = this.getLastUsedCode(table, field, property);
+				var indices = this.getLastUsedIndex(lastUsedCode);
+				indices = this.getNextIndex(indices);
+				newCode = this.getCode(indices);
+				this.setLastUsedCode(property, newCode);
+			}
+			finally {
+				mutex.release();
+			}
+		}
+		return newCode;
+	},
+
+	getLastUsedCode: function(table, field, propertyName) {
+		var gr = new GlideRecord('sys_properties');
+		gr.addQuery('name', propertyName);
+		gr.query();
+		if(gr.next()) {
+			return gr.getValue('value');
+		}
+		else {
+			gr = new GlideRecord(table);
+			gr.orderByDesc('sys_created_on');
+			gr.query();
+			gr.setLimit(1);
+			if(gr.next()) {
+				return gr.getValue(field);
+			}
+		}
+		return '';
+	},
+
+	getLastUsedIndex : function(lastUsedCode) {
+		var indices = [0,0,0,-1];
+		if(!gs.nil(lastUsedCode)) {
+			for(var i = 0; i &lt; lastUsedCode.length; i++) {
+				var index = this.CHARS.indexOf(lastUsedCode[i]);
+				indices[i] = index &gt; -1 ? index : 0;
+			}
+		}
+		return indices;
+	},
+
+	getNextIndex: function(indices) {
+		for(var i = indices.length - 1; i &gt;= 0; i--) {
+			if(indices[i] &lt; this.CHARS.length - 1) {
+				indices[i] = indices[i] + 1;
+				break;
+			}
+			else {
+				indices[i] = 0;
+			}
+		}
+		return indices;
+	},
+
+	getCode: function(indices) {
+		var newCode = '';
+		for(var i = 0; i &lt; indices.length; i++) {
+			newCode = newCode + this.CHARS[indices[i]];
+		}
+		return newCode;
+	},
+
+	setLastUsedCode: function(propertyName, code) {
+		var gr = new GlideRecord('sys_properties');
+		gr.addQuery('name', propertyName);
+		gr.query();
+		if(gr.hasNext())
+			gr.next();
+		gr.name = propertyName;
+		gr.type = 'string';
+		gr.value = code;
+		gr.setWorkflow(false);
+		gr.update();
+	},
+
+    type: 'UniqueCodeGenerator'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-02-11 18:39:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;77fd7e35b3232300290ea943c6a8dcf8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UniqueCodeGenerator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Skills Management" source="com.snc.skills_management"&gt;6c463c602fa33010d8a4d5f62799b6ab&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_77fd7e35b3232300290ea943c6a8dcf8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-02-11 23:49:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2380&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:41</sys_created_on>
+        <sys_id>71dc093e2f331110d8a4d5f62799b6a7</sys_id>
+        <sys_name>UniqueCodeGenerator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_71dc093e2f331110d8a4d5f62799b6a7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

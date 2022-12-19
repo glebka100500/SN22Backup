@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8832eea8c3b60110f2a1e0dd9740ddb8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AdvancedDashboardUtility&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This utility will be used to:&amp;#13;
+1.  Migrate existing UXF dashboards to Advanced dashboard experience&amp;#13;
+2. Convert from Dashboard ViewPort to new Dashboard&lt;/description&gt;
+        &lt;name&gt;AdvancedDashboardUtility&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AdvancedDashboardUtility = Class.create();
+AdvancedDashboardUtility.prototype = {
+
+    _DASHBOARD_VIEWPORT_SYSID: "3119f143532510102b54ddeeff7b126e",
+    _ADVANCED_DASHBOARD_SYSID: "02dc36706f01011089060168e25b3691",
+    _UX_BASE_EXPERIENCE_SHELL_SYSID: "47bcb58553030110aab9ddeeff7b12c2",
+    _ADVANCED_DASHBOARD_EXPERIENCE_REGISTRY: '8adc36706f01011089060168e25b3693',
+    _PLATFORM_ANALYTICS_WORKSPACE_EXPERIENCE_REGISTRY: '08c73d60537101100834ddeeff7b1287',
+
+    initialize: function() {},
+
+    convertToAdvancedDashboards: function() {
+        var grRoute = new GlideRecord('sys_ux_app_route');
+        //locate all routes that has dashboard viewport as parent macroponent
+        grRoute.addQuery('parent_macroponent', this._DASHBOARD_VIEWPORT_SYSID);
+        grRoute.query();
+        while (grRoute.next()) {
+            //Update all routes found with the relevant relations to map to advanced dashboard experience
+            grRoute.setValue("app_config", this._ADVANCED_DASHBOARD_SYSID);
+            grRoute.setWorkflow(false);
+            grRoute.setValue("parent_macroponent", this._UX_BASE_EXPERIENCE_SHELL_SYSID);
+            grRoute.setValue("parent_macroponent_composition_element_id", '');
+            grRoute.update();
+            gs.info("sys_ux_app_route record with sysID " + grRoute.getUniqueValue() + " was updated.");
+            this._updateScreenComponent(grRoute.getValue('app_config'), grRoute.getValue('screen_type'));
+        }
+    },
+
+    _updateScreenComponent: function(routeAppConfig, routeScreenType) {
+
+        var grScreen = new GlideRecord('sys_ux_screen');
+        //locate all screens that has dashboard viewport as parent macroponent
+        grScreen.addQuery('parent_macroponent', this._DASHBOARD_VIEWPORT_SYSID);
+        grScreen.addQuery('screen_type', routeScreenType);
+        grScreen.query();
+
+        //Update all screens found with the relevant relations to map to advanced dashboard experience
+        while (grScreen.next()) {
+            grScreen.setValue("app_config", this._ADVANCED_DASHBOARD_SYSID);
+            grScreen.setValue("parent_macroponent", this._UX_BASE_EXPERIENCE_SHELL_SYSID);
+            grScreen.update();
+            gs.info("sys_ux_screen record with sysID " + grScreen.getUniqueValue() + " was updated.");
+
+            var screenName = grScreen.getValue('name');
+            var screenSysId = grScreen.getUniqueValue();
+            var uxfPageMacroponentSysId = grScreen.getValue('macroponent');
+            var pageDefinitionCreatedBy = GlideUser.getUser(grScreen.macroponent.sys_created_by).getID();
+            var pageDefinitionCreatedOn = grScreen.macroponent.sys_created_on;
+            this._createPARDashboard(routeAppConfig, routeScreenType, screenName, screenSysId, uxfPageMacroponentSysId, pageDefinitionCreatedBy, pageDefinitionCreatedOn);
+
+        }
+    },
+
+    _createPARDashboard: function(routeAppConfig, routeScreenType, screenName, screenSysId, uxfPageMacroponentSysId, pageDefinitionCreatedBy, pageDefinitionCreatedOn) {
+        var gr = new GlideRecord('par_dashboard');
+        gr.initialize();
+        gr.setValue('name', screenName);
+        gr.setValue('experience', this._ADVANCED_DASHBOARD_EXPERIENCE_REGISTRY);
+        gr.setValue('sys_ux_app_config', routeAppConfig);
+        gr.setValue('sys_ux_screen_type', routeScreenType);
+        gr.setValue('sys_ux_screen', screenSysId);
+        gr.setValue('sys_ux_macroponent', uxfPageMacroponentSysId);
+        var dashboardSysId = gr.insert();
+        gs.info("par_dashboard record with sysID " + dashboardSysId + " was created.");
+
+        this._createDashboardMetaData(dashboardSysId, pageDefinitionCreatedBy, pageDefinitionCreatedOn);
+        this._createDashboardVisibility(dashboardSysId);
+    },
+
+    _createDashboardMetaData: function(dashboardSysId, pageDefinitionCreatedBy, pageDefinitionCreatedOn) {
+        var gr = new GlideRecord('par_dashboard_user_metadata');
+        gr.initialize();
+        gr.setValue('dashboard', dashboardSysId);
+        gr.setValue('created_by_user', pageDefinitionCreatedBy);
+        gr.setValue('updated_by_user', pageDefinitionCreatedBy);
+        gr.created_on = pageDefinitionCreatedOn;
+        gr.last_updated_on = pageDefinitionCreatedOn;
+        var sysId = gr.insert();
+        gs.info("par_dashboard_user_metadata record with sysID " + sysId + " was created.");
+
+    },
+
+    _createDashboardVisibility: function(dashboardSysId) {
+        var gr = new GlideRecord('par_dashboard_visibility');
+        gr.initialize();
+        gr.setValue('dashboard', dashboardSysId);
+        gr.setValue('experience', this._PLATFORM_ANALYTICS_WORKSPACE_EXPERIENCE_REGISTRY);
+        var sysId = gr.insert();
+        gs.info("par_dashboard_visibility record with sysID " + sysId + " was created.");
+    },
+
+    convertFromDashboardViewPortToNewDashboard: function() {
+        var gr = new GlideRecord('sys_ux_macroponent');
+        gr.addEncodedQuery('compositionLIKE' + this._DASHBOARD_VIEWPORT_SYSID);
+        gr.query();
+        var sysIds = [];
+        while (gr.next()) {
+            this._insertRecordToBackUp(gr.getUniqueValue(), gr.getValue('composition'));
+            this._setStaticCompositionAndElementId(gr);
+            gr.update();
+            sysIds.push(gr.getUniqueValue());
+        }
+        gs.info("Following sys_ux_macroponent records where updated with new dashboard composition json:" + sysIds);
+
+    },
+
+    _insertRecordToBackUp: function(uxMacroponentSysId, composition) {
+        var gr = new GlideRecord('par_dashboard_conversion_backup');
+        gr.initialize();
+        gr.setValue('sys_ux_macroponent', uxMacroponentSysId);
+        gr.setValue('original_composition', composition);
+        gr.insert();
+    },
+
+    //Will set composition and element ID from Dashboards macroponent (SysID: 163a913b532c0110aab9ddeeff7b1241)
+    _setStaticCompositionAndElementId: function(dashboardViewPortGR) {
+        var gr = new GlideRecord('sys_ux_macroponent');
+        if (!gr.get("163a913b532c0110aab9ddeeff7b1241")) {
+            gs.error("sys_ux_macroponent record with 163a913b532c0110aab9ddeeff7b1241 was not found.");
+            return;
+        }
+        var composition = gr.getValue('composition');
+        dashboardViewPortGR.setValue('composition', composition);
+
+        var layoutJson = JSON.parse(gr.getValue('layout'));
+        var elementId = layoutJson["default"]["items"][0]["element_id"];
+        var updatedLayout = this._getLayoutWithUpdatedElementId(dashboardViewPortGR.getValue('layout'), elementId);
+        dashboardViewPortGR.setValue('layout', updatedLayout);
+    },
+
+    _getLayoutWithUpdatedElementId: function(layout, newElementId) {
+        if (!this._isValidLayout(layout))
+            return layout;
+
+        var layoutJson = JSON.parse(layout);
+        //Will replace the old dashboard_viewport element Id with the one in the static json
+        //We assume that Layout model have only one dashboard viewport
+        layoutJson["default"]["items"][0]["element_id"] = newElementId;
+        return JSON.stringify(layoutJson);
+    },
+
+    _isValidLayout: function(layout) {
+        if (gs.nil(layout))
+            return false;
+
+        var jsonObj;
+        try {
+            jsonObj = JSON.parse(layout);
+        } catch (error) {
+            gs.error(error);
+            return false;
+        }
+
+        //if Layout model has more than one element we wouldn't update it at this point
+        if (gs.nil(jsonObj) || gs.nil(jsonObj["default"]) || gs.nil(jsonObj["default"]["items"]) ||
+            jsonObj["default"]["items"].length !== 1 || gs.nil(jsonObj["default"]["items"][0]) ||
+            gs.nil(jsonObj["default"]["items"][0]["element_id"]))
+            return false;
+
+        return true;
+    },
+
+    type: 'AdvancedDashboardUtility'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-04-08 13:42:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8832eea8c3b60110f2a1e0dd9740ddb8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AdvancedDashboardUtility&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide PAR Seismic Dashboards" source="com.snc.par.dashboards"&gt;68b311252f221110d8a4d5f62799b6d2&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8832eea8c3b60110f2a1e0dd9740ddb8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-28 10:43:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7779&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:14</sys_created_on>
+        <sys_id>39fc057e2f331110d8a4d5f62799b686</sys_id>
+        <sys_name>AdvancedDashboardUtility</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_39fc057e2f331110d8a4d5f62799b686</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

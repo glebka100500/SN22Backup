@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3216df419f122200598a5bb0657fcfae</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InterProjectRelationDeleteHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Called when external relation record is deleted in planned_task_rel_planned_task table, it goes and deletes the shadow tasks/relations and trigger full recalculate in both the projects&lt;/description&gt;
+        &lt;name&gt;InterProjectRelationDeleteHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InterProjectRelationDeleteHandler = Class.create();
+InterProjectRelationDeleteHandler.prototype = {
+    initialize: function(_current) {
+        this.relation = _current;
+        this._tasksToDelete = [];
+        this._relationsToDelete = [];
+    },
+    
+    performCleanup: function() {
+        PPMDebug.log("Into InterProjectRelationDeleteHandler.performCleanup");
+        var self = this;
+        var api = new SNC.PlannedTaskAPI();
+
+        this._findTasksToDelete();
+        this._findRelationsToDelete();
+        
+        this.notificationsToCleanup().forEach(function(notif) { 
+            PPMDebug.log("Into InterProjectRelationDeleteHandler.notificationsToCleanup - deleting -&gt; " + notif.getValue("sys_id"));
+            notif.deleteRecord(false);
+        });
+        
+        this._relationsToDelete.forEach(function(rel) { 
+            PPMDebug.log("Into InterProjectRelationDeleteHandler._relationsToDelete - deleting -&gt; " + rel.record.getValue("sys_id"));
+            rel.record.deleteRecord(false); 
+        }); 
+        
+        this._tasksToDelete.forEach(function(task) { 
+            PPMDebug.log("Into InterProjectRelationDeleteHandler._tasksToDelete - deleting -&gt; " + task.getValue("sys_id") + " - " + task.getValue("top_task"));
+            task.deleteRecord(false);
+        });         
+        
+        this._relationsToDelete.forEach(function(rel) { 
+            PPMDebug.log("Into InterProjectRelationDeleteHandler._relationsToDelete - validate wbs -&gt; " + rel.affectedProjectId);
+            if(rel.affectedProjectId)
+                api.validateWbs(rel.affectedProjectId);
+            InterProjectEventManager.raiseFullRecalculateEvent(rel.affectedProjectId);
+        });
+    },
+    
+    notificationsToCleanup: function() {
+        return PlannedTaskNotificationService.getAllNotificationsForTask(this.relation.getValue('child'));
+    },
+        
+    _findTasksToDelete: function() {
+        var task = this.taskToDeleteInParentProject();
+        PPMDebug.log("Into InterProjectRelationDeleteHandler._findTasksToDelete - taskToDeleteInParentProject -&gt; " + 
+            task.getValue("short_description") + " | hasMoreThanOneIncomingRelation -&gt;" + task.hasMoreThanOneIncomingRelation());
+        if ( JSUtil.notNil(task) &amp;&amp; !task.hasMoreThanOneIncomingRelation() ) {
+            PPMDebug.log("Into InterProjectRelationDeleteHandler._findTasksToDelete - adding 1 -&gt; " + 
+                task.getValue("short_description"));
+            this._tasksToDelete.push(task);
+        }
+        task = this.taskToDeleteInChildProject();
+        PPMDebug.log("Into InterProjectRelationDeleteHandler._findTasksToDelete - taskToDeleteInChildProject -&gt; " + 
+            task.getValue("short_description") + " | hasMoreThanOneOutgoingRelation -&gt; " + task.hasMoreThanOneOutgoingRelation());
+        if ( JSUtil.notNil(task) &amp;&amp;  !task.hasMoreThanOneOutgoingRelation() ) {
+            PPMDebug.log("Into InterProjectRelationDeleteHandler._findTasksToDelete - adding 2 -&gt; " + 
+                task.getValue("short_description"));
+            this._tasksToDelete.push(task);
+        }
+    },
+    
+    _findRelationsToDelete: function() {
+        var rels = [];
+        var rel = {};
+        rel.record = new PlannedTaskRelation(ShadowTaskQueryHelper.findUpstreamShadowRelation(this.relation.sys_id));
+        rel.affectedProjectId = rel.record.record().parent.top_task;
+        rel.affectedTaskId = rel.record.getValue('parent');
+        rels.push(rel);
+        rel = {};
+        rel.record = new PlannedTaskRelation(ShadowTaskQueryHelper.findDownstreamShadowRelation(this.relation.sys_id));
+        rel.affectedProjectId = rel.record.record().child.top_task;
+        rel.affectedTaskId = rel.record.getValue('child');
+        rels.push(rel);
+        this._relationsToDelete = rels;             
+    },
+    
+    taskToDeleteInParentProject: function() {
+        var rel = new PlannedTaskRelation(ShadowTaskQueryHelper.findUpstreamShadowRelation(this.relation.sys_id));
+        return rel.getChild();
+    },
+    
+    taskToDeleteInChildProject: function() {
+        var rel = new PlannedTaskRelation(ShadowTaskQueryHelper.findDownstreamShadowRelation(this.relation.sys_id));
+        return rel.getParent();
+    },
+    
+    type: 'InterProjectRelationDeleteHandler'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-05 00:24:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3216df419f122200598a5bb0657fcfae&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;84&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InterProjectRelationDeleteHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3216df419f122200598a5bb0657fcfae&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4276&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:46</sys_created_on>
+        <sys_id>e56c81ba2f331110d8a4d5f62799b689</sys_id>
+        <sys_name>InterProjectRelationDeleteHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e56c81ba2f331110d8a4d5f62799b689</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

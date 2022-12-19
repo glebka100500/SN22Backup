@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4bfa0c3297123000adcad4541b297593</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PortalFilters&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Identical to methods in PortalFilters. &lt;/description&gt;
+        &lt;name&gt;PortalFilters&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PortalFilters = (function() {
+	var pub = {};
+
+	function join(table, element, value) {
+		var joinedRecords = new GlideRecord(table);
+		joinedRecords.addQuery(element, value);
+		return joinedRecords;
+	}
+	
+	pub.getJoinFilter = function(table, element, value, reference_element, sub_query) {
+		if (gs.nil(reference_element)) {
+			reference_element='sys_id';
+		}
+		var ids = [];
+		ids.push('0');
+		var joinedRecords = join(table, element, value)
+		//joinedRecords.addEncodedQuery(sub_query);
+		joinedRecords.query();
+		while (joinedRecords.next())
+			ids.push(joinedRecords.getValue(reference_element).toString());
+		return ids;
+	}
+
+	pub.myApprovals = function(approver_id) {
+		return pub.getJoinFilter('sysapproval_approver', 'approver', approver_id, 'sysapproval', '');
+	}
+	
+	pub.myContracts = function() {
+		return pub.getJoinFilter('clm_m2m_contract_user', 'user', gs.getUserID(), 'contract', 'added&lt;'+gs.daysAgoStart(0) + '^removed&gt;' + gs.daysAgoEnd(0));
+	}
+	
+	pub.myOperatorGroups = function(elName) {
+		var parentGroup = 'ca95510737253000f5bf1f23dfbe5d87';	//Virtual Provisioning Cloud Operators
+		var gr = join('sys_user_grmember', 'user', gs.getUserID());
+		gr.addQuery('group.parent', parentGroup);
+		gr.query();
+		var myGroups = [];
+		while (gr.next()) {
+			myGroups.push(gr.group[elName]);
+		}
+		return myGroups;
+	}
+		
+	pub.myGroupSLAs = function(elName) {
+		var parentGroup = 'ca95510737253000f5bf1f23dfbe5d87';	//Virtual Provisioning Cloud Operators
+		var gr = new GlideRecord('sys_user_grmember');
+        gr.addQuery('user', gs.getUserID());
+		gr.addQuery('group.parent', parentGroup);
+		gr.query();
+		var myGroups = [];
+		while (gr.next())
+			myGroups.push('assignment_group=' + gr.group['sys_id'] + '^EQ');
+
+		var mySLAGroups = [];
+		var slaGr = new GlideRecord('contract_sla');
+		slaGr.addQuery('start_condition', 'IN', myGroups);
+		slaGr.query();
+		
+		while (slaGr.next())
+			mySLAGroups.push(''+ slaGr[elName]);
+		
+		return mySLAGroups;
+	}
+
+	pub.countDaysUntilRefresh = function(assetType) {
+	    var MS_PER_DAY = 1000 * 60 * 60 * 24;
+	    var asset = new GlideRecord('alm_asset');
+	    asset.addQuery('assigned_to', gs.getUserID());
+	    asset.addQuery('install_status', 'NOT IN', '7,8' );
+	    asset.addQuery('model_category.name', 'CONTAINS', assetType == 'pc' ? 'Computer' : 'Phone');
+	    asset.query();
+	    return getRefreshDays( asset );
+	  
+	
+	    function getRefreshDays(asset) {
+	        var MAX_CNT = 999999;
+	        var days = MAX_CNT;
+	        while (asset.next()) {
+	            var dat = asset.retirement_date;
+	            if (gs.nil(dat)) 
+	                 continue;
+	            
+	            var dayCount = computeDays(dat);
+	            if (dayCount &lt; days)
+	                days = dayCount;
+	        }
+	        return days === MAX_CNT ? 0 : days+'';
+	    }
+	
+	    function computeDays(dat) {
+	        dat = new GlideDateTime(dat + ' 23:59:59');
+	        var ofs = dat.getNumericValue();
+	        var now = new GlideDateTime(new GlideDate()+' 00:00:00').getNumericValue();
+	        var days = ofs - now;
+	        days = (days++) / MS_PER_DAY;
+	        return days &lt; 0 ? 0 : Math.round(days);
+	    }
+	}
+	
+	
+	pub.needsMyApproval = function(item) {
+		var approvals = new GlideRecord('sysapproval_approver');
+		approvals.addQuery('sysapproval', item.sys_id);
+		approvals.addQuery('approver', gs.getUserID());
+		approvals.addQuery('state', 'requested');
+		approvals.query();
+		return approvals.next();
+	}
+	
+	return pub;
+}());]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-12-17 22:47:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4bfa0c3297123000adcad4541b297593&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;29&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PortalFilters&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4bfa0c3297123000adcad4541b297593&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-07-02 17:54:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3463&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:20</sys_created_on>
+        <sys_id>428c4dba2f331110d8a4d5f62799b67b</sys_id>
+        <sys_name>PortalFilters</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_428c4dba2f331110d8a4d5f62799b67b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

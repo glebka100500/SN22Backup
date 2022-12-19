@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4d0fd338730023009ecc234ffff6a7d3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AsmtMetricsUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AsmtMetricsUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AsmtMetricsUtil = Class.create();
+AsmtMetricsUtil.prototype = {
+	initialize: function() {
+	},
+	
+	hasListNewAccess: function() {
+		return gs.action.getGlideURI().get('sysparm_view') != 'survey' 
+			&amp;&amp; !gs.action.getGlideURI().get('sysparm_target').includes('sample_metric') 
+			&amp;&amp; !gs.action.getGlideURI().get('sysparm_target').includes('asmt_metric.depends_on');
+	},
+	type: 'AsmtMetricsUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-18 18:54:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4d0fd338730023009ecc234ffff6a7d3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AsmtMetricsUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Assessment" source="com.snc.assessment_core"&gt;72d00d4b6d2620100acb70b35343300e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4d0fd338730023009ecc234ffff6a7d3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-18 18:57:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;398&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:22</sys_created_on>
+        <sys_id>628c4dba2f331110d8a4d5f62799b6b1</sys_id>
+        <sys_name>AsmtMetricsUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_628c4dba2f331110d8a4d5f62799b6b1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

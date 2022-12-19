@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9850bd939f30010054005f29468ba305</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdEnrollSampleProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Password Reset Enrollment Processor for sample verification&lt;/description&gt;
+        &lt;name&gt;PwdEnrollSampleProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdEnrollSampleProcessor = Class.create();
+/**
+ * Handles enrollment for SMS.
+ */
+PwdEnrollSampleProcessor.prototype = {
+    category: 'password_reset.extension.enrollment_form_processor', // DO NOT REMOVE THIS LINE!
+    
+    /**
+     * Init function.
+     */
+    initialize: function() {
+    },
+    
+    /**********
+    * Process the enrollment form, and returns a PwdExtensionScriptResponse object, which contains: result, message and value 
+    * 
+    * @param params.userId                            The sys-id of the user trying to enroll (table: sys_user)
+    * @param params.verificationId                    The sys-id of the verification to be enrolled into (table: pwd_verification)
+    * @param params.enrollmentId                      The sys-id of this enrollment process.
+	* 
+    * @param params.getFormParameter(&lt;form element&gt;)  Any of the form elements
+	* 
+    * @return a map with the attributes: 'result' and 'message' for example: {result: 'success', message : 'bla bla'}
+    **********/
+    process: function(params) {
+    	/* eslint-disable no-unused-vars */
+    	var LOG_ID = 'PwdEnrollSampleProcessor.process';
+    	/* eslint-enable no-unused-vars */
+		var sampleInput = params.getFormParameter('sample_input');
+		
+		// prepare response:
+		var response  = {result : 'failure', message : 'Error'};
+		
+    	if (sampleInput != 'ok') {
+			response.result = 'failure';
+			response.message = gs.getMessage('The sample input is not "ok"');
+		} else {
+			response.result = 'success';
+			response.message = gs.getMessage('Completed Successfully');
+		}
+		
+		return response;
+    },
+	
+	
+    type: 'PwdEnrollSampleProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-04-23 02:02:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9850bd939f30010054005f29468ba305&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;21&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdEnrollSampleProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9850bd939f30010054005f29468ba305&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-01-04 01:32:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1643&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:18</sys_created_on>
+        <sys_id>293d05be2f331110d8a4d5f62799b67d</sys_id>
+        <sys_name>PwdEnrollSampleProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_293d05be2f331110d8a4d5f62799b67d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

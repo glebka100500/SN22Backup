@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>90128c83c3322200b6dcdfdc64d3ae8d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProblemUtilSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Client callable utilities for Problem Management.&lt;/description&gt;
+        &lt;name&gt;ProblemUtilSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProblemUtilSNC = Class.create();
+ProblemUtilSNC.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	SOLVED_PERMANENTLY: "Solved (Permanently)",
+	
+	initialize: function(request, responseXML, gc) {
+		AbstractAjaxProcessor.prototype.initialize.call(this, request, responseXML, gc);
+	},
+	
+	checkResolveIncidents: function(problemGR) {
+		var resolveAction = false;
+		var transaction = GlideTransaction.get();
+		if (transaction)
+			resolveAction = "resolve_incidents" == transaction.getRequestParameter("sys_action");
+		return resolveAction || (problemGR.isValidRecord() &amp;&amp; problemGR.problem_state.changesTo(4));
+	},
+	
+	resolveIncidents: function(problemGR) {
+		var problemSysId = this.getParameter("sysparm_problem_sys_id");
+		if (JSUtil.nil(problemSysId) &amp;&amp; problemGR)
+			problemSysId = problemGR.getUniqueValue();
+		
+		var notes = this.getParameter("sysparm_notes");
+		if (JSUtil.nil(notes) &amp;&amp; problemGR)
+			notes = problemGR.getValue("close_notes");
+		
+		if (JSUtil.nil(problemSysId) || JSUtil.nil(notes))
+			return gs.getMessage("Problem sys_id and close notes are required");
+		
+		if (!problemGR) {
+			problemGR = new GlideRecord("problem");
+			problemGR.get(problemSysId);
+		}
+		
+		var problemNumber = problemGR.getValue("number");
+		var resolvedBy = gs.getUserID();
+		var resolvedAt = new GlideDateTime();
+		var updatedCloseNotes = gs.getMessage("Related problem {0} closed with the following Close Notes", problemNumber);
+		updatedCloseNotes += "\n" + notes;
+		
+		var incidentGR = new GlideRecord("incident");
+		incidentGR.addQuery("problem_id", problemSysId);
+		incidentGR.addQuery("state", IncidentState.AWAITING_PROBLEM);
+		incidentGR.addQuery("hold_reason", IncidentReason.AWAITING_PROBLEM);
+		incidentGR.query();
+		
+		if (!incidentGR.hasNext())
+			return gs.getMessage("There are no related incidents awaiting resolution of this problem");
+		
+		while (incidentGR.next()) {
+			var incidentCloseNotes = incidentGR.getDisplayValue("close_notes");
+			incidentGR.setValue("state", IncidentState.RESOLVED);
+			incidentGR.setValue("close_code", this.SOLVED_PERMANENTLY);
+			incidentGR.setValue("close_notes", updatedCloseNotes + "\n" + incidentCloseNotes);
+			incidentGR.setValue("resolved_by", resolvedBy);
+			incidentGR.setValue("resolved_at", resolvedAt);
+			incidentGR.update();
+		}
+		
+		var url = this._getResolvedIncidentsURL(problemSysId, resolvedBy, resolvedAt);
+		return gs.getMessage("&lt;a href='{0}'&gt;Related incidents&lt;/a&gt; moved to Resolved state", url);
+	},
+	
+	_getResolvedIncidentsURL: function(problemSysId, resolvedBy, resolvedAt) {
+		var resolvedIncidentsGR = new GlideRecord("incident");
+		resolvedIncidentsGR.addQuery("problem_id", problemSysId);
+		resolvedIncidentsGR.addQuery("state", IncidentState.RESOLVED);
+		resolvedIncidentsGR.addQuery("close_code", this.SOLVED_PERMANENTLY);
+		resolvedIncidentsGR.addQuery("resolved_by", resolvedBy);
+		resolvedIncidentsGR.addQuery("resolved_at", resolvedAt);
+		
+		var url = new GlideURL("incident_list.do");
+		url.set("sysparm_query", resolvedIncidentsGR.getEncodedQuery());
+		return url.toString();
+	},
+
+    type: 'ProblemUtilSNC'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-11-04 10:41:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;90128c83c3322200b6dcdfdc64d3ae8d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;38&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProblemUtilSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Problem Management Best Practice - Jakarta" source="com.snc.best_practice.problem.jakarta"&gt;9c648d0f6da620100acb70b353433020&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_90128c83c3322200b6dcdfdc64d3ae8d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-12-06 14:25:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3106&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:36</sys_created_on>
+        <sys_id>cb0d497e2f331110d8a4d5f62799b63e</sys_id>
+        <sys_name>ProblemUtilSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cb0d497e2f331110d8a4d5f62799b63e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

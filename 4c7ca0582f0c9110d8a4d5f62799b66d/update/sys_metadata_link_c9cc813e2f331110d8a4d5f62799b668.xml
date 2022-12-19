@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6f20d2539f75220088265bb0657fcf22</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CycleDetector&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Cycle Detector for Project Diagnosis&lt;/description&gt;
+        &lt;name&gt;CycleDetector&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CycleDetector = Class.create();
+CycleDetector.prototype = {
+    tasks: [],
+    taskSysIds: [],
+    relations: [],
+    taskProcessStack: [],
+    cyclicTasks: [],
+    cycleDetected: false,
+
+    initialize: function() {
+        gs.info("Into CycleDetector");
+    },
+
+    isNil: function(value) {
+        if( !value || value == "" || value == null ) {
+            return true;
+        }
+        return false;
+    },
+
+    getTaskObject: function(gr) {
+        if( gr.isValid()) {
+            return {
+                sys_id: gr.getValue("sys_id"),
+                parent: gr.getValue("parent"),
+                top_task: gr.getValue("tap_task"),
+                number: gr.getValue("number"),
+                short_description: gr.getValue("short_description"),
+                start_date: gr.getValue("start_date"),
+                end_date: gr.getValue("en_date"),
+                duration: gr.getValue("duration"),
+                children: [],
+                predecessors: [],
+                successors: [],
+                processed: false
+            };
+        }
+        return;
+    },
+
+    getRelationObject: function(gr) {
+        if( gr.isValid()) {
+            return {
+                sys_id: gr.getValue("sys_id"),
+                parent: gr.getValue("parent"),
+                child: gr.getValue("child"),
+                lag: gr.getValue("lag"),
+                type: gr.getValue("type"),
+                sub_type: gr.getValue("sub_type"),
+                processed: false
+            };
+        }
+        return;
+    },
+
+    glideRecord: function() {
+        var gr = new GlideRecord("planned_task");
+        return gr;
+    },
+
+    getTasks: function(sysId) {
+        var plannedTasks = this.glideRecord();
+        plannedTasks.addQuery("top_task", sysId).addOrCondition("parent", sysId);
+        plannedTasks.query();
+        return plannedTasks;
+    },
+
+    getRelations: function(sysIds) {
+        var taskRelations = new GlideRecord("planned_task_rel_planned_task");
+        taskRelations.addQuery("parent", "IN", sysIds).addOrCondition("child", "IN",  sysIds);
+        taskRelations.query();
+
+        return taskRelations;
+    },
+
+    loadTask: function(gr) {
+        var task = this.getTaskObject(gr);
+        this.tasks.push(task);
+        this.taskSysIds.push(task.sys_id);
+    },
+
+    loadTasks: function(sysId) {
+        var tasks = this.getTasks(sysId);
+        gs.info("Tasks Count: " + tasks.getRowCount());
+        while( tasks.next() ) {
+            this.loadTask(tasks);
+        }
+    },
+
+    loadRelation: function(gr) {
+        var relation = this.getRelationObject(gr);
+        this.relations.push(relation);
+    },
+
+    loadRelations: function() {
+        var relations = this.getRelations(this.taskSysIds.join(","));
+        gs.info("Relations Count: " + relations.getRowCount());
+        while( relations.next() ) {
+            this.loadRelation(relations);
+        }
+    },
+
+    getTaskBySysId: function(sysId) {
+        for (var i = 0; i &lt; this.tasks.length; i++) {
+            if(this.tasks[i].sys_id == sysId) {
+    
+                return this.tasks[i];
+            }
+        }
+    },
+
+    processParentChild: function() {
+        if( this.tasks.length &gt; 0) {
+            for (var i = 0; i &lt; this.tasks.length; i++) {
+                var task = this.tasks[i];
+                if( !this.isNil(task.parent)) {
+                    var parentTask = this.getTaskBySysId(task.parent);
+                    parentTask.children.push(task.sys_id);    
+                }
+            }
+        } else {
+            gs.info("*** No Tasks Found ***");
+        }
+    },
+
+    proccessPredecessorSuccessor: function() {
+        if(this.relations.length &gt; 0) {
+            for (var i = 0; i &lt; this.relations.length; i++) {
+                var relation = this.relations[i];
+                if( !this.isNil(relation.parent)) {
+                    var predecessorTask = this.getTaskBySysId(relation.parent);
+                    if( predecessorTask )
+                        predecessorTask.successors.push(relation);
+                }
+                if( !this.isNil(relation.child)) {
+                    var successorTask = this.getTaskBySysId(relation.child);
+                    if( successorTask )
+                        successorTask.predecessors.push(relation);
+                }
+            }
+        } else {
+            gs.info("*** No Relations Found ***");   
+        }
+    },
+
+    processForDetectCycles: function(sysId) {
+        this.propagateParentRelationsToLeafTasks();
+        this.propagateParentAsSuccessors();
+        this.startDetectCycles(sysId);
+    },
+
+    startDetectCycles: function(sysId) {
+        
+        var leafTasks = this.getSubTreeLeafs(sysId);
+        for (var i = 0; i &lt; leafTasks.length; i++) {
+            if( this.detectCycle(leafTasks[i]) ) {
+                this.cycleDetected = true;
+                break;
+            }
+        }
+    },
+
+    detectCycle: function(sysId) {
+        // Add the task 
+        this.taskProcessStack.push(sysId);
+        while( this.taskProcessStack.length &gt; 0) {
+            var lastTaskInStack = this.taskProcessStack[this.taskProcessStack.length-1];
+
+            // Get the next successors
+            var nextSuccessorSysId = this.getSuccessorForTask(lastTaskInStack);
+            if( !this.isNil(nextSuccessorSysId) ) {
+                if( this.taskProcessStackContains(nextSuccessorSysId) ) {
+                    var message = this.printTaskProccessStack(nextSuccessorSysId);
+                    this.cyclicTasks.push({sys_id: nextSuccessorSysId, 
+                                            message: message});
+                    return true; // Cycle Detected
+                } else {
+                    this.taskProcessStack.push(nextSuccessorSysId);
+                }
+            } else {
+    
+                // pop the last task
+                this.taskProcessStack.pop();
+            }
+        }
+        this.resetAllTaskSuccessors();
+        return false;
+    },
+
+    getSuccessorForTask: function(sysId) {
+        var task = this.getTaskBySysId(sysId);
+        var successors = task.successors;
+        for (var i = 0; i &lt; successors.length; i++) {
+            var successor = successors[i];
+            if( !successor.processed ) {
+                successor.processed = true;
+    
+                return successor.child;
+            }
+        }
+        return;
+    },
+
+    taskProcessStackContains: function(sysId) {
+        for (var i = 0; i &lt; this.taskProcessStack.length; i++) {
+            if( sysId == this.taskProcessStack[i]) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    resetAllTaskSuccessors: function() {
+        /*for (var i = 0; i &lt; this.tasks.length; i++) {
+            gs.info("Resetting task: " + this.tasks[i].short_description + " - " + this.tasks[i].sys_id);
+            var successors = this.tasks[i].successors;
+            for (var i = 0; i &lt; successors.length; i++) {
+                   successors[i].processed = false;
+            }   
+        }*/
+    },
+
+    printTaskProccessStack: function(sysId) {
+        var cycleString = "";
+        for (var i = 0; i &lt; this.taskProcessStack.length; i++) {
+            var task = this.getTaskBySysId(this.taskProcessStack[i]);
+            cycleString = cycleString + task.number + " -&gt; ";
+        }
+        var recursiveTask = this.getTaskBySysId(sysId);
+        gs.info( cycleString + recursiveTask.number);
+        return cycleString + recursiveTask.number;
+    },
+
+    getCloneRelation: function( parent, child, type ) {
+        return {
+            sys_id: undefined,
+            parent: parent,
+            child: child,
+            lag: undefined,
+            type: type,
+            sub_type: type,
+            processed: false
+        };
+    },
+
+    propagateParentAsSuccessors: function() {
+        for (var i = 0; i &lt; this.tasks.length; i++) {
+            var task = this.tasks[i];
+            if( !this.isNil(task.parent) ) {
+                var parentTask = this.getTaskBySysId(task.parent);
+                var cloneRelation = this.getCloneRelation(task.sys_id, task.parent, "child");
+                task.successors.push(cloneRelation);
+                parentTask.predecessors.push(cloneRelation);
+            }
+        }
+    },
+
+    propagateParentRelationsToLeafTasks:  function() {
+        for (var i = 0; i &lt; this.tasks.length; i++) {
+            var task = this.tasks[i];
+
+            //     " | children -&gt; " + task.children.length);
+            if( task.predecessors.length &gt; 0 &amp;&amp; task.children.size &gt; 0 ) {
+                var subTreeLeafTasks = this.getSubTreeLeafs(task.sys_id);
+    
+                var predecessorRelations = task.predecessors;
+                for (var i = 0; i &lt; subTreeLeafTasks.length; i++) {
+                    var subTreeLeafTask = subTreeLeafTasks[i];
+                    for (var i = 0; i &lt; predecessorRelations.length; i++) {
+                        var predecessorRelation = predecessorRelations[i];
+                        var cloneRelation = this.cloneRelation(predecessorRelation.parent, subTreeLeafTask.sys_id, "parent_clone");
+                        var predecessorTask = this.getTaskBySysId(task.parent);
+                        predecessorTask.successors.push(cloneRelation);
+                        subTreeLeafTask.predecessors.push(cloneRelation);
+                    }
+                }
+            }
+        }
+    },
+
+    getSubTreeLeafs: function(sysId) {
+        var subTreeLeafTasks = [];
+        this.addSubTreeLeaf(sysId, subTreeLeafTasks);
+        return subTreeLeafTasks;
+    },
+
+    addSubTreeLeaf: function(sysId, subTreeLeafTasks) {
+        var task = this.getTaskBySysId(sysId);
+        if(task.children.length &gt; 0) {
+            var childSysIdes = task.children;
+
+            for (var i = 0; i &lt; childSysIdes.length; i++) {
+    
+                if( sysId != childSysIdes[i]) {
+                    this.addSubTreeLeaf(childSysIdes[i], subTreeLeafTasks);    
+                } else {
+                    gs.info("***** Parent it self is mapped to child *****");
+                }
+            }
+        } else {
+            subTreeLeafTasks.push(sysId);
+        }
+    },
+
+    processProject: function(sysId) {
+        this.loadTasks(sysId);
+        this.loadRelations();
+        this.processParentChild();
+        this.proccessPredecessorSuccessor();
+        this.processForDetectCycles(sysId);
+    },
+	
+	isCyclic: function() {
+		return this.cycleDetected;
+	},
+
+    getCyclicTasks: function () {
+        return this.cyclicTasks;
+    },
+
+    type: 'CycleDetector'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-09-16 22:33:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6f20d2539f75220088265bb0657fcf22&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CycleDetector&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6f20d2539f75220088265bb0657fcf22&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-11-09 05:14:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10562&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:22</sys_created_on>
+        <sys_id>c9cc813e2f331110d8a4d5f62799b668</sys_id>
+        <sys_name>CycleDetector</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c9cc813e2f331110d8a4d5f62799b668</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

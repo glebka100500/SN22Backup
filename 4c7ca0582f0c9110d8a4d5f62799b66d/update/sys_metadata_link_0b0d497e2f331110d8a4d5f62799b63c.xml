@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9003f07bc31011003d2ae219cdba8f6d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Constants for the Service Catalog application&lt;/description&gt;
+        &lt;name&gt;sc_&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ = Class.create();
+sc_.prototype = {
+    initialize: function() {
+    },
+
+    type: 'sc_'
+};
+
+sc_.LOG_LEVEL = "com.glide.servicecatalog.log";
+
+// Tables
+sc_.CATEGORY = "sc_category";
+sc_.CATALOG = "sc_catalog";
+sc_.CATALOG_ITEM = "sc_cat_item";
+sc_.CATALOG_ITEM_PRODUCER = "sc_cat_item_producer";
+sc_.CATALOG_ITEM_PRODUCER_SERVICE = "sc_cat_item_producer_service";
+sc_.CATALOG_ITEM_CATEGORY = "sc_cat_item_category";
+sc_.REQUESTED_ITEM = "sc_req_item";
+sc_.USER = "sys_user";
+sc_.GROUP = "sys_user_group";
+sc_.ITEM_OPTION = "item_option_new";
+sc_.QUESTION_CHOICE = "question_choice";
+sc_.SCRIPTABLE_ORDER_GUIDE_FAILURE = "sc_script_order_guide_failure";
+sc_.TASK = "sc_task";
+
+// STATES
+sc_.REPROCESSING = "reprocessing";
+
+// Fieldnames
+//sc_.CAT_ITEM = "cat_item";
+sc_.ACTIVE = "active";
+sc_.IC_VERSION = "sc_ic_version";
+sc_.DESKTOP_IMAGE = "picture";
+sc_.MOBILE_IMAGE = "mobile_picture";
+sc_.HOMEPAGE_IMAGE = "homepage_image";
+sc_.TITLE = "title";
+sc_.PARENT = "parent";
+sc_.DESCRIPTION = "description";
+
+// Roles
+sc_.CATALOG_ADMIN = "catalog_admin";
+
+// Parameters]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-10-15 10:49:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9003f07bc31011003d2ae219cdba8f6d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9003f07bc31011003d2ae219cdba8f6d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;nigel.bell&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-02-24 18:29:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1075&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:35</sys_created_on>
+        <sys_id>0b0d497e2f331110d8a4d5f62799b63c</sys_id>
+        <sys_name>sc_</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0b0d497e2f331110d8a4d5f62799b63c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

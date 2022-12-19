@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4160351d0752101028ef0a701ad30065</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NLUInterfaceHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;All Utility methods related to NLU Extention Points&lt;/description&gt;
+        &lt;name&gt;NLUInterfaceHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NLUInterfaceHelper = Class.create();
+var tables = NLUConstants.tables;
+
+(function() {
+
+    NLUInterfaceHelper.getModelIntentsData = function() {
+        var models = null;
+        var igr = new GlideRecord(tables.SYS_NLU_INTENT);
+        igr.query();
+        while (igr.next()) {
+            if (!models) models = {};
+            if (!models[igr.model.name]) models[igr.model.name] = [];
+            models[igr.model.name].push(igr.getValue('name'));
+        }
+        return models;
+    };
+
+    NLUInterfaceHelper.prototype = {
+
+        initialize: function() {
+            var epoints = new global.GlideScriptedExtensionPoint();
+            this.eps = epoints.getExtensions("NLUInterface");
+        },
+
+        getAllMappedIntentsCount: function() {
+            var result = {};
+            var modelData = NLUInterfaceHelper.getModelIntentsData();
+            if (this.eps.length &gt; 0) {
+                for (var i = 0; i &lt; this.eps.length; i++) {
+                    try {
+                        var eachResult = this.eps[i].getAllMappedIntentsCount(modelData);
+                        if (eachResult) {
+                            Object.keys(eachResult).forEach(function(eachModel) {
+                                if (result[eachModel]) {
+                                    result[eachModel] += parseInt(eachResult[eachModel]);
+                                } else {
+                                    result[eachModel] = parseInt(eachResult[eachModel]);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        gs.error('Failed to get mapped intents from the implementer: ' + e.message);
+                    }
+                }
+            }
+            return result;
+        },
+
+        getMappedIntents: function(modelId, intentIds) {
+            var gr = new GlideRecord(tables.SYS_NLU_MODEL);
+            if (gr.get(modelId)) {
+                var modelName = gr.getValue('name');
+
+                var intentNames;
+                if (!NLUHelper.isEmpty(intentIds)) {
+                    intentNames = [];
+
+                    var intentGr = new GlideRecord(tables.SYS_NLU_INTENT);
+                    intentGr.addQuery('model', modelId);
+                    intentGr.addQuery('sys_id', intentIds);
+                    intentGr.query();
+
+                    while (intentGr.next()) {
+                        intentNames.push(intentGr.getValue('name'));
+                    }
+                }
+                var parlo = new NLUParloIntegrator(gr);
+                var trainedIntentNames = parlo.getTrainedIntentNames();
+                return this.getMappedIntentsFromName(modelName, intentNames, trainedIntentNames);
+            }
+            return [];
+        },
+
+        getMappedIntentsFromName: function(modelName, intentNames, trainedIntentNames) {
+            var result = [];
+            if (this.eps.length &gt; 0) {
+                for (var i = 0; i &lt; this.eps.length; i++) {
+                    var eachResult = this.eps[i].getMappedIntents(modelName, intentNames);
+                    if (eachResult) {
+                        Object.keys(eachResult.mappings).forEach(function(intentName) {
+                            eachResult.mappings[intentName].forEach(function(mapping) {
+                                mapping.isIntentTrained = trainedIntentNames.indexOf(intentName) &gt; -1;
+                            });
+                        });
+                        result.push(eachResult);
+                    }
+                }
+            }
+            return result;
+        },
+
+        getMappedIntentsCountInModel: function(modelId) {
+            return Object.keys(this.getMappedIntents(modelId)[0].mappings).length;
+        },
+		
+        type: 'NLUInterfaceHelper'
+    };
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-07-28 09:12:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4160351d0752101028ef0a701ad30065&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NLUInterfaceHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="NLU Workbench - Core" source="com.glide.nlu"&gt;04dd388b6d2220100acb70b35343302f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4160351d0752101028ef0a701ad30065&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-05 18:00:08&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3812&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:06</sys_created_on>
+        <sys_id>aa7c49ba2f331110d8a4d5f62799b6e8</sys_id>
+        <sys_name>NLUInterfaceHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_aa7c49ba2f331110d8a4d5f62799b6e8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

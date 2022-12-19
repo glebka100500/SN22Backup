@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2027b502c0a80165001e647ebf58ad74</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScriptListener&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Functions for creating a listener and reacting to changes&lt;/description&gt;
+        &lt;name&gt;ScriptListener&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var ScriptListener = Class.create();
+
+ScriptListener.prototype = {
+  initialize: function() {
+     this.listener = null;
+     this.record = null;  
+     this.script = 'Generic ECC Queue Update';
+     this.fields = new Array();
+  },
+
+  create: function() {
+     this.listener = new GlideScriptListener();
+  },
+
+  attach: function() {
+     this.listener.setScriptName(this.script);
+     this.listener.setRecord(this.record);
+     if (this.fields.length == 0)
+        this.fields.push("*");
+
+     this.listener.attachListener(this.fields.join(","));
+  },
+
+  setListener: function(listener) {
+     this.listener = listener;
+  },
+
+  setRecord: function(record) {
+     if (this.listener == null)
+        this.create();
+
+     this.record = record;
+  },
+
+  getAttribute: function(attr) {
+     return this.listener.getAttribute(attr);
+  },
+
+  addAttribute: function(attr, value) {
+     this.listener.addAttribute(attr, value);
+  },
+
+  addField: function(field) {
+     this.fields.push(field);
+  },
+
+  serializeAll: function() {
+     var serializer = new GlideRecordXMLSerializer();
+     return serializer.serialize(this.record, this.record.getTableName());
+  },
+
+  serializeDelta: function() {
+     var list = this.listener.getDelta(); 
+     gs.log("Changed fields: " + list);
+     var xml = new GlideXMLDocument(this.record.getTableName());
+     var parent = xml.getDocumentElement();
+     var xs = new GlideElementXMLSerializer();
+     for (var i = 0; i &lt; list.size(); i++) {
+        var element = list.get(i);
+        xs.serialize(this.record, element, parent);
+     }
+     return xml.toString();
+  },
+
+  z: function() {}
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-04-05 19:54:43&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2027b502c0a80165001e647ebf58ad74&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;107&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScriptListener&lt;/sys_name&gt;
+        &lt;sys_package display_value="ECC" source="com.glideapp.ecc"&gt;50dcb8836d2220100acb70b35343309e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2027b502c0a80165001e647ebf58ad74&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;glide.maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2008-04-11 17:57:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1718&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:22</sys_created_on>
+        <sys_id>b34cc97a2f331110d8a4d5f62799b610</sys_id>
+        <sys_name>ScriptListener</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b34cc97a2f331110d8a4d5f62799b610</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

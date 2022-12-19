@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0990a7c4ebc2011054009861eb52281c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionPredictionOutput&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;An object wrapper around Auto-Resolution Prediction Output record&lt;/description&gt;
+        &lt;name&gt;AutoResolutionPredictionOutput&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionPredictionOutput = Class.create();
+AutoResolutionPredictionOutput.prototype = {
+	
+	record: null,
+	
+    initialize: function(param) {
+		if (typeof param === 'string') {
+			// if the param is string, it's the sysId of the record
+			this.record = new GlideRecord(AutoResolutionConstants.PREDICTION_OUTPUT_TABLE_NAME);
+			
+			if (!this.record.get(param))
+				throw 'Record not found';
+		
+		} else if (param instanceof GlideRecord) {
+			this.record = param;
+		}
+	},
+	
+	/**
+	* After the record was updated from outside, the method will fetch the same record from DB
+	* After this call, the record will be up to date.
+	*/
+	refresh: function() {
+		this.initialize(this.record.getUniqueValue());
+	},
+	
+	getSysId : function() {
+		return this.record.getUniqueValue();
+	},
+	
+	getPrediction : function() {
+		return this.record.prediction;
+	},
+	
+	getService : function() {
+		return this.record.getValue('service');
+	},
+	
+	getOutput : function() {
+		return this.record.getValue('output');
+	},
+	
+	getScore : function() {
+		return this.record.getValue('score');
+	},
+	
+	getDetails : function() {
+		return this.record.getValue('details');
+	},
+	
+	/**
+	* Returns the feedback value
+	*/
+	getFeedback: function() {
+		return this.record.getValue('feedback_value');
+	},
+	
+	/**
+	* Checks if feedback can be submitted
+	* @return true if yes.
+	*/
+	canSubmitFeedback : function() {
+		return !this.isFeedbackSubmitted() &amp;&amp; !this.isFeedbackProcessed();
+	},
+	
+	/**
+	* Returns the feedback status
+	*/
+	getFeedbackStatus : function() {
+		return this.record.getValue('feedback_status');
+	},
+	
+	/**
+	* Tests if feedback is already submitted or not
+	*/
+	isFeedbackSubmitted : function() {
+		return this.record.getValue('feedback_status') == global.AutoResolutionConstants.FEEDBACK_STATUS_SUBMITTED;
+	},
+	
+	/**
+	* Tests if feedback is already processed or not
+	*/
+	isFeedbackProcessed : function() {
+		return this.record.getValue('feedback_status') == global.AutoResolutionConstants.FEEDBACK_STATUS_PROCESSED;
+	},
+	
+	/**
+	* Submits the feedback if allowed. 
+	* If feedback is already submitted or processed, the feedback will be disregarded and thus, it won't be submitted
+	*
+	* @param the feedback to submit. It can be either 
+	*                                global.AutoResolutionConstants.FEEDBACK_HELPFUL 
+	*                                or global.AutoResolutionConstants.FEEDBACK_NOT_HELPFUL
+	*
+	* @return true if succeeded or false if feedback is already submitted or processed
+	*/
+	submitFeedback : function(feedback) {
+
+		// check if feedback can be submitted. If not return.
+		if (!this.canSubmitFeedback())
+			return false;
+		
+		// set the feedback value.
+		this.record.setValue('feedback_value', feedback);
+		
+		// update the status.
+		this.record.setValue('feedback_status', global.AutoResolutionConstants.FEEDBACK_STATUS_SUBMITTED);
+		
+		return true;
+	},
+	
+	/**
+	* Update the record
+	*/
+	update : function() {
+		this.record.update();
+	},
+	
+	type: 'AutoResolutionPredictionOutput'
+};
+
+/**
+* Create a new Auto-Resolution prediction object
+* 
+* @param predictionSysId
+* @param outputPayload the output line-item in the result from LanguageX
+*/
+AutoResolutionPredictionOutput.create = function(predictionSysId, outputPayload) {
+	
+	var gr = new GlideRecord(AutoResolutionConstants.PREDICTION_OUTPUT_TABLE_NAME);
+	gr.setValue('prediction', predictionSysId);
+	
+	gr.setValue('service', enforceEmptyStringIfNil(outputPayload.service));
+	gr.setValue('output', enforceEmptyStringIfNil(outputPayload.serviceOutput));
+	gr.setValue('score', enforceEmptyStringIfNil(outputPayload.serviceOutputScore));
+	
+	if (!gs.nil(outputPayload.serviceOutputDetails) &amp;&amp; outputPayload.serviceOutputDetails.length &gt;0 )
+		gr.setValue('details', outputPayload.serviceOutputDetails);
+	
+	gr.insert();
+	
+	return new AutoResolutionPredictionOutput(gr);
+};
+
+function enforceEmptyStringIfNil(val) {
+	return gs.nil(val) ? '' : val;
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-02-28 22:09:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;0990a7c4ebc2011054009861eb52281c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionPredictionOutput&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_0990a7c4ebc2011054009861eb52281c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-30 16:13:31&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3889&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:54</sys_created_on>
+        <sys_id>4d3c417a2f331110d8a4d5f62799b6fd</sys_id>
+        <sys_name>AutoResolutionPredictionOutput</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4d3c417a2f331110d8a4d5f62799b6fd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

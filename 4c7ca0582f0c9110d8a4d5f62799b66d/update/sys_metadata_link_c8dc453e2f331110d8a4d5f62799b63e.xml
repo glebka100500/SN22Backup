@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7534b51f07011010220b0a701ad300e6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NLUEntity&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;All utilities related to Entities in NLP Workbench&lt;/description&gt;
+        &lt;name&gt;NLUEntity&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NLUEntity = Class.create();
+
+(function() {
+
+    var constants = global.NLUConstants.constants;
+    var tables = global.NLUConstants.tables;
+
+    NLUEntity.getGRById = function(entityId) {
+        var gr = new GlideRecord(tables.SYS_NLU_ENTITY);
+        gr.get(entityId);
+
+        return gr;
+    };
+
+    NLUEntity.getEntitiesGr = function(entities) {
+        var entityGr = new GlideRecord(tables.SYS_NLU_ENTITY);
+        entityGr.addQuery('sys_id', 'IN', entities);
+        entityGr.query();
+        return entityGr;
+    };
+
+    NLUEntity.getDataFromGR = function(entityRec) {
+        var entityArray = [];
+
+        while (entityRec.next()) {
+            entityArray.push({
+                id: entityRec.getValue('sys_id'),
+                name: entityRec.getValue('name'),
+                createdOnTimestamp: global.NLUHelper.toTimezoneAdjustedTimestamp(
+                    new GlideDateTime(entityRec.getValue('sys_created_on'))),
+            });
+        }
+
+        return entityArray;
+    };
+
+    NLUEntity.getSysEntityByName = function(name) {
+        var gr = new GlideRecord(tables.SYS_NLU_SYS_ENTITY);
+        if (gr.get('name', name)) return gr;
+
+        return null;
+    };
+
+    NLUEntity.isModelAssignedToMe = function(sysId, modelId) {
+        if (!modelId) {
+            var intEntGr = new GlideRecord(tables.M2M_SYS_NLU_INTENT_ENTITY);
+            intEntGr.addQuery('entity', sysId);
+            intEntGr.query();
+            if (intEntGr.next()) {
+                modelId = intEntGr.intent.model;
+            }
+        }
+        return global.NLUModel.isAssignedToMe(modelId);
+    };
+
+    NLUEntity.getEntityData = function(entityIds, filter) {
+        var entityData = [];
+        var srcIntentEntitiesGr = new GlideRecord(tables.M2M_SYS_NLU_INTENT_ENTITY);
+        var query = 'entityIN' + entityIds.join(',') + (filter ? '^' + filter : '');
+        srcIntentEntitiesGr.addEncodedQuery(query);
+        srcIntentEntitiesGr.query();
+
+        while (srcIntentEntitiesGr.next()) {
+            var entityId = srcIntentEntitiesGr.getValue('entity');
+            entityData.push({
+                id: entityId,
+                intent: srcIntentEntitiesGr.getValue('intent'),
+                relationship: srcIntentEntitiesGr.getValue('relationship')
+            });
+        }
+        return entityData;
+    };
+
+
+    NLUEntity.prototype = {
+
+        type: 'NLUEntity',
+
+        initialize: function(entityId) {
+            this.entityId = entityId;
+        },
+
+        getGR: function() {
+            if (!this.entityGr) this.entityGr = NLUEntity.getGRById(this.entityId);
+            return this.entityGr;
+        },
+
+        getAnnotations: function(intentId, filter) {
+            var gr = new GlideRecord(tables.M2M_SYS_NLU_UTTERANCE_ENTITY);
+            gr.addQuery('entity', this.entityId);
+            if (intentId) {
+                var joinQuery = gr.addJoinQuery(tables.SYS_NLU_UTTERANCE, 'utterance', 'sys_id');
+                joinQuery.addCondition('intent', intentId);
+            }
+            if (filter) gr.addEncodedQuery(filter);
+            gr.query();
+
+            return gr;
+        },
+
+        getModelId: function() {
+            var modelId = this.getGR().getValue('model');
+            if (!modelId) {
+                var m2mGr = new GlideRecord(tables.M2M_SYS_NLU_INTENT_ENTITY);
+                if (m2mGr.get('entity', this.getGR().getUniqueValue())) {
+                    modelId = m2mGr.intent.model;
+                }
+            }
+            return modelId;
+        }
+    };
+
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-06-02 11:49:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7534b51f07011010220b0a701ad300e6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;35&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NLUEntity&lt;/sys_name&gt;
+        &lt;sys_package display_value="NLU Workbench - Core" source="com.glide.nlu"&gt;04dd388b6d2220100acb70b35343302f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7534b51f07011010220b0a701ad300e6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-03 17:02:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3527&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:34</sys_created_on>
+        <sys_id>c8dc453e2f331110d8a4d5f62799b63e</sys_id>
+        <sys_name>NLUEntity</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c8dc453e2f331110d8a4d5f62799b63e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>76bf6f7487a12300c386d61e36cb0b2d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProblemUtilsClientSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ProblemUtilsClientSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProblemUtilsClientSNC = Class.create();
+ProblemUtilsClientSNC.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    submitForm: function() {
+		var tableName = this.getParameter('sysparm_record_type');
+		var pTaskExts = new TableUtils("problem_task").getAllExtensions();
+		if(tableName == 'problem' || pTaskExts.indexOf(tableName) !== -1) {
+			var sys_id = this.getParameter('sysparm_sys_id');
+			var fieldsToBeUpdated = JSON.parse(this.getParameter('sysparm_fields'));
+			var recordGr = new GlideRecord(tableName);
+			recordGr.get(sys_id);
+			if (recordGr.isValidRecord() &amp;&amp; recordGr.canWrite()) {
+				for (var field in fieldsToBeUpdated) {
+					recordGr[field + ""] = fieldsToBeUpdated[field];
+				}
+				if (recordGr.update())
+					return true;
+			}
+			return false;
+		}
+		else {
+			gs.error("Invalid Record Type");
+			return false;
+		}
+    },
+    isDisplayBackgroundMoveMessage: function() {
+        var problemUtil = new ProblemV2Util();
+        var recordsToMove = gs.getProperty("problem.duplicate.records_to_move");
+        var recordsMap = problemUtil.dotCommaToMap(recordsToMove.split(","));
+        var record;
+        var gr;
+        for (record in recordsMap) {
+			gr = new GlideRecord(record);
+			if(gr.isValid()) {
+				gr.addQuery(recordsMap[record], this.getParameter('sysparm_srcPrbSysId'));
+				gr.setLimit(1);
+				gr.query();
+				// Even if one record exist with parent as the Source Problem return true. 
+				if (gr.hasNext()) 
+					return true;
+			} 
+		}
+        return false;
+    },
+    isDisplayWarningTaskMove: function() {
+        var recordsToMove = gs.getProperty("problem.duplicate.records_to_move");
+        // If Moving of PTASKs is specified
+        if (recordsToMove &amp;&amp; recordsToMove.split(",").indexOf('problem_task.problem') !== -1) {
+            // If Cascade closure of PTASK is enabled 
+            if (gs.getProperty("problem.closed.cancel_open_tasks") === 'true') {
+                // If The target PRB is Closed
+                var targetProbRecord = new GlideRecord('problem');
+                targetProbRecord.get(this.getParameter('sysparm_trgtPrbSysId'));
+                // If target PRB is Closed
+                if (targetProbRecord.isValidRecord() &amp;&amp; targetProbRecord.state + "" === ProblemState.STATES.CLOSED) {
+                    var grPTask = new GlideRecord('problem_task');
+                    if (grPTask.isValid()) {
+                        grPTask.addQuery('problem', this.getParameter('sysparm_srcPrbSysId'));
+                        grPTask.query();
+                        while (grPTask.hasNext()) {
+                            grPTask.next();
+                            // If source Problem's Ptask are OPEN
+                            if (grPTask.state != ProblemTaskState.States.CLOSED) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // If any of 4 conditions are not met simple return false. 
+        return false;
+    },
+	
+	isDisplayReassesInfoForClosedPrb: function() {
+		var ptaskGr = new GlideRecord("problem_task");
+		if (ptaskGr.get(this.getParameter('sysparm_ptaskSysId'))) {
+			var ptaskStateUtil = new ProblemTaskStateUtils();
+			return (ptaskStateUtil.canReassessPtask(ptaskGr) &amp;&amp; !ptaskStateUtil.canReassesPtaskForClosedPrb(ptaskGr));
+		}
+		return false;
+	},
+	
+    type: 'ProblemUtilsClientSNC'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-11-01 09:39:01&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;76bf6f7487a12300c386d61e36cb0b2d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProblemUtilsClientSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Problem Management Best Practice - Madrid - State Model" source="com.snc.best_practice.problem.madrid.state_model"&gt;fad449836de620100acb70b353433081&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_76bf6f7487a12300c386d61e36cb0b2d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-01 05:25:05&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3414&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:38</sys_created_on>
+        <sys_id>cddc853e2f331110d8a4d5f62799b6cd</sys_id>
+        <sys_name>ProblemUtilsClientSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cddc853e2f331110d8a4d5f62799b6cd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3ded9b0f7707330022f7f4d2681061b8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RelatedListItemCandidateFilter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;OOB: Implements extension point global.RelatedListItemCandidateFilter&lt;/description&gt;
+        &lt;name&gt;RelatedListItemCandidateFilter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RelatedListItemCandidateFilter = Class.create();
+RelatedListItemCandidateFilter.prototype = {
+    initialize: function(tableName, parentFieldName, parentRecordSysId, referencedFieldName) {
+		this.tableName = tableName;
+		this.parentFieldName = parentFieldName;
+		this.parentRecordSysId = parentRecordSysId;
+		this.referencedFieldName = referencedFieldName;
+    },
+    getFilterQuery: function() {
+       var selectedRecord = new GlideRecord(this.tableName);
+        selectedRecord.addQuery(this.parentFieldName, this.parentRecordSysId);
+        selectedRecord.query();
+        var result = [];
+        while (selectedRecord.next()) {
+            result.push(selectedRecord.getValue(this.referencedFieldName));
+        }
+		
+		if (result.length)
+            return "sys_idNOT IN" + result.join(",");
+		
+        return "";
+    },
+	
+	handles: function(thing){
+		return thing == "DEFAULT";
+	},
+
+    type: 'RelatedListItemCandidateFilter'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-08 17:49:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3ded9b0f7707330022f7f4d2681061b8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RelatedListItemCandidateFilter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agent Workspace - Form" source="com.snc.agent_workspace.form"&gt;48054dc36de620100acb70b35343307f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3ded9b0f7707330022f7f4d2681061b8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-08-08 17:49:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;939&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:03</sys_created_on>
+        <sys_id>f17c09ba2f331110d8a4d5f62799b694</sys_id>
+        <sys_name>RelatedListItemCandidateFilter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f17c09ba2f331110d8a4d5f62799b694</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

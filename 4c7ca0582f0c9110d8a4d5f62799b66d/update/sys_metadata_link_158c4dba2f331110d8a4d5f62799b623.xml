@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4a3f34eeffe6330032ba6f9f793bf1dd</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MatchingDimensionParts&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Dimension to process parts matching.&lt;/description&gt;
+        &lt;name&gt;MatchingDimensionParts&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ *  Rate users on available parts in personal stockrooms, required by a task
+ *
+ *    Two counting methods:
+ *    1. count 1 or 0, this is default
+ *    2. count fraction, enabled by passing in args.config.partialPart
+ *
+ *  Example: task requires 10 consumable assets, an agent has 5 consumable assets in stockroom.
+ *           Method 1 rates this agent to "0 / 1"
+ *           Method 2 rates this agent to "0.5 / 1"
+ *
+ *  Input:   task - a task sys_id or a task GlideRecord
+ *           users - an array of user sys_ids
+ *           taskFieldValues - ignored, not used as part_requirement is not a field in task
+ *           args - config object, i.e. args.config.userPart, args.config.partialPart
+ *
+ *  Output:  {"06826bf03710200044e0bfc8bcbe5d8a":{
+ *                 "detailedDisplayValue":"Dynex 6 foot USB 2.0 A/B Cable,Philips Respironics BiPAP Focus",
+ *                 "displayValue":"2 / 2",
+ *			       "rating":1,"value":2},
+ *		       "82826bf03710200044e0bfc8bcbe5d89":{
+ *		            "detailedDisplayValue":"Dynex 6 foot USB 2.0 A/B Cable",
+ *				    "displayValue":"0 / 2",
+ *                  "rating":0,
+ *                   "value":0}}
+ */
+var MatchingDimensionParts = Class.create();
+MatchingDimensionParts.prototype = {
+	FIELD_AGENT_STOCKROOM_TYPE : "e2aa2b3f3763100044e0bfc8bcbe5dde",
+    initialize: function() {
+		this.debugOn = new CSMUtil().isDebugOn();
+		this.countPartial = false;
+	},
+	
+	process : function(task, users, taskFieldValues, args) {
+		if (args &amp;&amp; args.config &amp;&amp; args.config.usePart) {
+			if (JSUtil.notNil(args.config.partialPart) &amp;&amp; args.config.partialPart) {
+				this.countPartial = true;
+			}
+			
+			var modelReqQuant = this.getPartsForTask(task);
+		
+			var usersParts = this.getUserPartsMatching(users, modelReqQuant);
+			if (this.debugOn)
+				gs.log(JSON.stringify(usersParts), "Matching Parts");
+		
+			return usersParts;			
+		} 
+		
+		return this._rateUserEqually(users, false);
+	},
+	
+	_rateUserEqually : function(users, featureEnabled) {
+		var partObj = {};
+        partObj.rating = 1;
+        partObj.value = 1;
+        partObj.displayValue = gs.getMessage("NA");
+		var dispString = featureEnabled ? gs.getMessage("Task does not require any part, all users rated equally.")
+									: gs.getMessage("Part required is not enabled, all users rated equally");
+        partObj.detailedDisplayValue = dispString;
+
+		var userParts = {};
+        users.forEach(function(id) {
+			userParts[id] = partObj;
+        });
+		return userParts;
+	},
+	
+    getPersonalRooms: function(userIds) {
+        var rooms = new GlideRecord("alm_stockroom");
+        rooms.addQuery("type", this.FIELD_AGENT_STOCKROOM_TYPE);
+        rooms.addQuery("manager", "IN", userIds.join());
+        rooms.query();
+
+        var pRoomIds = {};
+        while (rooms.next()) {
+            pRoomIds[rooms.getUniqueValue()] = rooms.getValue("manager");
+        }
+        return pRoomIds;
+    },
+
+    getPartsForTask: function(task) {
+        var modelReqQuant = {};
+		
+        var taskSysId = task.sys_id;
+		if (!taskSysId)
+			taskSysId = task;
+			
+        if (taskSysId) {
+            var partRequirement = new GlideAggregate("sm_part_requirement");
+            partRequirement.addQuery("service_order_task", taskSysId);
+            partRequirement.groupBy("model");
+            partRequirement.addAggregate("SUM", "required_quantity");
+            partRequirement.query();
+            while (partRequirement.next()) {
+                var model = partRequirement.model + "";
+                var requiredQuantity = +partRequirement.getAggregate("SUM", "required_quantity");
+                
+                modelReqQuant[model] = requiredQuantity;
+            }
+        }
+		if (this.debugOn)
+			gs.log(JSON.stringify(modelReqQuant), "Matching Parts");
+        return modelReqQuant;
+    },
+
+    getUserPartsMatching: function(agentIds, modelReqQuant) {
+        if (
+            Object.keys(modelReqQuant).length === 0 &amp;&amp;
+            modelReqQuant.constructor === Object
+        ) {
+            return this._rateUserEqually(agentIds, true);
+        }
+
+        if (JSUtil.nil(agentIds)) return {};
+		var userParts = {};
+		
+        var personRoomIds = this.getPersonalRooms(agentIds);
+		if (this.debugOn)
+			gs.log(JSON.stringify(personRoomIds), "Matching Parts");
+
+        agentIds.forEach(function(id) {
+            userParts[id] = {};
+        });
+
+        var roomModels = {};
+        var modelsArr = Object.keys(modelReqQuant);
+
+        if (modelsArr.length &gt; 0) {
+            var asset = new GlideAggregate("alm_asset");
+            asset.addQuery("model", "IN", modelsArr.join());
+         
+            asset.addQuery("install_status", "6");     // in stock
+            asset.addQuery("substatus", "available");
+
+            asset.addQuery("stockroom", "IN", Object.keys(personRoomIds).join());
+    
+            asset.groupBy("stockroom");
+            asset.groupBy("model");
+            asset.addAggregate("SUM", "quantity");
+            asset.query();
+			
+            while (asset.next()) {
+                var assetModel = asset.model + "";
+                var assetRoom = asset.stockroom + "";
+                var requirementAmount = modelReqQuant[assetModel];
+                var ownedAmount = +asset.getAggregate("SUM", "quantity");
+                
+                if (!roomModels.hasOwnProperty(assetRoom)) {
+                    roomModels[assetRoom] = {
+                        partCount: 0,
+                        partNames: []
+                    };
+                }
+
+                roomModels[assetRoom]["partNames"].push(asset.getDisplayValue());
+                if (requirementAmount &lt;= ownedAmount) {
+                    roomModels[assetRoom]["partCount"] += 1;
+                } else if (this.countPartial) {
+					roomModels[assetRoom]["partCount"] += ownedAmount / requirementAmount;
+				}
+            }
+        }
+
+        for (var room in personRoomIds) {
+            if (roomModels.hasOwnProperty(room)) {
+                var model = roomModels[room];
+                userParts[personRoomIds[room]] = {
+                    detailedDisplayValue: model["partNames"].join(),
+                    displayValue: model["partCount"] + " / " + modelsArr.length,
+                    rating: model["partCount"] / modelsArr.length,
+                    value: model["partCount"]
+                };
+            } else {
+                userParts[personRoomIds[room]] = {
+                    detailedDisplayValue: gs.getMessage(
+                        "No Matching Part Available in Personal Stockroom"
+                    ),
+                    displayValue: "0 / " + modelsArr.length,
+                    rating: 0,
+                    value: 0
+                };
+            }
+        }
+		
+        return userParts;
+    },
+    type: 'MatchingDimensionParts'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-07-12 20:45:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4a3f34eeffe6330032ba6f9f793bf1dd&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MatchingDimensionParts&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4a3f34eeffe6330032ba6f9f793bf1dd&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-08-26 17:42:37&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6786&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:17</sys_created_on>
+        <sys_id>158c4dba2f331110d8a4d5f62799b623</sys_id>
+        <sys_name>MatchingDimensionParts</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_158c4dba2f331110d8a4d5f62799b623</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

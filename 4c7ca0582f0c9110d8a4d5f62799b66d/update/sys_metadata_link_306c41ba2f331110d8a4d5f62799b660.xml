@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>30bb8fe5532210107a1cddeeff7b1264</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AutoResolutionProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionProcessor = Class.create();
+AutoResolutionProcessor.prototype = {
+
+	initialize: function() {
+		this.WORKING_ON_TASK_MSG = gs.getMessage("I'm working on this task.");
+		this.NO_TASK_MSG = gs.getMessage('No task record found.');
+		this.INVALID_CONFIG = gs.getMessage("Auto-Resolution configuration is invalid, unassigning myself from the task for an agent to pick it up.");
+		this.INVALID_CONTEXT = gs.getMessage("Auto-Resolution context is invalid, unassigning myself from the task for an agent to pick it up.");
+		this.NOT_ASSIGNED_TO_BOT_USER = gs.getMessage("Task is no longer assigned to bot user.");
+		this.UNASSIGN_TASK_MSG = gs.getMessage("An agent can better assist you with this task. I'm unassigning myself from the task for an agent to pick it up.");
+		this.taskHelper = new AutoResolutionTaskHelper();
+		this.contextHelper = new AutoResolutionContextHelper();
+	},
+
+	process: function(taskSysId, taskTableName) {
+		var stageSW = new GlideStopWatch();
+		var totalSW = new GlideStopWatch();
+		totalSW.start();
+
+		var logMessages = [
+			'Auto-Resolution Task processing summary',
+			'Start time: ' + new GlideDateTime()
+		];
+
+		this.LOGGING_UTILS = new AutoResolutionLoggingUtils()
+			.withName(this.type)
+			.withTaskValues(taskSysId, taskTableName)
+			// The next context keys will be filled in dynamically, when available
+			.withLanguage('')
+			.withContextId('')
+			.withConfiguration('');
+
+		this.LOGGER = this.LOGGING_UTILS.createLogger();
+
+		// Perform initial validations and un-assign task if something is not right
+		stageSW.start();
+		var validationResponse = this._doInitialValidations(taskSysId, taskTableName);
+		stageSW.end();
+		logMessages.push(this._buildLogMessage("AutoResolutionValidationStage", stageSW));
+
+		// Set values from validation response
+		var taskGr = validationResponse.task_gr;
+		var contextGr = validationResponse.context_gr;
+		var configGr = validationResponse.config_gr;
+		var languageCode = validationResponse.language_code;
+
+		if (!validationResponse.validation_passed) {
+			this.unassignAndUpdateContext(taskGr, contextGr, validationResponse.reason, validationResponse.reason,
+				AutoResolutionConstants.TASK_PROCESSING_STATE.VALIDATION);
+			logMessages = this._addEndLogMessages(logMessages, totalSW);
+			this.LOGGER.info(logMessages.join('\n'));
+			return;
+		}
+
+		var taskProcessingStages = [
+			new AutoResolutionIntentPredictionStage(contextGr, configGr, taskGr, languageCode),
+			new AutoResolutionLanguageXStage(contextGr, configGr, taskGr, languageCode),
+			new AutoResolutionExitConditionStage(contextGr, configGr, taskGr, languageCode),
+			new AutoResolutionAISearchStage(contextGr, configGr, taskGr, languageCode),
+			new AutoResolutionNotificationStage(contextGr, configGr, taskGr, languageCode)
+		];
+
+		var loggingContextJSON = this._updateLoggingContext(contextGr.getUniqueValue(), configGr.getUniqueValue(), languageCode);
+		var loggingContext = new sn_log.GlideLogContext(loggingContextJSON);
+		var contextFieldValueMap = {};
+		var contextActive = true;
+
+		try {
+
+			// Iterate and execute all stages
+			for (var i=0; i&lt;taskProcessingStages.length; i++) {
+				stageSW.start();
+				var stage = taskProcessingStages[i];
+
+				this.LOGGER.debug('Executing task processing stage {0} with contextFieldValueMap: {1}', stage.type,
+					JSON.stringify(contextFieldValueMap));
+
+				// Execute the stage
+				var stageResponse = stage.execute(contextFieldValueMap);
+
+				this.LOGGER.debug('Task processing stage {0} is complete with response: {1}', stage.type,
+					JSON.stringify(stageResponse))
+
+				// Merge the context from the stage
+				contextFieldValueMap = this._merge(contextFieldValueMap, stageResponse.contextFieldValueMap);
+
+				stageSW.stop();
+				logMessages.push(this._buildLogMessage(stage.type, stageSW));
+
+				// Check if the stage is telling us to stop the process
+				if (!stageResponse.should_proceed){
+					contextFieldValueMap.task_processing_state = stage.getStateValue();
+					contextActive = false;
+					break;
+				}
+			}
+
+		} catch (error) {
+			this.LOGGER.error('Error process task={0} in stage={1} for Auto-Resolution, exception={2}', taskGr.number,
+				stage.getStateValue(), error);
+
+			contextActive = false;
+			contextFieldValueMap.task_processing_state = stage.getStateValue();
+			var reasonMessage = "Unexpected error occurred during " + stage.type;
+
+			if (gs.nil(contextFieldValueMap.reason))
+				contextFieldValueMap.reason = reasonMessage;
+			else
+				contextFieldValueMap.reason = reasonMessage + ',\n' + contextFieldValueMap.reason;
+		}
+
+		contextFieldValueMap.active = contextActive;
+
+		if (contextActive) {
+			contextFieldValueMap.task_processing_state = AutoResolutionConstants.TASK_PROCESSING_STATE.PROCESSED;
+		} else {
+			contextFieldValueMap.sla_state = '';
+			contextFieldValueMap.notification_state = '';
+		}
+
+		stageSW.start();
+
+		this.contextHelper.updateContext(contextGr.getUniqueValue(), contextFieldValueMap);
+		this.LOGGER.info('Updated IAR Context with field values: {0}', JSON.stringify(contextFieldValueMap));
+		this.handleTask(taskGr, configGr, contextGr.getUniqueValue(), contextActive);
+
+		stageSW.stop()
+		logMessages.push(this._buildLogMessage("ContextAndTaskUpdate", stageSW));
+
+		logMessages = this._addEndLogMessages(logMessages, totalSW);
+		this.LOGGER.info(logMessages.join('\n'));
+
+		// Clear the dynamic logging context
+		loggingContext.clear();
+	},
+
+	/**
+	 * Validate task, IAR configuration, IAR context record exists and task is still assigned to bot user
+	 * @param taskSysId
+	 * @param taskTableName
+	 * @returns {{validation_passed = true/false
+	              context_sys_id = &lt;sys Id of the IAR context record&gt;
+	              language_code = &lt;session language identified during task creation
+	              config_sys_id = &lt;sys Id of the IAR configuration record&gt;}}
+	 */
+	_doInitialValidations: function(taskSysId, taskTableName) {
+		this.LOGGER.debug('Auto-Resolution - Task Processing - Initial Validations');
+
+		var response = {
+			validation_passed: false,
+			reason: '',
+			language_code: '',
+			task_gr: null,
+			context_gr: null,
+			config_gr: null,
+		};
+
+		try {
+			var taskGr = AutoResolutionTaskDataBroker.getTaskRecord(taskTableName, taskSysId);
+			if (gs.nil(taskGr)) {
+				response.reason = this.NO_TASK_MSG;
+				this.LOGGER.error('Task record not found for sysId {0} in table {1}', taskSysId, taskTableName);
+				return response;
+			}
+			response.task_gr = taskGr;
+
+			var contextGr = this.contextHelper.getContextFromTask(taskGr);
+			if (gs.nil(contextGr)) {
+				response.reason = this.INVALID_CONTEXT;
+				return response;
+			}
+			response.context_gr = contextGr;
+
+			// Configuration should be valid and active
+			var configGr = this.contextHelper.getConfigurationGr(contextGr);
+			if (!configGr || configGr.getValue("active") !== '1') {
+				response.reason = this.INVALID_CONFIG;
+				return response;
+			}
+			response.config_gr = configGr;
+
+			if (!this.taskHelper.isTaskAssignedToBotUser(taskGr)) {
+				response.reason = this.NOT_ASSIGNED_TO_BOT_USER;
+				return response;
+			}
+
+			response.language_code = this.contextHelper.getLanguageFromContext(contextGr);
+			response.validation_passed = true;
+
+			return response;
+
+		} catch (ex) {
+			response.reason = 'Unexpected exception during initial validations of task';
+			this.LOGGER.error(response.reason + ': ' + ex);
+			return response;
+		}
+	},
+
+	_addEndLogMessages: function(logMessages, sw) {
+		var endGDT = new GlideDateTime();
+		logMessages.push(this._buildLogMessage("Total", sw));
+		logMessages.push('End time: ' + endGDT);
+		return logMessages;
+	},
+
+	/**
+	 * Un-assign task and set context inactive
+	 * @param {GlideRecord} taskGr
+	 * @param {GlideRecord} contextGr
+	 * @param {string} workNote
+	 * @param {string} reason
+	 * @param {string} state
+	 */
+	unassignAndUpdateContext: function(taskGr, contextGr, workNote, reason, state) {
+		if (!gs.nil(taskGr))
+			this.taskHelper.unassignTask(taskGr, workNote);
+		if (!gs.nil(contextGr)) {
+			this.contextHelper.setContextInactive(contextGr, reason);
+			contextGr.setValue('task_processing_state', state);
+			contextGr.update();
+		}
+		this.LOGGER.error(reason);
+	},
+
+	handleTask: function(taskGr, configGr, contextId, contextActive) {
+		if (contextActive) {
+			this.LOGGER.debug('Continuing with Auto-Resolution flow: {0}', taskGr.number);
+			this.taskHelper.setWorkNotesOnTask(taskGr, this.WORKING_ON_TASK_MSG);
+		} else {
+			this.taskHelper.unassignTask(taskGr, this.UNASSIGN_TASK_MSG, configGr.unresolved_task_template.name);
+			this.LOGGER.warn('IAR flow for task={0} was unable to proceed.  See contextId={1}', taskGr.getValue('number'),
+				contextId);
+		}
+	},
+
+	_updateLoggingContext: function(contextId, configId, languageCode) {
+		var context = {};
+		context[AutoResolutionLoggingUtils.CONTEXT_ID] = contextId;
+		context[AutoResolutionLoggingUtils.CONFIGURATION] = configId;
+		context[AutoResolutionLoggingUtils.LANGUAGE] = languageCode;
+		this.LOGGING_UTILS.withConfiguration(configId);
+		this.LOGGING_UTILS.withContextId(contextId);
+		this.LOGGING_UTILS.withLanguage(languageCode);
+		return context;
+	},
+
+	_merge: function(obj1, obj2) {
+		for (var attribute in obj2)
+			obj1[attribute] = obj2[attribute];
+		return obj1;
+	},
+
+	_buildLogMessage: function(identifier, sw) {
+		return sw + " - " + identifier;
+	},
+
+	type: 'AutoResolutionProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-08-10 20:48:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;30bb8fe5532210107a1cddeeff7b1264&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;904&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_30bb8fe5532210107a1cddeeff7b1264&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-26 16:26:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;9330&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:43</sys_created_on>
+        <sys_id>306c41ba2f331110d8a4d5f62799b660</sys_id>
+        <sys_name>AutoResolutionProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_306c41ba2f331110d8a4d5f62799b660</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6a7e9f3eef130000a7450fa3f82256a2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DefaultTableSetter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides the functionality for expanding a set of table patterns into a list of resolved table names.&lt;/description&gt;
+        &lt;name&gt;DefaultTableSetter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DefaultTableSetter = Class.create();
+
+DefaultTableSetter.prototype = {
+  initialize: function() {
+	  
+  },
+	
+  process: function() {
+    // This method should be overridden in the subclass
+  },
+
+  getTableNames: function(propertyName) {
+    var propertyValue = gs.getProperty(propertyName);
+    var arrTablePatterns = this.list2array(propertyValue);
+    var arrTableNames = this.buildTableNames(arrTablePatterns);
+    arrTableNames = this.sortTableNames(arrTableNames);
+    return arrTableNames;
+  },
+  
+  list2array: function(listTokens, delimiter) {
+    delimiter = (delimiter? delimiter : ",");    
+    var arrPatterns = listTokens.split(delimiter);
+    for(var index = 0; index &lt; arrPatterns.length; ++index) {
+      arrPatterns[index] = trim(arrPatterns[index]);
+    }
+    return arrPatterns;
+  },
+  
+  buildTableNames: function(arrTablePatterns) {
+    var arrTableNames = [];
+    for (var index = 0; index &lt; arrTablePatterns.length; index++) {
+      var pattern = arrTablePatterns[index];
+      var extended = pattern.indexOf(".extended");
+      var addExtended = (extended &gt;= 0);
+      var tableName = addExtended? pattern.slice(0, extended) : pattern;
+      arrTableNames = this.addTableNames(tableName, addExtended, arrTableNames);
+    } 
+    return arrTableNames;
+  },
+  
+  addTableNames: function(tableName, addExtended, arrTableNames) {
+    if(gs.tableExists(tableName)) {
+      if(addExtended) {
+        var tableUtils = new TableUtils(tableName);
+        var tablePlusExtendedTableNames = tableUtils.getAllExtensions();
+          var asJavaScriptArray = j2js(tablePlusExtendedTableNames);
+	  var arrayUtils = new ArrayUtil();
+	  arrTableNames = arrayUtils.union(arrTableNames, asJavaScriptArray);
+      } else {
+	  arrTableNames.push(tableName);
+      }
+    }
+    return arrTableNames;
+  },
+  
+  sortTableNames: function(arrTableNames) {
+    var sorter = new SortTableArrayByLabel();
+    return sorter.sortTablesByLabel(arrTableNames);
+  },
+  
+  type: "DefaultTableSetter"  
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-06-20 18:40:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6a7e9f3eef130000a7450fa3f82256a2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DefaultTableSetter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Management Basics" source="com.snc.service"&gt;b89005876d2620100acb70b353433001&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6a7e9f3eef130000a7450fa3f82256a2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-02-12 02:29:24&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1995&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:14</sys_created_on>
+        <sys_id>1fbccdfa2f331110d8a4d5f62799b650</sys_id>
+        <sys_name>DefaultTableSetter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1fbccdfa2f331110d8a4d5f62799b650</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6aa89d5573722010f14a063f34f6a752</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionLanguageChoiceListBuilder&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;IAR Choice list builder for supported languages&lt;/description&gt;
+        &lt;name&gt;AutoResolutionLanguageChoiceListBuilder&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionLanguageChoiceListBuilder = Class.create();
+AutoResolutionLanguageChoiceListBuilder.prototype = {
+
+    //Tier-1 languages
+    ENGLISH: {
+        name: 'English',
+        id: 'en'
+    },
+    FRENCH: {
+        name: 'French',
+        id: 'fr',
+        plugin: 'com.snc.i18n.french'
+    },
+    GERMAN: {
+        name: 'German',
+        id: 'de',
+        plugin: 'com.snc.i18n.german'
+    },
+    JAPANESE: {
+        name: 'Japanese',
+        id: 'ja',
+        plugin: 'com.snc.i18n.japanese'
+    },
+    SPANISH: {
+        name: 'Spanish',
+        id: 'es',
+        plugin: 'com.snc.i18n.spanish'
+    },
+
+    initialize: function() {
+        this.supportedNonEnglishLanguages = [this.FRENCH, this.GERMAN, this.JAPANESE, this.SPANISH];
+    },
+
+    getSupportedLanguages: function() {
+        var activeLanguages = this._getActiveLanguageList();
+        var list = new GlideChoiceList();
+        for (i = 0; i &lt; activeLanguages.length; i++)
+            list.add(new GlideChoice(activeLanguages[i].id, activeLanguages[i].name));
+        return list;
+    },
+    getSupportedLanguagesForUIB: function() {
+        try {
+            var activeLanguages = this._getActiveLanguageList();
+            var uibList = [];
+            activeLanguages.forEach(function(language) {
+                uibList.push({
+                    'id': language.id,
+                    'label': language.name
+                });
+            });
+            return uibList;
+        } catch (e) {
+            return [];
+        }
+    },
+
+    _getActiveLanguageList: function() {
+        var activeLanguages = [];
+        // By default, we add the english language to the list of active languages
+        activeLanguages.push(this.ENGLISH);
+
+        var multiLanguageSupportEnabled = gs.getProperty(
+            AutoResolutionConstants.AUTO_RESOLUTION_ENABLE_MULTI_LANGUAGE_SUPPORT_PROPERTY, 'false') === 'true';
+        if (!multiLanguageSupportEnabled)
+            return activeLanguages;
+
+        for (var i = 0; i &lt; this.supportedNonEnglishLanguages.length; i++) {
+            if (this._isLanguagePackActive(this.supportedNonEnglishLanguages[i].plugin))
+                activeLanguages.push(this.supportedNonEnglishLanguages[i]);
+        }
+
+        return activeLanguages;
+    },
+
+    _isLanguagePackActive: function(pluginId) {
+        return GlidePluginManager.isActive(pluginId);
+    },
+
+    type: 'AutoResolutionLanguageChoiceListBuilder'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-03-08 23:54:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6aa89d5573722010f14a063f34f6a752&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionLanguageChoiceListBuilder&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6aa89d5573722010f14a063f34f6a752&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-26 05:45:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2429&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:15</sys_created_on>
+        <sys_id>1fbccdfa2f331110d8a4d5f62799b69f</sys_id>
+        <sys_name>AutoResolutionLanguageChoiceListBuilder</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1fbccdfa2f331110d8a4d5f62799b69f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

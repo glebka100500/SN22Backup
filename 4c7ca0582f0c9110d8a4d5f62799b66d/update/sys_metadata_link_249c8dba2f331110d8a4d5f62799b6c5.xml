@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>52689edc9f3120007aaa207c7f4bcca8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ArchiveDiagnostics&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ArchiveDiagnostics&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ArchiveDiagnostics = Class.create();
+
+ArchiveDiagnostics.prototype = {
+  initialize : function() {
+  },
+
+  getRuleCount: function() {
+	 var xx = new GlideAggregate('sys_archive');
+	 xx.addAggregate('COUNT');
+	 xx.addQuery('active', true);
+	 xx.query();
+	 xx.next();
+	 return xx.getAggregate('COUNT');
+  },
+
+  getLastRun: function() {
+	 var xx = new GlideRecord('sys_status');
+	 xx.addQuery('name', 'glide.db.archiver');
+	 xx.query();
+	 if (xx.next() &amp;&amp; xx.value.startsWith('active'))
+		return 'Running';
+	 
+	 var xx = new GlideAggregate('sys_archive');
+	 xx.addAggregate('MAX', 'last_run_date');
+	 xx.setGroup(false);
+	 xx.query();
+	 xx.next();
+	 return new GlideDateTime(xx.getAggregate('MAX', 'last_run_date')).getDisplayValue();
+  },
+
+  getTotalRecords: function() {
+	 var xx = new GlideAggregate('sys_archive');
+	 xx.addAggregate('SUM', 'total');
+	 xx.setGroup(false);
+	 xx.query();
+	 xx.next();
+	 return xx.getAggregate('SUM', 'total');
+  },
+   
+  getActiveRecords: function() {
+	 var xx = new GlideRecord('sys_archive');
+	 xx.addQuery('active', true);
+	 xx.query();
+	 return xx;
+  },
+
+  type: "ArchiveDiagnostics"
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;don goodliffe&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-04-30 21:57:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;52689edc9f3120007aaa207c7f4bcca8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ArchiveDiagnostics&lt;/sys_name&gt;
+        &lt;sys_package display_value="Data Archiving" source="com.glide.auxdb"&gt;e90149cb6d2620100acb70b3534330a7&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_52689edc9f3120007aaa207c7f4bcca8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;don goodliffe&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-04-30 23:23:21&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1172&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:31</sys_created_on>
+        <sys_id>249c8dba2f331110d8a4d5f62799b6c5</sys_id>
+        <sys_name>ArchiveDiagnostics</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_249c8dba2f331110d8a4d5f62799b6c5</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

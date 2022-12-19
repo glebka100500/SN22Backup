@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7a6b11ea37202000dadaa3549dbe5d25</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VelocityUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;VelocityUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VelocityUtil = Class.create();
+VelocityUtil.prototype = {
+    initialize: function(){
+    },
+    
+    addData: function(releaseSysId, data, teamId, teamName, previousCount, names){
+        var count = 0;
+        for (var j = 0; j &lt; previousCount; j++){
+            data.addValue(0, teamName, names[j]);
+            count++;
+        }
+        var gr = this.getGR(releaseSysId, teamId);
+        while (gr.next())  {
+            var points = gr["actual_points"];
+            var name = gr["short_description"];
+            data.addValue(points, teamName, name);
+            count++;
+        }
+        for (var j = count; j &lt; names.length; j++)
+            data.addValue(0, teamName, names[j]);
+        return count;
+    },
+    
+    getDataNames: function(releaseSysId, teamId){
+        var names = [];
+        var gr = this.getGR(releaseSysId, teamId);
+        while (gr.next())
+            names[names.length] = gr.getValue("short_description");
+        return names;
+    },
+    
+    getTeams: function(releaseSysId){
+        var teams = {};
+        var gr = this.getGR(releaseSysId, null);
+        while(gr.next()) {
+			var team = gr["release_team"];
+            if (team != null &amp;&amp; team != "") {
+                var tr = new GlideRecordSecure("scrum_pp_team");
+                tr.addQuery("sys_id", team);
+                tr.query();
+                if (tr.next())
+                    teams[tr["sys_id"]] = tr.team_name.getDisplayValue();
+            }
+        }
+        return teams;
+    },
+    
+    getGR: function(releaseSysId, teamId, teamNotNull){
+        var data = CategoryChart.getNewDataset();
+        var gr = new GlideRecordSecure("rm_sprint")
+        if (releaseSysId)
+            gr.addQuery("release", releaseSysId);
+        if (teamId)
+            gr.addQuery("release_team", teamId);   
+        else if (teamNotNull)
+            gr.addNotNullQuery("release_team");
+        gr.addQuery("state", 3);
+        gr.orderBy("start_date");
+        gr.query();
+        return gr;
+    },
+
+    hasData: function(releaseSysId, teamId){
+        if (teamId == null || teamId == "") {
+            var teams = this.getTeams(releaseSysId);
+            for (var key in teams)
+                return true;
+        }else if (releaseSysId == null || releaseSysId == "") {
+            var gr = this.getGR(null, teamId);
+            if (gr.next())
+                return true;
+        }
+        return false;
+    }
+    
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-03-06 14:02:38&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7a6b11ea37202000dadaa3549dbe5d25&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;54&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VelocityUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7a6b11ea37202000dadaa3549dbe5d25&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-06-03 02:19:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2418&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:45</sys_created_on>
+        <sys_id>7edc493e2f331110d8a4d5f62799b6c1</sys_id>
+        <sys_name>VelocityUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7edc493e2f331110d8a4d5f62799b6c1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_wizard_answer">
+    <sys_wizard_answer action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <answer>New JWT Credentials</answer>
+        <button_label/>
+        <dependent_value/>
+        <element/>
+        <name>JWT Credentials</name>
+        <next_question/>
+        <order>100</order>
+        <payload_name/>
+        <question display_value="Credentials" name="Credentials">02320d476d6620100acb70b353433084</question>
+        <roles/>
+        <script/>
+        <sys_class_name>sys_wizard_answer</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-06-08 13:49:53</sys_created_on>
+        <sys_id>6c2d2c1c2f0c9110d8a4d5f62799b6f3</sys_id>
+        <sys_name>JWT Credentials</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_wizard_answer_6c2d2c1c2f0c9110d8a4d5f62799b6f3</sys_update_name>
+        <table/>
+        <target_url>x_644088_integrati_jwt_credentials.do</target_url>
+        <type>1</type>
+    </sys_wizard_answer>
+</record_update>

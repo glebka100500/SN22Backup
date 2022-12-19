@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>93a41db5eb6311006a668c505206fe0d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdAjaxChangePassword&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Ajax request processor for Password Change&lt;/description&gt;
+        &lt;name&gt;PwdAjaxChangePassword&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdAjaxChangePassword = Class.create();
+
+PwdAjaxChangePassword.prototype = Object.extendsObject(PwdAjaxRequestProcessor, {
+	
+	changePasswordBL : new PWDChangePasswordBL(),
+	
+	isPublic: function() {
+		return false;
+	},
+	
+	getProcessesForUser: function() {
+		var userId = this.getParameter('sysparm_user');		
+		var processes = this.changePasswordBL.getProcessesForUser(userId);
+		
+		processes.forEach(function(process) {
+			var processItem = this.newItem('process');
+			
+			for (var attr in process)
+				processItem.setAttribute(attr, process[attr]);
+			
+		}, this);
+	},
+	
+	validatePassword: function() {
+		var processId = this.getParameter('sysparam_process_id');
+		var newPwd = this.getParameter("sysparam_new_password");
+
+		return this.changePasswordBL.validatePassword(processId, newPwd);
+	},
+	
+	// receiver of the change password request from ui.
+	// creates a pwd reset request and kicks off the wf
+	changePassword: function() {
+		var userId = this.getParameter('sysparm_user');
+		var procId = this.getParameter('sysparm_procId');		
+		var newPasswd = this.getParameter("sysparam_new_password");
+		var oldPasswd = this.getParameter("sysparam_old_password");
+		
+		var result = this.changePasswordBL.changePassword(userId, procId, newPasswd, oldPasswd);
+	
+		gs.getSession().putProperty('sysparm_request_id', result.requestId);
+		gs.getSession().putProperty('sysparm_sys_user_id', userId);
+		gs.getSession().putProperty('sysparm_directory', this.type);
+		
+		if (result.status == this.changePasswordBL.STATUS_BLOCKED) {
+			this._setResponseMessage("block", gs.getMessage('User is blocked'), '');					
+		}
+		else if (result.status == this.changePasswordBL.STATUS_FAILURE) {
+			var errorMsg = result.errorMessage;
+			this._setResponseMessage("failure", errorMsg, '');
+		}
+		else {
+			this._setResponseMessage("success", gs.getMessage("Password change was successful"), result.ctxId);
+		}	
+	},
+	
+	// ui to poll for the wf status
+	checkChangePwdWFState: function() {
+		var ctxId = this.getParameter('sysparam_wf_context_sys_id');
+		var ctx = PWDWorkflowHelper.getWorkflowData(ctxId, false);
+		
+		this._setResponseMessage(ctx.state, gs.getMessage("Current status of workflow") , ctx.result);
+	},
+		
+	type: 'PwdAjaxChangePassword'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-03-19 21:15:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;93a41db5eb6311006a668c505206fe0d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;127&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdAjaxChangePassword&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_93a41db5eb6311006a668c505206fe0d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-02 08:41:04&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2231&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:43</sys_created_on>
+        <sys_id>f41d0d7e2f331110d8a4d5f62799b60e</sys_id>
+        <sys_name>PwdAjaxChangePassword</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f41d0d7e2f331110d8a4d5f62799b60e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

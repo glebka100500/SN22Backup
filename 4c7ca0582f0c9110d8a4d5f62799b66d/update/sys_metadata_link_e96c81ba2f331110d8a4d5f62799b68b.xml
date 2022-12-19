@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>321f9764c3467200948710c422d3aef7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MatchingDimensionFilterProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;MatchingDimensionFilterProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MatchingDimensionFilterProcessor = Class.create();
+MatchingDimensionFilterProcessor.prototype = {
+    initialize: function() {
+    
+	},
+	getFilterData:function(filterParam){
+		var filterData = [];
+		if(filterParam &amp;&amp; filterParam.criteria_sys_id){
+			var gr = new GlideRecord('matching_dimension');
+			gr.get(filterParam.criteria_sys_id);
+				gs.log("Vinay dimension found",gr.getValue('use_reference'));
+				if(gr.getValue('use_reference')){
+					var filterTable = gr.getValue("reference_table");
+					var filterCond = gr.getValue("reference_filter");
+					var filterFieldName = gr.getValue("reference_field");
+					var filterGR = new GlideRecordSecure(filterTable);
+					filterGR.addQuery(filterCond);
+					filterGR.query();
+					while(filterGR.next()){
+						var filterDataObj = {};
+						filterDataObj.id = filterGR.getValue('sys_id');
+						filterDataObj.text = filterGR.getDisplayValue(filterFieldName);
+						filterData.push(filterDataObj);
+					}
+				}	
+		}
+		return filterData;	
+	},
+    type: 'MatchingDimensionFilterProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-04-07 21:40:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;321f9764c3467200948710c422d3aef7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MatchingDimensionFilterProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_321f9764c3467200948710c422d3aef7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-04-07 22:26:25&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1042&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:46</sys_created_on>
+        <sys_id>e96c81ba2f331110d8a4d5f62799b68b</sys_id>
+        <sys_name>MatchingDimensionFilterProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e96c81ba2f331110d8a4d5f62799b68b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>81211dd27373230021a044764df6a783</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ParloNLUAdapter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ParloNLUAdapter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ParloNLUAdapter = Class.create();
+ParloNLUAdapter.prototype = {
+    initialize: function() {
+    },
+
+    getModels: function (parloModelsJSON) {
+		if (gs.nil(parloModelsJSON))
+			return {
+            'models': []
+        };
+        var modelsArray = JSON.parse(parloModelsJSON);
+        var modelsArrayFormatted = [];
+        for (var i = 0; i &lt; modelsArray.length; i++) {
+			if (modelsArray[i] &amp;&amp; modelsArray[i].id &amp;&amp; modelsArray[i].name) {
+				modelsArrayFormatted.push(this._toModel(modelsArray[i]));
+			}
+        }
+        return {
+            'models': modelsArrayFormatted
+        };
+    },
+    getEntities: function (modelId, parloEntitiesJSON) {
+		if (gs.nil(parloEntitiesJSON))
+			return {
+            'model_id': modelId,
+            'entities': []
+        };
+
+        var entitiesByModelIdArray = JSON.parse(parloEntitiesJSON);
+
+        var entitiesArrayFormatted = [];
+        for (var i = 0; i &lt; entitiesByModelIdArray.length; i++) {
+            entitiesArrayFormatted.push(this._toEntity(entitiesByModelIdArray[i]));
+        }
+        return {
+            'model_id': modelId,
+            'entities': entitiesArrayFormatted
+        };
+    },
+    getIntents: function (modelId,parloIntentsJSON) {
+        if (gs.nil(parloIntentsJSON))
+			return {
+            'model_id': modelId,
+            'intents': []
+        };
+
+        var intentsArray = JSON.parse(parloIntentsJSON);
+        var intentsArrayFormatted = [];
+        for (var i = 0; i &lt; intentsArray.length; i++) {
+            intentsArrayFormatted.push(this._toIntent(intentsArray[i]));
+        }
+        return {
+            'model_id': modelId,
+            'intents': intentsArrayFormatted
+        };
+    },
+    predict: function (modelId,parloPredictionResultJSON) {
+		if (gs.nil(parloPredictionResultJSON))
+			return {
+            "model_id": modelId,
+            "scored_intents": [],
+            "scored_entities": []
+        };
+
+	var parloPredictionResult = JSON.parse(JSON.parse(parloPredictionResultJSON));
+        if (parloPredictionResult.status == "failure")
+            return this._toError(parloPredictionResult.response);
+        var scoredIntents = [];
+        var scoredEntities = [];
+        for (var i = 0; i &lt; parloPredictionResult.response.intents.length; i++) {
+            var intent = parloPredictionResult.response.intents[i];
+            scoredIntents.push({
+                "name": intent.intentName,
+                "id": intent.intentName,
+                "confidence": intent.score
+            });
+            this._fillScoredEntities(intent.entities, scoredEntities);
+        }
+        this._fillScoredEntities(parloPredictionResult.entities, scoredEntities);
+        return {
+            "model_id": modelId,
+            "scored_intents": scoredIntents,
+            "scored_entities": scoredEntities,
+			"raw_provider_result": JSON.stringify(parloPredictionResult)
+        };
+    },
+
+    _toError: function (errorMessage) {
+        return {
+            'message': errorMessage
+        };
+    },
+     _toModel: function (modelObj) {
+        if (gs.nil(modelObj)) return;
+		var name=modelObj.name;
+		if(modelObj.hasOwnProperty('displayName'))
+			name=modelObj.displayName;
+        return {
+            'name': name,
+            'id': modelObj.name,
+ 			'language': modelObj.language,
+			'scope': modelObj.scope
+        };
+    },
+    _toIntent: function (intentObj) {
+        if (gs.nil(intentObj)) return;
+        return {
+            'name': intentObj.name,
+            'id': intentObj.name,
+            'sys_id': intentObj.id,
+            'enabled': gs.nil(intentObj.enabled) ? true : intentObj.enabled
+        };
+    },
+    _toEntity: function (entityObj) {
+        if (gs.nil(entityObj)) return;
+        return {
+            'name': entityObj.name,
+            'id': entityObj.name
+        };
+    },
+    _fillScoredEntities: function (entities, scoredEntities) {
+        for (i = 0; i &lt; entities.length; i++) {
+            var entity = entities[i];
+            var entityName = entity.name.split('.').pop();
+            scoredEntities.push({
+                "name": entityName,
+                "id": entityName,
+                "value": entity.normalization &amp;&amp; entity.normalization.value ? entity.normalization.value :  entity.value,
+                "confidence": entity.score
+            });
+        }
+    },
+    type: 'ParloNLUAdapter'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-02-25 10:14:21&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;81211dd27373230021a044764df6a783&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;42&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ParloNLUAdapter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Proxy Agent to the ServiceNow Natural Language Understanding server" source="com.glide.nlu.intent.discovery"&gt;3b377e0f2f400110d8a4d5f62799b6d1&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_81211dd27373230021a044764df6a783&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-01 20:13:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4348&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:57</sys_created_on>
+        <sys_id>a9ec8d3e2f331110d8a4d5f62799b6da</sys_id>
+        <sys_name>ParloNLUAdapter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a9ec8d3e2f331110d8a4d5f62799b6da</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>98138570930302001aa8372e457ffb69</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FillChoiceForFilters&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;FillChoiceForFilters&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var FillChoiceForFilters = Class.create();
+FillChoiceForFilters.prototype = {
+	initialize: function() {
+	},
+ 
+	fillChoice:function() {
+		
+		var compositeElement = new GlideCompositeElement(current.source_field, current.source_table);
+		var ed = compositeElement.getTargetED();
+		var grTarget = new GlideRecord(current.source_table);
+		var isDatabaseView = grTarget.isView();
+		var tableName = current.source_table;
+		var columnName = ed.getColumnName();
+
+		if(compositeElement.isSimple() &amp;&amp; !isDatabaseView){//single field on table
+			tableName = current.source_table;
+		}else if (compositeElement.isSimple() &amp;&amp; isDatabaseView){//single field on view
+			tableName = ed.getChoiceTable();
+		}else if (!compositeElement.isSimple()){ // Dotwalking field
+			tableName = compositeElement.getTargetTD().getED().getName();
+		}
+		
+		var fTable = ed.getChoiceTable();
+		
+		if (fTable &amp;&amp; fTable !== tableName)
+			tableName = fTable;
+		
+		var grp = GlideChoiceListGenerator(tableName,columnName).getRecordList();
+		var gp = [];
+		while(grp.next()) {
+			gp.push('' + grp.getValue('sys_id'));
+		}
+		return 'sys_idIN' + gp.toString();
+	},
+   choiceWithoutExcludedItems:function(){
+		var gp = [];
+		var grpExclusions = [];
+		var grFilter = new GlideRecord("sys_ui_hp_publisher");
+		grFilter.addQuery('sys_id',current.sys_id);
+		grFilter.query();
+
+		while(grFilter.next()) {
+			grpExclusions.push('' + grFilter.getValue('exclusion_choice_list'));
+		}
+
+		var compositeElement = new GlideCompositeElement(current.source_field, current.source_table);
+		var ed = compositeElement.getTargetED();
+	    var grTarget = new GlideRecord(current.source_table);
+		var isDatabaseView = grTarget.isView();
+	    var tableName = current.source_table;
+		var columnName = ed.getColumnName();
+
+		if(compositeElement.isSimple() &amp;&amp; !isDatabaseView){//single field on table
+			tableName = current.source_table;
+		}else if (compositeElement.isSimple() &amp;&amp; isDatabaseView){//single field on view
+			tableName = ed.getChoiceTable();
+		}else if (!compositeElement.isSimple()){ // Dotwalking field
+			tableName = compositeElement.getTargetTD().getED().getName();
+		}
+	   
+	   	var fTable = ed.getChoiceTable();
+		
+		if (fTable &amp;&amp; fTable !== tableName)
+			tableName = fTable;
+
+		var grp = GlideChoiceListGenerator(tableName,columnName).getRecordList();
+		while(grp.next()) {
+			gp.push('' + grp.sys_id);
+		}
+		return 'sys_idIN' + gp.toString()+'^sys_id NOT IN'+grpExclusions.toString();
+
+	},
+
+	referenceTableChoices:function(){
+		var gp = [];
+		var grpExclusions = [];
+		var grFilter = new GlideRecord("sys_ui_hp_publisher");
+		grFilter.addQuery('sys_id',current.sys_id);
+		grFilter.query();
+
+		while(grFilter.next()) {
+			grpExclusions.push('' + grFilter.getValue('exclusion_choice_list'));
+		}
+
+		var grp = new GlideRecord(current.reference_table);
+		grp.addQuery('sys_id','NOT IN',grpExclusions.toString());
+		if(current.reference_conditions)
+		  grp.addEncodedQuery(current.reference_conditions);
+		grp.orderBy('sequence');
+		grp.query();
+		while(grp.next()) {
+			gp.push('' + grp.sys_id);
+		}
+		return 'sys_idIN' + gp.toString();
+	},
+
+
+	type: 'FillChoiceForFilters'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-10-09 09:28:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;98138570930302001aa8372e457ffb69&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FillChoiceForFilters&lt;/sys_name&gt;
+        &lt;sys_package display_value="Interactive Filters" source="com.glideapp.home.publishers"&gt;e04305836da620100acb70b35343308e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_98138570930302001aa8372e457ffb69&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-05-18 12:44:12&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3127&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:12</sys_created_on>
+        <sys_id>443d05be2f331110d8a4d5f62799b673</sys_id>
+        <sys_name>FillChoiceForFilters</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_443d05be2f331110d8a4d5f62799b673</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

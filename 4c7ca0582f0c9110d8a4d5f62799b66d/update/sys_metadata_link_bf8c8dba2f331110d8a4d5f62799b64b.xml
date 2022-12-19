@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>503e7a20d7132100f2d224837e61030c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UserCriteriaMigration&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This script will set the user criteria property to true if there are no records in the legacy m2m tables. After this runs, only an instance using old tables will be left not using the user criteria functionality.&lt;/description&gt;
+        &lt;name&gt;UserCriteriaMigration&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UserCriteriaMigration = Class.create();
+UserCriteriaMigration.prototype = {
+    initialize : function() {
+    },
+
+    fixUserCriteriaProperty : function() {
+        gs.log("User Criteria Migration started: For using the Service Catalog User Criteria")
+
+		var uc_prop = "glide.sc.use_user_criteria";
+        var be = GlidePluginManager.isActive("com.glide.express.applications");
+        
+        function fixUserCriteriaProperty(uc_prop) {
+            var legacyTables = [ "sc_cat_item_company_mtom",
+                    "sc_cat_item_company_no_mtom", "sc_cat_item_dept_mtom",
+                    "sc_cat_item_dept_no_mtom", "sc_cat_item_group_mtom",
+                    "sc_cat_item_group_no_mtom", "sc_cat_item_location_mtom",
+                    "sc_cat_item_location_no_mtom", "sc_cat_item_user_mtom",
+                    "sc_cat_item_user_no_mtom", "sc_category_company_mtom",
+                    "sc_category_company_no_mtom", "sc_category_dept_mtom",
+                    "sc_category_dept_no_mtom", "sc_category_group_mtom",
+                    "sc_category_group_no_mtom", "sc_category_location_mtom",
+                    "sc_category_location_no_mtom", "sc_category_user_mtom",
+                    "sc_category_user_no_mtom" ];
+
+            var numTbls = legacyTables.length;
+            var totRecs = 0;
+
+            for (var i = 0; i &lt; numTbls; i++) {
+                var recs = new GlideRecord(legacyTables[i]);
+                if (recs.isValid()) {
+                    recs.query();
+                    totRecs += recs.getRowCount();
+                    gs.print("Num of records found in " + legacyTables[i] + " : " + recs.getRowCount());
+                }
+                if (totRecs &gt; 0)
+                    i = numTbls;
+            }
+
+            if (totRecs &gt; 0) {
+				gs.setProperty(uc_prop, false);
+                gs.log("User Criteria migration finished unsuccessfully. Property: " + uc_prop + " has been set to 'false'. Records found in legacy tables. Please refer to the wiki to perform manual user criteria migration");
+            } else {
+                gs.setProperty(uc_prop, true);
+                gs.log("User Criteria migration finished successfully. Property: " + uc_prop + " has been set to 'true'");
+            }
+        }
+        
+        if (!be)
+            fixUserCriteriaProperty(uc_prop);
+		else
+			gs.setProperty(uc_prop, false);
+			
+    },
+
+    type : 'UserCriteriaMigration'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-09-18 17:42:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;503e7a20d7132100f2d224837e61030c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UserCriteriaMigration&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_503e7a20d7132100f2d224837e61030c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-09-20 22:44:12&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2425&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:27</sys_created_on>
+        <sys_id>bf8c8dba2f331110d8a4d5f62799b64b</sys_id>
+        <sys_name>UserCriteriaMigration</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bf8c8dba2f331110d8a4d5f62799b64b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

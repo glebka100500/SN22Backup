@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>441f22d40a2581027b72c63a41c520ff</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WalkWorkflow&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This utility class walks activities in a workflow and generates either 'full' or 'expected' sequences. &amp;#13;
+&amp;#13;
+Sequences are segements of comma-separated lists of activity IDs.  The segments are separated by a pipe character: |&amp;#13;
+&amp;#13;
+If a sequence list ends in a | then it indicates that that sequence list was not completely generated, which happens for overly complicated workfllows.&lt;/description&gt;
+        &lt;name&gt;WalkWorkflow&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * Walk the workflow and get the list of successors for each activity along with
+ * a shortest path order indicating how deep the activity is in the workflow
+ */
+
+/* global 
+ *   gs
+ */
+/* eslint-disable strict 
+ */
+
+gs.include("PrototypeServer");
+
+var WalkWorkflow = Class.create();
+WalkWorkflow.prototype = {
+	MAX_SEQUENCE_COUNT : 2000,
+	MAX_SEQUENCE_LENGTH : 100,
+
+	initialize : function(/* GlideRecord */workflowVersion) {
+		this.workflowVersion = workflowVersion;
+	},
+
+	/**
+	 * Walk the workflow and set up the activity shortest path ordering
+	 */
+	walk : function(/* boolean */fullSequences) {
+		this.activities = {};
+		this._getDependencyMap();
+		this._setShortestPathOrders();
+		if (fullSequences)
+			this.computeFullSequences();
+		else
+			this.computeSequences();
+	},
+
+	/**
+	 * Get all of the activities at the specified shortest path order
+	 * 
+	 * returns an array of activity sys_ids at the specified order if an empty
+	 * array is returned, there are no more activities
+	 */
+	getActivitiesAtOrder : function(order) {
+		var ret = [];
+		for ( var id in this.activities) {
+			if (this.activities[id].order == order)
+				ret.push(id);
+		}
+		return ret;
+	},
+
+	/**
+	 * Get the activity sequences as a string of |-terminated comma-separated
+	 * lists of activities (walk() must have been called prior to calling this
+	 * method)
+	 */
+	getSequences : function() {
+		var seqs = [];
+		var len = this.sequences.length;
+		for (var i = 0; i &lt; len; i++)
+			seqs.push(this._getSequence(this.sequences[i]));
+
+		return seqs.join('|');
+	},
+
+	_getSequence : function(seq) {
+		var a = [];
+		var len = seq.length;
+		for (var i = 0; i &lt; len; i++)
+			a.push(seq[i]);
+
+		return a.join(",");
+	},
+
+	_getDependencyMap : function() {
+		this.transitions = {};
+		var gr = new GlideRecord('wf_activity');
+		gr.addQuery('workflow_version', this.workflowVersion.sys_id);
+		gr.addNullQuery('parent');
+		gr.query();
+		while (gr.next()) {
+			var activity = new WalkWorkflowActivity(gr.sys_id.toString(),
+					gr.name.toString(), gr.activity_definition.attributes
+							.toString());
+			this.activities[activity.sys_id] = activity;
+		}
+
+		this._getChildren();
+
+		for ( var id in this.activities) {
+			var activity = this.activities[id];
+			this._getTransitions(activity);
+		}
+	},
+
+	_getChildren : function() {
+		// load up any child activities and associated them with their parent
+		var gr = new GlideRecord('wf_activity');
+		gr.initialize();
+		gr.addQuery('workflow_version', this.workflowVersion.sys_id);
+		gr.addNotNullQuery('parent');
+		gr.query();
+		while (gr.next()) {
+			var parent = this.activities[gr.parent.toString()];
+			if (!parent)
+				continue;
+
+			var activity = new WalkWorkflowActivity(gr.sys_id.toString(),
+					gr.name.toString(), gr.activity_definition.attributes
+							.toString());
+			parent.children.push(activity);
+		}
+	},
+
+	_getTransitions : function(activity) {
+		var sysId = activity.sys_id.toString();
+		var gr = new GlideRecord('wf_transition');
+		gr.addQuery('from', sysId);
+		gr.query();
+		while (gr.next()) {
+			if (gr.condition.skip_during_generate == true)
+				activity.tos[gr.to.toString()] = "skipped";
+			else
+				activity.tos[gr.to.toString()] = "not_skipped";
+		}
+	},
+
+	// Set shortest path order to each activity
+	_setShortestPathOrders : function() {
+		this._setShortestPathOrder(this.workflowVersion.start, 0, {});
+	},
+
+	_setShortestPathOrder : function(sysId, order, visited) {
+		var activity = this.activities[sysId];
+		if (visited[sysId])
+			return;
+
+		visited[sysId] = true;
+		if (activity.order == 0)
+			activity.order = order;
+
+		order++;
+		for ( var to in activity.tos) {
+			this._setShortestPathOrder(to, order, visited);
+		}
+	},
+
+	/**
+	 * Compute the sequences of activities. All sequences leading up to a join
+	 * end at the join and then a single sequence from the join is computed.
+	 * This ensures that we can walk all sequences up to a join and then walk
+	 * the sequence from the join.
+	 * 
+	 * For example:
+	 * 
+	 * Begin -&gt; T1 -&gt; T1.1 -&gt; Join1 -&gt; T3 -&gt; End -&gt; T2 -------------^
+	 * 
+	 * would result in these sequences:
+	 * 
+	 * 1. Begin, T1, T1.1, Join1 2. Begin, T2, Join1 3. Join1, T3, End
+	 * 
+	 * and this:
+	 * 
+	 * Begin -&gt; T1 -&gt; T1.1 -&gt; Join1 -------&gt; T3 -&gt; Join2 -&gt; T5 -&gt; End -&gt; T2
+	 * -------------^ -&gt; T4 -----^
+	 * 
+	 * would result in these sequences:
+	 * 
+	 * 1. Begin, T1, T1.1, Join1 2. Begin, T2, Join1 3. Join1, T3, Join2 4.
+	 * Join1, T4, Join2 5. Join2, T5, End
+	 */
+	computeSequences : function() {
+		this.visited = {};
+		this.sequences = [];
+		this.sequenceKeys = {};
+		this.joins = [];
+		this.sequenceCount = 0;
+		this._computeSequence(this.workflowVersion.start, []);
+
+		var joinId;
+		this.joinNdx = 0;
+		this.joinsVisited = {};
+		while ((joinId = this._nextJoin()) != null)
+			this._computeSequence(joinId, []);
+
+		if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT) {
+			gs.print("Workflow " + this.workflowVersion.name
+					+ " - expected sequences list too large, not saved");
+			this._addSequence([]);
+			return;
+		}
+
+		this.sequenceKeys = null;
+		this.visited = null;
+		this.joins = null;
+		this.joinsVisited = null;
+	},
+
+	_computeSequence : function(id, sequence) {
+		if (sequence.length &gt; this.MAX_SEQUENCE_LENGTH)
+			return;
+
+		var seq = sequence.slice(0);
+		this.visited[id] = true;
+
+		this.sequenceCount++;
+		if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT)
+			return;
+		seq.push(id);
+		var a = this.activities[id];
+		var end = true;
+		for ( var tid in a.tos) {
+			if (a.tos[tid] == "skipped")
+				continue;
+
+			end = false;
+			break;
+		}
+		if (end) {
+			this._addSequence(seq);
+			return;
+		}
+
+		for ( var to in a.tos) {
+			if (a.tos[to] == "skipped")
+				continue;
+
+			if (this.visited[to]) {
+				this._addSequence(seq.slice(0));
+				continue;
+			}
+
+			var toAct = this.activities[to];
+			if (!toAct.isJoin) {
+				this._computeSequence(to, seq);
+				if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT)
+					return;
+				continue;
+			}
+
+			// Add the join to our join list to process at the end
+			this.sequenceCount++;
+			if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT)
+				return;
+			seq.push(to);
+			this._addSequence(seq.slice(0));
+			this.joins.push(to);
+		}
+		return;
+	},
+
+	_addSequence : function(seq) {
+		// don't add duplicate sequences
+		var seqKey = seq.join(',');
+		if (this.sequenceKeys[seqKey])
+			return;
+
+		this.sequenceKeys[seqKey] = true;
+		this.sequences.push(seq);
+	},
+
+	_nextJoin : function() {
+		while (this.joinNdx &lt; this.joins.length) {
+			var joinId = this.joins[this.joinNdx];
+			this.joinNdx++;
+			if (this.joinsVisited[joinId]) {
+				continue;
+			}
+
+			this.joinsVisited[joinId] = true;
+			return joinId;
+		}
+		return null;
+	},
+
+	computeFullSequences : function() {
+		this.sequenceCount = 0;
+		this.sequences = [];
+		this.sequenceKeys = {};
+		this._computeFullSequence(this.workflowVersion.start, []);
+		this.sequenceKeys = null;
+		if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT) {
+			gs.print("Workflow " + this.workflowVersion.name
+					+ " - full sequences list too large, not saved");
+			this._addSequence([]);
+		}
+	},
+
+	_computeFullSequence : function(id, sequence) {
+		if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT)
+			return;
+
+		if (sequence.length &gt; this.MAX_SEQUENCE_LENGTH)
+			return;
+
+		var seq = sequence.slice(0);
+		var len = seq.length;
+		if (this._exists(seq, id)) {
+			// seen this one before on this sequence - do not loop, just save up
+			// to here
+			this._addSequence(seq);
+			return;
+		}
+
+		this.sequenceCount++;
+		if (this.sequenceCount &gt; this.MAX_SEQUENCE_COUNT)
+			return;
+
+		seq.push(id);
+		var a = this.activities[id];
+		var end = true;
+		for ( var tid in a.tos) {
+			end = false;
+			break;
+		}
+		if (end) {
+			this._addSequence(seq);
+			return;
+		}
+
+		for ( var to in a.tos) {
+			if (this._exists(seq, to)) {
+				this._addSequence(seq.slice(0));
+				continue;
+			}
+
+			this._computeFullSequence(to, seq);
+		}
+		return;
+	},
+
+	// Useful debugging/dumping support
+
+	dump : function() {
+		gs.print("Workflow: " + this.workflowVersion.name);
+		this.dumpActivities = {};
+		this._dump(this.workflowVersion.start, 0);
+		this.dumpActivities = null;
+		gs.print("");
+		gs.print("Sequences:");
+		var joins = {};
+		this.dumpSequences();
+		gs.print("");
+		gs.print("Shortest Paths:");
+		this.dumpShortestPathOrders();
+		gs.print("");
+		gs.print("");
+	},
+
+	dumpSequences : function() {
+		for (var i = 0; i &lt; this.sequences.length; i++)
+			this._dumpSequence(this.sequences[i]);
+	},
+
+	_dumpSequence : function(seq) {
+		var a = [];
+		for (var i = 0; i &lt; seq.length; i++)
+			a.push(this.activities[seq[i]].name);
+
+		var s = a.join(", ");
+		gs.print(s);
+	},
+
+	dumpShortestPathOrders : function() {
+		var order = 0;
+		var ret;
+		do {
+			ret = this.getActivitiesAtOrder(order);
+			for (var i = 0; i &lt; ret.length; i++) {
+				var activity = this.activities[ret[i]];
+				gs.print(activity.order + ": " + activity.name);
+				for (var childNdx = 0; childNdx &lt; activity.children.length; childNdx++)
+					gs.print("   : " + activity.children[childNdx].name);
+			}
+			order++;
+		} while (ret.length &gt; 0);
+	},
+
+	_dump : function(sysId, order) {
+		if (this.dumpActivities[sysId])
+			return;
+
+		this.dumpActivities[sysId] = true;
+		var activity = this.activities[sysId];
+		if (activity.isJoin)
+			gs.print("Name: " + activity.name + "*");
+		else
+			gs.print("Name: " + activity.name);
+
+		order++;
+		for ( var to in activity.tos) {
+			var toActivity = this.activities[to];
+			gs.print("   To: " + toActivity.name);
+		}
+
+		for ( var to in activity.tos) {
+			this._dump(to, order);
+		}
+	},
+
+	_exists : function(arr, id) {
+		var len = arr.length;
+		for (var i = 0; i &lt; len; i++) {
+			if (arr[i] == id)
+				return true;
+		}
+		return false;
+	},
+
+	type : 'WalkWorkflow'
+}
+
+/**
+ * This is the activity that is created by the WalkWorkflow class when walking a
+ * workflow and ordering the activities
+ */
+var WalkWorkflowActivity = Class.create();
+WalkWorkflowActivity.prototype = {
+
+	initialize : function(sysId, name, attributes) {
+		this.sys_id = sysId;
+		this.name = name;
+		this.attributes = attributes;
+		this.tos = {};
+		this.order = 0;
+		this.children = [];
+		this.isJoin = (attributes.indexOf("generate=join") != -1);
+	},
+
+	type : 'WalkWorkflowActivity'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-10-28 15:43:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;441f22d40a2581027b72c63a41c520ff&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;81&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WalkWorkflow&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_441f22d40a2581027b72c63a41c520ff&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;john.maher&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-05-27 10:12:14&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;10159&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:09</sys_created_on>
+        <sys_id>137cc9ba2f331110d8a4d5f62799b608</sys_id>
+        <sys_name>WalkWorkflow</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_137cc9ba2f331110d8a4d5f62799b608</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

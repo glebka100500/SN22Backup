@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5708e00553460110657addeeff7b1294</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VaCustomAdapterPropertyUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Util class to get custom adapter property&lt;/description&gt;
+        &lt;name&gt;VaCustomAdapterPropertyUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VaCustomAdapterPropertyUtil = Class.create();
+VaCustomAdapterPropertyUtil.prototype = {
+	VERIFICATION_QUE_PROPERTY_NAME : "verification_question_id",
+	MFA_PROPERTY_NAME : "mfa_question_id",
+	
+    initialize : function() {
+		var source = "VaCustomAdapterPropertyUtil";
+        var logContext = {
+			"app": "CI",
+			"track": "CCCIF",
+			"source": source
+        };
+        this.logger = new sn_log.GlideLogger(source, logContext, ["app", "track", "source"]);
+    },
+
+	/*
+	  returns the list of verification_question_id and mfa_question_id property applicable to all the providerApp record in the system
+	*/
+	getPwdVerificationIds : function() {
+		var providerAppIds = this._getProviderAppIds();
+		var result = [];
+		for (var i = 0; i&lt;providerAppIds.length; i++) {
+			var verificationId = this._getVerificationQueId(providerAppIds[i]);
+			if (!gs.nil(verificationId)){
+				result.push(verificationId);
+			}
+			var mfaId = this._getMFAId(providerAppIds[i]);
+			if (!gs.nil(mfaId)){
+				result.push(mfaId);
+			}		
+		}
+		
+		var arrayUtil = new ArrayUtil();  
+		return arrayUtil.unique(result);  
+	},
+	
+	_getVerificationQueId : function(providerAppId) {
+		return this._getCustomAdapterProperty(this.VERIFICATION_QUE_PROPERTY_NAME, providerAppId);
+	},
+	
+	_getMFAId : function(providerAppId) {
+		return this._getCustomAdapterProperty(this.MFA_PROPERTY_NAME, providerAppId);
+	},
+	
+	_getCustomAdapterProperty : function (name, providerAppId) {
+		try {
+			return sn_cs.VASystemObject.getCustomAdapterPropertyWithHierarchy(name, providerAppId);
+		} catch (e) {
+			var message = e.message;
+			this.logger.error("Exception while getting : CustomAdapterProperty {0} for providerAppId {1} \n {2}", name, providerAppId, message);
+		}
+		return "";	
+	},
+	
+	_getProviderAppIds : function() {
+		var providerAppIds = [];
+		var providerAppGr = new GlideRecord("sys_cs_provider_application");
+		providerAppGr.query();
+		while(providerAppGr.next()) {
+			providerAppIds.push(providerAppGr.getUniqueValue());
+		}
+		return providerAppIds;
+	},
+	
+    type: 'VaCustomAdapterPropertyUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-03 12:05:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5708e00553460110657addeeff7b1294&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VaCustomAdapterPropertyUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Conversational Custom Chat Integration" source="com.glide.cs.custom.adapter"&gt;0617320f2f400110d8a4d5f62799b63f&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5708e00553460110657addeeff7b1294&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-04 05:06:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2062&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:38</sys_created_on>
+        <sys_id>5a9c41fa2f331110d8a4d5f62799b684</sys_id>
+        <sys_name>VaCustomAdapterPropertyUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5a9c41fa2f331110d8a4d5f62799b684</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

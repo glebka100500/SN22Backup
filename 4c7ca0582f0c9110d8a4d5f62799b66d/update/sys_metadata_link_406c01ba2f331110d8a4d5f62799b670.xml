@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2ef3f17c9313130079b5925cf67ffb95</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AttachmentActionsUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Util functions for Attachment Actions&lt;/description&gt;
+        &lt;name&gt;AttachmentActionsUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AttachmentActionsUtil = Class.create();
+AttachmentActionsUtil.prototype = {
+	initialize: function() {},
+
+	getAttachmentIds: function(inputs, outputs) {
+		var tableSysID;
+		if (inputs.record) {
+			if (inputs.record.length == 32) {
+				tableSysID = inputs.record;
+			} else {
+				tableSysID = inputs.record.getValue("sys_id");
+			}
+		}
+
+		var gr = new GlideRecord("sys_attachment");
+		var sysIds = "";
+
+		if (!tableSysID)
+			throw "Read Error: Unable to read the Record";
+
+		if (!inputs.deleteAll)
+			gr.addQuery("file_name", inputs.file.toString().trim());
+
+		gr.addQuery("table_sys_id", tableSysID.toString().trim());
+
+		try {
+			gr.query();
+		} catch (e) {
+
+			var grError = ". " + gr.getLastErrorMessage();
+			gs.error("Query Error:" + e);
+			throw "Error while Query execution. please check System logs" + grError;
+		}
+		if (gr.getRowCount() == 0)
+			gs.info("No attachments found for the " + inputs.record.getTableName() +
+				":" + tableSysID);
+
+		while (gr.next()) {
+
+			sysIds = sysIds.concat(gr.getValue("sys_id")).concat(",");
+		}
+
+		outputs.AllIds = sysIds;
+		return outputs;
+	},
+
+	deleteAttachments: function(records) {
+
+		var allIds = records.split(",");
+
+		for (var i = 0; i &lt; allIds.length; i++) {
+			var gr = new GlideRecord("sys_attachment");
+			gr.addQuery("sys_id", allIds[i]);
+			gr.query();
+			gr.next();
+			try {
+				gr.deleteRecord();
+			} catch (e) {
+				gs.error("Delete error : Unable to delete the record with Sys_id-" +
+					allIds[i] + ". Failed with:" + e);
+				throw "Delete error : Unable to delete the record with Sys_id-" + allIds[
+					i];
+			}
+		}
+
+	},
+
+	copyAttachments: function(inputs) {
+
+		var fileName = inputs.fromObj.getValue("file_name");
+		var contentType = inputs.fromObj.getValue("content_type");
+
+		var gr = new GlideRecord(inputs.table);
+		var aStream;
+		var id = inputs.fromObj.getValue("sys_id");
+
+		if (!inputs.toObj)
+			throw "Empty Target Record";
+		if (inputs.toObj &amp;&amp; inputs.toObj.length == 32)
+			gr.get(inputs.toObj);
+
+		try {
+			var gsa = new GlideSysAttachment();
+			if (inputs.toObj.length == 32) {
+				aStream = gsa.getContentStream(id);
+				gsa.writeContentStream(gr, fileName, contentType, aStream);
+			} else {
+				aStream = gsa.getContentStream(id);
+				gsa.writeContentStream(inputs.toObj, fileName, contentType, aStream);
+			}
+
+
+		} catch (e) {
+			gs.error("Unable to Copy Attachment. " + e);
+			throw "Failed to copy the attachment. Please check System Logs";
+		}
+
+	},
+	moveAttachments: function(inputs) {
+		var id, tableName;
+		if (inputs.toObj) {
+			if (inputs.toObj.length == 32) {
+				id = inputs.toObj;
+				tableName = inputs.table;
+			} else {
+				id = inputs.toObj.getValue("sys_id");
+				tableName = inputs.toObj.getTableName();
+			}
+		} else
+			throw "Empty Target Record";
+
+		try {
+			inputs.fromObj.setValue("table_name", tableName);
+			inputs.fromObj.setValue("table_sys_id", id);
+			inputs.fromObj.update();
+		} catch (e) {
+
+			gs.error("Unable to Move Attachment. " + e);
+			throw "Error while moving attachment. Please check System Logs";
+
+		}
+
+	},
+
+	type: 'AttachmentActionsUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-07-12 04:11:40&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2ef3f17c9313130079b5925cf67ffb95&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;66&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AttachmentActionsUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Flow Designer System Level Actions" source="com.glide.hub.action_type.system"&gt;6314418b6da620100acb70b353433078&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2ef3f17c9313130079b5925cf67ffb95&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-12-05 05:13:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3070&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:40</sys_created_on>
+        <sys_id>406c01ba2f331110d8a4d5f62799b670</sys_id>
+        <sys_name>AttachmentActionsUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_406c01ba2f331110d8a4d5f62799b670</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4b4b87cbc7c63300a6dff2327ec2605b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SPMFoundationConstants&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;SPMFoundationConstants&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SPMFoundationConstants = Class.create();
+SPMFoundationConstants.prototype = {
+    initialize: function() {
+
+    },
+    PORTFOLIO_TABLE: 'spm_service_portfolio',
+    LAYER_TABLE: 'spm_taxonomy_layer_definition',
+    LAYER: 'spm_taxonomy_layer',
+    TAXONOMY_TABLE: 'spm_taxonomy_node',
+    CAT_ITEM_SUBSCRIBE_TABLE: 'sc_cat_item_subscribe_mtom',
+    SC_REQ_ITEM_TABLE: 'sc_req_item',
+    SERVICE_OFFERING_TABLE: 'service_offering',
+    CMDB_OUTAGE_CI_MTOM_TABLE: 'cmdb_outage_ci_mtom',
+    SERVICE_TABLE: 'cmdb_ci_service',
+    PHASE_CATALOG: 'catalog',
+    NAME: 'name',
+    PARENT: 'parent',
+    BUSINESS_CRITICALITY: 'busines_criticality',
+    OWNED_BY: 'owned_by',
+    DELIVERY_MANAGER: 'delivery_manager',
+    DELEGATE: 'service_owner_delegate',
+    STATE: 'state',
+    DRAFT_STATE: 'draft',
+    PUBLISHING_STATE: 'publishing',
+    PUBLISHED_STATE: 'published',
+    TABLE_NAMES: {
+        'service_offering': 'Offering',
+        'cmdb_ci_service_business': 'Business Service',
+        'cmdb_ci_service_technical': 'Technical Service'
+    },
+
+    type: 'SPMFoundationConstants'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-06-19 23:27:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4b4b87cbc7c63300a6dff2327ec2605b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SPMFoundationConstants&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Portfolio Management Foundation" source="com.snc.service_portfolio"&gt;5692894b6d6620100acb70b3534330f5&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4b4b87cbc7c63300a6dff2327ec2605b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-23 22:33:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1087&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:19</sys_created_on>
+        <sys_id>ad8c4dba2f331110d8a4d5f62799b643</sys_id>
+        <sys_name>SPMFoundationConstants</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ad8c4dba2f331110d8a4d5f62799b643</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

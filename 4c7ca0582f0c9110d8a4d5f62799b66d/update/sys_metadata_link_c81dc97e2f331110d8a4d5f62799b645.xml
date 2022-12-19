@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9283290237102000a08a40ed9dbe5dde</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CategoryChart&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;CategoryChart wrapper for JFreeChart. This class should provide an easier way to create charts that are category based.&amp;#13;
+&amp;#13;
+It allows for the addition of multiple dataset, axes and renderers.&lt;/description&gt;
+        &lt;name&gt;CategoryChart&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CategoryChart = Class.create();
+
+CategoryChart.Types = {
+    LINE_AND_SHAPE: "LINE_AND_SHAPE",
+    LINE: "LINE",
+    SHAPE: "SHAPE",
+    BAR: "BAR",
+    AREA: "AREA"
+};
+
+CategoryChart.LabelPositions = {
+    STANDARD: Packages.org.jfree.chart.axis.CategoryLabelPositions.STANDARD,
+    DOWN_45: Packages.org.jfree.chart.axis.CategoryLabelPositions.DOWN_45,
+    DOWN_90: Packages.org.jfree.chart.axis.CategoryLabelPositions.DOWN_90,
+    UP_45: Packages.org.jfree.chart.axis.CategoryLabelPositions.UP_45,
+    UP_90: Packages.org.jfree.chart.axis.CategoryLabelPositions.UP_90
+};
+
+CategoryChart.getNewDataset = function(){
+    return new Packages.org.jfree.data.category.DefaultCategoryDataset();
+};
+
+CategoryChart.prototype = {
+    // Java classes used
+    BasicStroke: Packages.java.awt.BasicStroke,
+    Color: Packages.java.awt.Color,
+    JFreeChart: Packages.org.jfree.chart.JFreeChart,
+    CategoryAxis: Packages.org.jfree.chart.axis.CategoryAxis,
+    NumberAxis: Packages.org.jfree.chart.axis.NumberAxis,
+    CategoryPlot: Packages.org.jfree.chart.plot.CategoryPlot,
+    DatasetRenderingOrder: Packages.org.jfree.chart.plot.DatasetRenderingOrder,
+    PlotOrientation: Packages.org.jfree.chart.plot.PlotOrientation,
+    AreaRenderer: Packages.org.jfree.chart.renderer.category.AreaRenderer,
+    BarRenderer: Packages.org.jfree.chart.renderer.category.BarRenderer,
+    CategoryItemRenderer: Packages.org.jfree.chart.renderer.category.CategoryItemRenderer,
+    LineAndShapeRenderer: Packages.org.jfree.chart.renderer.category.LineAndShapeRenderer,
+    NumberAxis: Packages.org.jfree.chart.axis.NumberAxis,
+
+    initialize: function(title, xAxisLabel, yAxisLabel){
+        this.datasetIndex = 0;
+        this.rendererIndex = 0;
+        this.domainIndex = 0;
+        this.rangeIndex = 0;
+
+        var domainAxis = new this.CategoryAxis(xAxisLabel);
+        var rangeAxis = new this.NumberAxis(yAxisLabel);
+
+        this.plot = new this.CategoryPlot();
+        this.plot.setDomainAxis(this.domainIndex++, domainAxis);
+        this.plot.setRangeAxis(this.rangeIndex++, rangeAxis);
+
+        this.plot.setDomainGridlinesVisible(true);
+        this.plot.setRangeGridlinesVisible(true);
+
+        this.plot.setOrientation(this.PlotOrientation.VERTICAL);
+
+        this.chart = new this.JFreeChart(title, this.plot);
+        this.chart.setAntiAlias(true);
+        this.chart.setBackgroundPaint(this.Color.white);
+    },
+
+    getChart: function(){
+        return this.chart;
+    },
+
+    addSeries: function(type, dataset){
+        this.addSeriesData(dataset);
+        this.addSeriesRenderer(type);
+    },
+
+    addSeriesData: function(dataset){
+        this.plot.setDataset(this.datasetIndex++, dataset);
+        return this.datasetIndex;
+    },
+
+    setSeriesData: function(dataset, index){
+        this.plot.setDataset(index, dataset);
+    },
+
+    addSeriesRenderer: function(type){
+        switch (type) {
+            case CategoryChart.Types.BAR:
+                this.plot.setRenderer(this.rendererIndex++, new this.BarRenderer());
+                break;
+            case CategoryChart.Types.LINE_AND_SHAPE:
+                this.plot.setRenderer(this.rendererIndex++, new this.LineAndShapeRenderer(true, true));
+                break;
+            case CategoryChart.Types.LINE:
+                this.plot.setRenderer(this.rendererIndex++, new this.LineAndShapeRenderer(true, false));
+                break;
+            case CategoryChart.Types.SHAPE:
+                this.plot.setRenderer(this.rendererIndex++, new this.LineAndShapeRenderer(false, true));
+                break;
+            case CategoryChart.Types.AREA:
+                this.plot.setRenderer(this.rendererIndex++, new this.AreaRenderer());
+                break;
+            default:
+                this.plot.setRenderer(this.rendererIndex++, new this.BarRenderer());
+        }
+
+        return this.rendererIndex;
+    },
+
+    setRenderer: function(renderer, index){
+        this.plot.setRenderer(index, renderer);
+    },
+
+    setCategoryMargin: function(margin, index){
+        this.plot.getDomainAxis(index).setCategoryMargin(margin);
+    },
+
+    setLowerMargin: function(margin, index){
+        this.plot.getDomainAxis(index).setLowerMargin(margin);
+    },
+
+    setUpperMargin: function(margin, index){
+        this.plot.getDomainAxis(index).setUpperMargin(margin);
+    },
+
+    setDomainGridlinesVisible: function(value){
+        this.plot.setDomainGridlinesVisible(value);
+    },
+
+    setRangeGridlinesVisible: function(value){
+        this.plot.setRangeGridlinesVisible(value);
+    },
+
+    /**
+     * @param r - red
+     * @param g - green
+     * @param b - blue
+     * @param a - alpha
+     * @param rendererIdx - index of the renderer
+     * @param seriesIdx - index of the data series associated with the renderer
+     */
+    setSeriesColorRGB: function(r, g, b, a, rendererIdx, seriesIdx){
+        var max = 255;
+        this.plot.getRenderer(rendererIdx).setSeriesPaint(seriesIdx, new this.Color(r / max, g / max, b / max, a / max));
+    },
+
+    /**
+     * 
+     * @param hex - something like this #A1A1A1
+     * @param rendererIdx - index of the renderer
+     * @param seriesIdx - index of the data series associated with the renderer
+     */
+    setSeriesColorHex: function(hex, rendererIdx, seriesIdx){
+        this.plot.getRenderer(rendererIdx).setSeriesPaint(seriesIdx, this.Color.decode(hex));
+    },
+
+    /**
+     * 
+     * @param width
+     * @param rendererIdx - index of the renderer
+     * @param seriesIdx - index of the data series associated with the renderer
+     */
+    setSeriesStroke: function(width, rendererIdx, seriesIdx){
+        this.plot.getRenderer(rendererIdx).setSeriesStroke(seriesIdx, new this.BasicStroke(width));
+    },
+
+    setDatasetRenderingOrderForward: function(){
+        this.plot.setDatasetRenderingOrder(this.DatasetRenderingOrder.FORWARD);
+    },
+
+    setDatasetRenderingOrderReverse: function(){
+        this.plot.setDatasetRenderingOrder(this.DatasetRenderingOrder.REVERSE);
+    },
+
+    setPlotOrientationVertical: function(){
+        this.plot.setOrientation(this.PlotOrientation.VERTICAL);
+    },
+
+    setPlotOrientationHorizontal: function(){
+        this.plot.setOrientation(this.PlotOrientation.HORIZONTAL);
+    },
+
+    setRangeTicksToWholeNumbers: function(rangeIndex){
+        this.plot.getRangeAxis(rangeIndex).setStandardTickUnits(this.NumberAxis.createIntegerTickUnits());
+    },
+    
+    setDomainTickLabelPosition: function(pos){
+        this.plot.getDomainAxis().setCategoryLabelPositions(pos);
+    },
+
+    type: "CategoryChart"
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-02-21 15:28:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9283290237102000a08a40ed9dbe5dde&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CategoryChart&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9283290237102000a08a40ed9dbe5dde&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-03-07 14:47:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6741&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:40</sys_created_on>
+        <sys_id>c81dc97e2f331110d8a4d5f62799b645</sys_id>
+        <sys_name>CategoryChart</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c81dc97e2f331110d8a4d5f62799b645</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

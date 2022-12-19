@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5ccac17ac0a80a6d5a31d946e2f4b046</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.LiveMsgUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Helper functions for working with live_message records&lt;/description&gt;
+        &lt;name&gt;LiveMsgUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var LiveMsgUtil = Class.create();
+
+LiveMsgUtil.prototype = {
+    initialize: function(msg){
+        this.message = msg;
+        this.isReply = !msg.reply_to.nil();
+        this.isReplyTo = !msg.in_reply_to.nil();
+        this.liveFeedApi = new SNC.LiveFeedApi();
+		this.MSG_FORMAT_TEXT = 'TEXT';
+		
+        if (this.isReply) {
+			//set base message
+            this.basePoster = this.message.reply_to.profile.getDisplayValue();
+            this.baseMsg = this.liveFeedApi.formatMessage(this.message.reply_to.message, this.MSG_FORMAT_TEXT);
+
+            if (this.isReplyTo) {
+				//this is a reply to a child message
+                this.replyToPoster = this.message.in_reply_to.profile.getDisplayValue();
+                this.replyToMsg = this.liveFeedApi.formatMessage(this.message.in_reply_to.message, this.MSG_FORMAT_TEXT);
+            }
+            else {
+				//this is a reply to the base message
+                this.replyToPoster = this.message.reply_to.profile.getDisplayValue();
+                this.replyToMsg = this.liveFeedApi.formatMessage(this.message.reply_to.message, this.MSG_FORMAT_TEXT);
+            }
+        }
+    },
+    
+	getBaseMsgWithName: function() {
+		return this.basePoster + ": " + this.baseMsg;
+	},
+
+	getReplyToMsgWithName: function() {
+		return this.replyToPoster + ": " + this.replyToMsg;
+	},
+
+	
+    getBaseMsg: function(){
+        return this.baseMsg;
+    },
+    
+    getBasePoster: function(){
+        return this.basePoster;
+    },
+    
+    getReplyToMsg: function(){
+        return this.replyToMsg;
+    },
+    
+    getReplyToPoster: function(){
+        return this.replyToPoster;
+    },
+    
+    /**
+     *
+     * @return Array of user sys_ids that are participating in this thread
+     */
+    getThreadUsers: function(){
+        if (!this.message || this.message.reply_to.nil()) 
+            return;
+        
+        var users = [];
+        var threadMsgs = new GlideRecord("live_message");
+        threadMsgs.addQuery("reply_to", this.message.reply_to).addOrCondition("sys_id", this.message.reply_to);
+        threadMsgs.query();
+        while (threadMsgs.next()) {
+            //include only users
+            if (threadMsgs.profile.type == "user")  
+                users.push(threadMsgs.profile.document.toString());
+            
+        }
+        var arrUtils = new ArrayUtil();
+        return arrUtils.unique(users);
+    },
+    
+    /**
+     * Returns an array of objects with url and text properties
+     * Usage:
+     * &lt;code&gt;
+     * var util = new LiveMsgUtils(messageGlideRecord);
+     * var links = util.getLinks(); 
+     * for (var i = 0; i &lt; links.length; i++) {
+     *    var url = links[i].url;
+     *    var text = links[i].text;
+     *    var htmlLink = '&lt;a href="' + url + '"&gt;' + text + '&lt;/a&gt;';
+     *    gs.print(htmlLink);
+     * }
+     * &lt;/code&gt;
+     */
+    getLinks: function(){
+        if (!this.message || !this.message.has_links) 
+            return;
+        
+        var links = [];
+        var linkGr = new GlideRecord("live_link");
+        linkGr.addQuery("attached_to_table", "live_message");
+        linkGr.addQuery("attached_to_id", this.message.getUniqueValue());
+        linkGr.query();
+        while (linkGr.next()) {
+            var link = {};
+            link.url = linkGr.url.toString();
+            link.text = linkGr.short_description.toString();
+            links.push(link);
+        }
+        
+        return links;
+    },
+    
+    type: "LiveMsgUtil"
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;john.roberts&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-01-06 19:26:15&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5ccac17ac0a80a6d5a31d946e2f4b046&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;LiveMsgUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Live Feed" source="com.glideapp.live_feed"&gt;b07d74c76d2220100acb70b353433057&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5ccac17ac0a80a6d5a31d946e2f4b046&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-09-05 11:00:44&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3431&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:47</sys_created_on>
+        <sys_id>a4ac45fa2f331110d8a4d5f62799b634</sys_id>
+        <sys_name>LiveMsgUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a4ac45fa2f331110d8a4d5f62799b634</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

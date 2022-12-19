@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7d2b875f2f189950d8a4d5f62799b658</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RequestAuthAWSAPIV4&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;RequestAuthAWSAPIV4&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RequestAuthAWSAPIV4 = Class.create();
+RequestAuthAWSAPIV4.prototype =  Object.extend(new RequestAuthInternal(), {
+	intialize: function () {
+		RequestAuthInternal.prototype.initalize.apply(this, arguments);
+		this.readRequestData = this.readRequestData.bind(this);
+		this.utils = new MyJSUtils();
+	},
+	
+	getPassword: function (encryptedPassword){
+		return '6wB81fJ4m4u9RMthkbubwwMcm9ZCjZdpl0cx9u8A'; // hardcoded for testing purposes
+	},
+	/* generate key by signing the secret multiple times*/
+	getSignatureKey: function (key, dateStamp, regionName, serviceName){
+		key = encodeURIComponent('AWS4' + key);
+		var signedDate = hmacHexDigest(key, 'HmacSHA256', dateStamp);
+		var signedService = hmacHexDigest(signedDate, 'HmacSHA256', serviceName);
+		var signedRegion = hmacHexDigest(signedService, 'HmacSHA256', regionName);
+		return signedRegion;
+	},
+	
+	generateAuth: function(authAPI){
+		gs.log('-------------------Custom Signing--------------------');
+		this.readRequestData(authAPI);
+		
+		//sign the data - JWT provider is hardcoded but can create a new table for GitHub JWT credentials that extends discovery_credentials and store it there
+		var dt = new GlideDateTime().getNumericValue()/1000; 
+		var jwtAPI = new sn_auth.GlideJWTAPI();
+		var providerID = "135d0c742f360110d8a4d5f62799b627";
+		var header = {"alg" : "RS256", "typ": "JWT"};
+		var jwt = jwtAPI.generateJWT(providerID, JSON.stringify(header), JSON.stringify({}));
+		gs.log("------------------------ Generated Token -----------------------------");
+		
+		/* signature and canonical request headers - https://docs.aws.amazon.com/translate/latest/dg/API_Reference.html */
+		
+		var method = 'POST';
+		var service = 'translate';
+		var region = 'ca-central-1';
+		var host = service + '.' + region + '.amazonaws.com';
+		var endpoint = 'https://' + host + '/';
+		
+		var accessKeyId = 'AKIASDAIZ2VJD7D6YBF6';
+		var secret = '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';
+		
+		var content_type = 'application/x-amz-json-1.1';
+        /*
+		
+		Amazon Translate requires an x-amz-target header that has this format:
+		AWSShineFrontendService_20170701.&lt;operationName&gt;.
+		
+		*/
+		var amz_target = 'AWSShineFrontendService_20170701.TranslateText';
+		
+		var gDateTime = GlideDateTime().toString();
+		var gDate = GlideDate().toString();
+		
+		var uri = '/'; // add any relative path here
+		
+		var canonical_headers = 'content-type:' + content_type + '\n' + 'host:' + host + '\n' + 'x-amz-date:' + gDateTime + '\n' + 'x-amz-target:' + amz_target + '\n';
+		
+		var signed_headers = canonical_headers;
+		
+		var payload_hash = new GlideDigest().getSHA256Hex(JSON.stringify(this.payload));
+		
+		var canonical_request = method + '\n' + uri + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash;
+
+
+		// create a string to sign
+		
+		var algorithm = 'AWS4-HMAC-SHA256';
+		var credential_scope = date_stamp + '/' + region + '/' + service + '/' + 'aws4_request';
+		var string_to_sign = algorithm + '\n' +  gDateTime + '\n' +  credential_scope + '\n' +  new GlideDigest().getSHA256Hex(canonical_request);
+		
+		var signingKey = getSignatureKey(secret, gDate, region, service);
+		var signature = hmacHexDigest(signingKey, 'HmacSHA256', encodeURIComponent(string_to_sign));
+		var authorization_header = algorithm + ' ' + 'Credential=' + accessKeyId + '/' + credential_scope + ', ' +  'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature;
+		
+		
+		
+		//return HttpRequestAuthedData object.
+		var httpRequestSignedData = new sn_auth.HttpRequestAuthedData();
+		httpRequestSignedData.addHeader("authorization", authorization_header);
+		httpRequestSignedData.addHeader('X-Amz-Date', gDateTime);
+		httpRequestSignedData.addHeader('X-Amz-Target', amz_target);
+		httpRequestSignedData.addHeader('Content-Type', content_type);
+		
+        httpRequestSignedData.setStatus("SUCCESS"); //avilable status values :SUCCESS, FAIL, SKIPPED;
+        httpRequestSignedData.setDirective("HEADER"); //use QUERY if signed data needs to be sent in query parameters
+        return httpRequestSignedData;
+	},
+	readRequestData: function(authAPI){
+		
+		var requestData = authAPI.getHttpRequestData();
+        this.endpoint = requestData.getEndpoint();
+        this.method = requestData.getHttpMethod().toUpperCase();
+		
+	
+        this.queryParamMap = requestData.getQueryParamMap();
+		
+		this.headerMap = requestData.getHeaderMap();
+		
+        this.payload = requestData.getContent();
+
+        // get credential fields if needed, these attributes are different based on credential type
+        var credential = authAPI.getAuthCredential(); 
+		
+		this.secretAccessKey = getPassword(credential.password);
+		// if we create custom table we can get the value of jwt provider from here
+      
+	},
+    type: 'RequestAuthAWSAPIV4'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-06-30 19:17:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7d2b875f2f189950d8a4d5f62799b658&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RequestAuthAWSAPIV4&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7d2b875f2f189950d8a4d5f62799b658&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-30 22:19:05&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4874&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:48</sys_created_on>
+        <sys_id>efdcc93e2f331110d8a4d5f62799b634</sys_id>
+        <sys_name>RequestAuthAWSAPIV4</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_efdcc93e2f331110d8a4d5f62799b634</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

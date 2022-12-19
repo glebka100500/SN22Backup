@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>462be7f1cb200200d71cb9c0c24c9cf0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeRequestStateModel_emergency&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This script include represents the state model for emergency changes. The script include ChangeRequestStateHandler controls the transitioning between states using this model to determine what transitions are allowed.&amp;#13;
+&amp;#13;
+The script include 'ChangeRequestStateModelSNC_emergency', which this one extends, contains the implementation for all the 'moving' and 'canMove' functions.&amp;#13;
+&amp;#13;
+Model structure using the first property "draft":&amp;#13;
+    draft - current state the change request is in&amp;#13;
+    nextState - the state the change request can move to without specifying a state&amp;#13;
+    authorize - a state the change request can move to when in draft if this.toAuthorize_canMove() returns true&amp;#13;
+                        - when the change request moves to authorize, this.toAuthorize_moving() is called&amp;#13;
+    scheduled - works in the exact same way that authorize does&amp;#13;
+    canceled - works in the exact same way that authorize does&amp;#13;
+&amp;#13;
+ChangeRequestStateHandler keeps a mapping of these friendly state names with their respective numeric value:&amp;#13;
+STATE_NAMES: {&amp;#13;
+        "-5": "draft",&amp;#13;
+        "-4": "assess",&amp;#13;
+        "-3": "authorize",&amp;#13;
+        "-2": "scheduled",&amp;#13;
+        "-1": "implement",&amp;#13;
+        "0": "review",&amp;#13;
+        "3": "closed",&amp;#13;
+        "4": "canceled"&amp;#13;
+}&lt;/description&gt;
+        &lt;name&gt;ChangeRequestStateModel_emergency&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeRequestStateModel_emergency = Class.create();
+ChangeRequestStateModel_emergency.prototype = Object.extendsObject(ChangeRequestStateModelSNC_emergency, {
+    draft: {
+        nextState: [ "authorize" ],
+
+        authorize: {
+            moving: function() {
+                return this.toAuthorize_moving();
+            },
+
+            canMove: function() {
+                return this.toAuthorize_canMove();
+            }
+        },
+
+        scheduled: {
+            moving: function() {
+                return this.toScheduled_moving();
+            },
+
+            canMove: function() {
+                return this.toScheduled_canMove();
+            }
+        },
+
+        canceled: {
+            moving: function() {
+                return this.toCanceled_moving();
+            },
+
+            canMove: function() {
+                return this.toCanceled_canMove();
+            }
+        }
+    },
+
+    authorize: {
+        nextState: [ "scheduled" ],
+
+        draft: {
+            moving: function() {
+                return this.toDraft_moving();
+            },
+
+            canMove: function() {
+                return this.toDraft_canMove();
+            }
+        },
+
+        scheduled: {
+            moving: function() {
+                return this.toScheduled_moving();
+            },
+
+            canMove: function() {
+                return this.toScheduled_canMove();
+            }
+        },
+
+		review: {
+            moving: function() {
+                return this.toReview_moving();
+            },
+
+            canMove: function() {
+                return this.toReview_canMove();
+            }
+        },
+
+        canceled: {
+            moving: function() {
+                return this.toCanceled_moving();
+            },
+
+            canMove: function() {
+                return this.toCanceled_canMove();
+            }
+        }
+    },
+
+    scheduled: {
+        nextState: [ "implement" ],
+
+        implement: {
+            moving: function() {
+                return this.toImplement_moving();
+            },
+            canMove: function() {
+                return this.toImplement_canMove();
+            }
+        },
+
+        canceled: {
+            moving: function() {
+                return this.toCanceled_moving();
+            },
+
+            canMove: function() {
+                return this.toCanceled_canMove();
+            }
+        }
+    },
+
+    implement: {
+        nextState: [ "review" ],
+
+        review: {
+            moving: function() {
+                return this.toReview_moving();
+            },
+
+            canMove: function() {
+                return this.toReview_canMove();
+            }
+        },
+
+        canceled: {
+            moving: function() {
+                return this.toCanceled_moving();
+            },
+
+            canMove: function() {
+                return this.toCanceled_canMove();
+            }
+        }
+    },
+
+    review: {
+        nextState: [ "closed" ],
+
+        closed: {
+            moving: function() {
+                return this.toClosed_moving();
+            },
+
+            canMove: function() {
+                return this.toClosed_canMove();
+            }
+        }
+    },
+
+    closed: {},
+
+    canceled: {},
+
+    type: "ChangeRequestStateModel_emergency"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-10 17:38:10&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;462be7f1cb200200d71cb9c0c24c9cf0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeRequestStateModel_emergency&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - State Model" source="com.snc.change_management.state_model"&gt;42a301876da620100acb70b353433090&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_462be7f1cb200200d71cb9c0c24c9cf0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-08 19:14:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3249&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:12</sys_created_on>
+        <sys_id>4c8c0dba2f331110d8a4d5f62799b63b</sys_id>
+        <sys_name>ChangeRequestStateModel_emergency</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4c8c0dba2f331110d8a4d5f62799b63b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3e3a3a11c333210016194ffe5bba8f70</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OAuthUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;//* Dont edit this script include. Best practise: Extend this script include and override the functions like shown in sample code. &amp;#13;
+// Use the Script include to add or update headers, query parameters, endpoint URLs in oauth flow.&amp;#13;
+//* sample script below&amp;#13;
+//*&amp;#13;
+	var OAuthCustomUtil = Class.create();&amp;#13;
+	OAuthCustomUtil.prototype = Object.extendsObject(OAuthUtil, {&amp;#13;
+&amp;#13;
+	preprocessAuthCode: function(requestParamMap) {&amp;#13;
+		this.oauthContext.setAuthorizationEndpoint("https://accounts.google.com/o/oauth2/v2/auth");&amp;#13;
+		this.oauthContext.addHeader("Content-Type","application/json");&amp;#13;
+		var profGr = this.oauthContext.getOAuthProfile();&amp;#13;
+		gs.info(profGr.getValue('name'));&amp;#13;
+	},&amp;#13;
+	&amp;#13;
+	preprocessAccessToken: function(requestParamMap) {&amp;#13;
+		this.oauthContext.addHeader("Content-Type","application/json");&amp;#13;
+		this.oauthContext.addQueryParameter("name","jackson");&amp;#13;
+		gs.info(this.oauthContext.getQueryParameter("name"));&amp;#13;
+		gs.info(this.oauthContext.getHeader("Content-Type"));&amp;#13;
+		this.oauthContext.setTokenEndpoint("https://oauth2.googleapis.com/token");&amp;#13;
+		var profGr = this.oauthContext.getOAuthProfile();&amp;#13;
+		gs.info(profGr.getValue('grant_type'));&amp;#13;
+	},&amp;#13;
+	&amp;#13;
+	type: 'OAuthCustomUtil'&amp;#13;
+}); &amp;#13;
+ &lt;/description&gt;
+        &lt;name&gt;OAuthUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[//* Dont edit this script include. Best practise: Extend this script include and override the functions. 
+var OAuthUtil = Class.create();
+OAuthUtil.prototype = {
+	initialize: function(oauthContext) {
+		this.oauthContext = oauthContext;
+	},
+	
+	interceptRequestParameters : function(requestParamMap) {
+		// Add/Modify request parameters if needed
+		this.preprocessAccessToken(requestParamMap);
+	},
+	
+	parseTokenResponse: function(accessTokenResponse) {
+		gs.log("accessTokenResponse.getContentType()===&gt;" +accessTokenResponse.getContentType());
+gs.log("accessTokenResponse.getBody()====&gt;" +accessTokenResponse.getBody());
+		this.postprocessAccessToken(accessTokenResponse);
+	},
+	
+	preprocessAuthCode: function(requestParamMap) {
+	},
+	
+	preprocessAccessToken: function(requestParamMap) {
+	},
+	
+	postprocessAccessToken: function(accessTokenResponse) {
+		var contentType = accessTokenResponse.getContentType();
+		if (contentType &amp;&amp; contentType.indexOf('application/json') != -1) {
+			var tokenResponse = (new global.JSON()).decode(accessTokenResponse.getBody());
+			gs.log(tokenResponse);
+			var paramMap = accessTokenResponse.getparameters();
+			for (param in tokenResponse)
+				paramMap.put(param, tokenResponse[param].toString());
+		}
+	},
+	
+	type: 'OAuthUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-10-15 21:49:32&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3e3a3a11c333210016194ffe5bba8f70&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;46&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OAuthUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="OAuth 2.0" source="com.snc.platform.security.oauth"&gt;3c4dbc476d2220100acb70b353433044&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3e3a3a11c333210016194ffe5bba8f70&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-08 20:30:36&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1296&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:04</sys_created_on>
+        <sys_id>827c09ba2f331110d8a4d5f62799b6f4</sys_id>
+        <sys_name>OAuthUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_827c09ba2f331110d8a4d5f62799b6f4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

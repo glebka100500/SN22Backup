@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8625bd775bd2030036c32c1cf0f91af4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AgileBoardMetaDataCommonUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AgileBoardMetaDataCommonUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AgileBoardMetaDataCommonUtil = Class.create();
+
+AgileBoardMetaDataCommonUtil.basePreferencePrefix = 'com.snc.agile_board.';
+
+AgileBoardMetaDataCommonUtil.maxSprintLimit = 10;
+
+AgileBoardMetaDataCommonUtil.getMaxSprintLimit = function() {
+
+	return this.maxSprintLimit;
+};
+
+AgileBoardMetaDataCommonUtil.getTabTitles = function() {
+
+	return new JSON().encode({
+		BACKLOG_PLANNING: gs.getMessage('Backlog Planning'),
+		SPRINT_PLANNING: gs.getMessage('Sprint Planning'),
+		SPRINT_TRACKING: gs.getMessage('Sprint Tracking'),
+		PROGRAM_BACKLOG: gs.getMessage('Scrum Program Backlog'),
+		PROGRAM_BOARD: gs.getMessage('Scrum Program Board')
+	});
+};
+
+AgileBoardMetaDataCommonUtil.isMultiTaskActive = function() {
+
+	return pm.isActive('com.snc.sdlc.agile.multi_task');
+};
+
+AgileBoardMetaDataCommonUtil.isScrumProgramActive = function() {
+
+	return pm.isActive('com.snc.sdlc.scrum_program');
+};
+
+AgileBoardMetaDataCommonUtil.isTestMgmtActive = function() {
+
+	return pm.isActive('com.snc.test_management.2.0');
+};
+
+AgileBoardMetaDataCommonUtil.getPreference = function(pKey) {
+
+	return gs.getPreference(this.basePreferencePrefix + '' + pKey);
+};
+
+AgileBoardMetaDataCommonUtil.setDefaultPreference = function(pKey) {
+
+	var result = this.getPreference(pKey);
+
+	if(result == null) {
+		gs.getUser().savePreference(this.basePreferencePrefix + pKey, true);
+		return true;
+	} else {
+		return this.getBooleanPreference(pKey);
+	}
+};
+
+AgileBoardMetaDataCommonUtil.getBooleanPreference = function(pKey, pVal) {
+
+	return gs.getBooleanPreference(this.basePreferencePrefix + '' + pKey, pVal);
+};
+
+AgileBoardMetaDataCommonUtil.getBacklogListConfig = function() {
+
+	return {
+		'epic.short_description': this.getBooleanPreference('backlog.config.epic.short_description', true),
+		'product.name': this.getBooleanPreference('backlog.config.product.name', false),
+		'assignment_group.name': this.getBooleanPreference('backlog.config.assignment_group.name', false),
+		'release.short_description': this.getBooleanPreference('backlog.config.release.short_description', false)
+	};
+};
+
+AgileBoardMetaDataCommonUtil.getSprintPlaningListConfig = function() {
+
+	return {
+		'epic.short_description': this.getBooleanPreference('sprint_planning.config.epic.short_description', true),
+		'product.name': this.getBooleanPreference('sprint_planning.config.product.name', false),
+		'assignment_group.name': false,
+		'release.short_description': this.getBooleanPreference('sprint_planning.config.release.short_description', false)
+	};
+};
+
+AgileBoardMetaDataCommonUtil.getBacklogQueryForGroup = function(groupId) {
+	var query = '^sys_class_name=rm_story^active=true^sprintISEMPTY';
+	if(this.isMultiTaskActive())
+		query += '^original_task.active=true';
+	if(JSUtil.notNil(groupId))
+		query += '^assignment_group=' + groupId;
+	return query;
+};
+
+AgileBoardMetaDataCommonUtil.getSprintChoices = function() {
+
+	return {
+	    DRAFT: '-6',
+	    PLANNING: '1',
+	    CURRENT: '2',
+	    COMPLETE: '3',
+	    CANCELLED: '4'
+	};
+};
+
+AgileBoardMetaDataCommonUtil.canStartSprint = function(sprint){
+
+	var sprintChoices = this.getSprintChoices();
+	var sprintState = sprint.getValue('state');
+	if (sprintState === sprintChoices.DRAFT || sprintState === sprintChoices.PLANNING) {
+		var count = new GlideAggregate('rm_sprint');
+		count.addQuery('sys_class_name', 'rm_sprint');
+		count.addQuery('state', sprintChoices.CURRENT);
+		count.addQuery('assignment_group', sprint.assignment_group);
+		count.addAggregate('COUNT');
+		count.query();
+		var currentSprints = 0;
+		if (count.next())
+			currentSprints = parseInt(count.getAggregate('COUNT'));
+
+		return (currentSprints === 0);
+	}
+	return false;
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-11-14 22:46:50&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8625bd775bd2030036c32c1cf0f91af4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AgileBoardMetaDataCommonUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8625bd775bd2030036c32c1cf0f91af4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-06 18:09:47&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3631&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:08</sys_created_on>
+        <sys_id>18fc817e2f331110d8a4d5f62799b6a1</sys_id>
+        <sys_name>AgileBoardMetaDataCommonUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_18fc817e2f331110d8a4d5f62799b6a1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

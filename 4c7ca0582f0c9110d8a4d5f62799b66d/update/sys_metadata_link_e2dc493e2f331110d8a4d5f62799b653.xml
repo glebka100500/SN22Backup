@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>79c22376db100300081f92c8f0b8f5a5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InstanceCloneValidatorAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Instance Clone Validator for validating some Preflight Rules Check for Clone&lt;/description&gt;
+        &lt;name&gt;InstanceCloneValidatorAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InstanceCloneValidatorAjax = Class.create();
+InstanceCloneValidatorAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	/**
+	* @param : sysparm_clone_sys_id -  SysID - String
+	* @return : String
+	**/
+	executeValidationRules : function() {
+		var response = {};
+		var errMsg = SystemCloneUtil.validateClone();
+		if(!gs.nil(errMsg)) {
+			response.type = 'error';
+			response.message = errMsg;
+		} else {
+			var cloneHistorySysId = this.getParameter('sysparm_clone_sys_id');
+			if (gs.nil(cloneHistorySysId)) 
+				return ;
+
+			var cloneGr = new GlideRecord("clone_instance");
+			if (!cloneGr.get(cloneHistorySysId)) 
+				return ;
+			
+			var validationRules = cloneGr.getValue('clone_request_validation_rules');
+			if (gs.nil(validationRules)) 
+				return ;
+
+			validationRules = new JSON().decode(validationRules);
+			if (!gs.nil(validationRules.preflightCheck)) {
+				var preflightChecksResponse = this.executePreflightChecks(validationRules.preflightCheck);
+				if (!gs.nil(preflightChecksResponse)) 
+					response = preflightChecksResponse;
+			}
+
+			if (!gs.nil(validationRules.preflightErrors)) {
+				var preflightErrors = validationRules.preflightErrors;
+				var preflightErrorMsg = '';
+				for(var key in preflightErrors)
+					if(preflightErrors.hasOwnProperty(key))
+						preflightErrorMsg = preflightErrorMsg.concat(preflightErrors[key] + ";");
+
+				if(!gs.nil(preflightErrorMsg)) {
+					response.type = 'error';
+					response.message = preflightErrorMsg;
+				}
+			}
+		}
+
+		var encodedResponseString = new JSON().encode(response);
+		return encodedResponseString;
+	},
+
+	/**
+	* @arg : preflightCheckObj -  JSON Object
+	* @return : response - JSON Object
+	**/
+
+	executePreflightChecks : function(preflightCheckObj) {
+		var response = {};
+		if (gs.nil(preflightCheckObj.exclusionTablesBlacklistRules))
+			return;
+
+		var exclusionTablesBlacklistRules = preflightCheckObj.exclusionTablesBlacklistRules;
+		if (gs.nil(exclusionTablesBlacklistRules.tables))
+			return;
+
+		var excludeTablesBlackList = exclusionTablesBlacklistRules.tables;
+		var excludeListGr = new GlideRecord("clone_data_exclude");
+		excludeListGr.addQuery('name', 'IN', excludeTablesBlackList);
+		excludeListGr.query();
+		if (excludeListGr.next()) {
+			response.type = exclusionTablesBlacklistRules.type;
+			response.message = exclusionTablesBlacklistRules.message;
+		}
+		return response; 
+
+	},
+
+	/**
+	* @arg : sysparm_clone_sys_id -  SysID - String
+	* @return : response JSON object
+	**/
+	executeLargePreserverValidation: function() {
+		var cloneHistorySysId = this.getParameter('sysparm_clone_sys_id');
+		if (gs.nil(cloneHistorySysId))
+			return;
+		var response = {};
+		var cloneGr = new GlideRecord("clone_instance");
+		if (!cloneGr.get(cloneHistorySysId))
+			return;
+		var largeTablesList = "";
+		var excessCloneTime = 0;
+		var reasonsForLargePreserver = [];
+		var largeTablesInPreserver = this.checkForLargeTablesInPreserver(cloneGr);
+		reasonsForLargePreserver = this.getReasonsForLargePreserver(cloneGr);
+		if (!gs.nil(largeTablesInPreserver)) {
+			for (var table in largeTablesInPreserver) {
+				largeTablesList += table;
+				largeTablesList += ", ";
+				excessCloneTime += largeTablesInPreserver[table];
+			}
+			largeTablesList = largeTablesList.substring(0, largeTablesList.length - 2);
+		}
+		response.reasonsForLargePreserver = reasonsForLargePreserver;
+		response.largeTablesList = largeTablesList;
+		if(excessCloneTime == 0){
+			response.warningMessage = gs.getMessage("clone.large.preserver.warning.tables",[largeTablesList]);
+		}
+		else{
+			var warningMessage = gs.getMessage("clone.large.preserver.warning.tables",[largeTablesList]);
+			response.warningMessage = gs.getMessage("{0} by {1} minutes.",[warningMessage,excessCloneTime]);
+		}
+		
+		var encodedResponseString = new JSON().encode(response);
+		return encodedResponseString;
+		
+	},
+
+	getReasonsForLargePreserver: function(cloneGr) {
+		var cloudDetails = cloneGr.getValue("cloud_details");
+		cloudDetails = new JSON().decode(cloudDetails);
+		var reasonsForLargePreserver = cloudDetails.reasonsForLargePreserver;
+		return reasonsForLargePreserver;
+	},
+	
+	checkForLargeTablesInPreserver: function(cloneGr) {
+		var tableName,preserverGr,useCloneProfile;
+		var largeTablesInPreserver = {};
+		var cloudDetails = cloneGr.getValue("cloud_details");
+		cloudDetails = new JSON().decode(cloudDetails);
+		var largeTablesList = cloudDetails.largeTablesList;
+		var cloneProfile = cloneGr.getValue("profile");
+		if(gs.nil(cloneProfile))
+			useCloneProfile = false;
+		else
+			useCloneProfile = true;
+		if(useCloneProfile) {
+			preserverGr = new GlideRecord("clone_profile_preservers");
+			preserverGr.addQuery('profile', cloneProfile);
+			preserverGr.query();
+			while (preserverGr.next()) {
+				tableName = preserverGr.preserver.table;
+				if(largeTablesList.hasOwnProperty(tableName) &amp;&amp; !(largeTablesInPreserver.hasOwnProperty(tableName)))
+					largeTablesInPreserver[tableName] = largeTablesList[tableName];
+			}
+		} else {
+			preserverGr = new GlideRecord("clone_data_preserver");
+			preserverGr.query();
+			while(preserverGr.next()) {
+				tableName = preserverGr.getValue("table");
+				if(largeTablesList.hasOwnProperty(tableName) &amp;&amp; !(largeTablesInPreserver.hasOwnProperty(tableName)))
+					largeTablesInPreserver[tableName] = largeTablesList[tableName];
+			}
+		}
+		return largeTablesInPreserver;
+	},
+    type: 'InstanceCloneValidatorAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-08-04 18:25:37&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;79c22376db100300081f92c8f0b8f5a5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;26&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InstanceCloneValidatorAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="High Availability Cloning" source="com.snc.ha"&gt;e9adf40b6d2220100acb70b35343303a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_79c22376db100300081f92c8f0b8f5a5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-09-13 19:20:16&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5386&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:44</sys_created_on>
+        <sys_id>e2dc493e2f331110d8a4d5f62799b653</sys_id>
+        <sys_name>InstanceCloneValidatorAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e2dc493e2f331110d8a4d5f62799b653</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

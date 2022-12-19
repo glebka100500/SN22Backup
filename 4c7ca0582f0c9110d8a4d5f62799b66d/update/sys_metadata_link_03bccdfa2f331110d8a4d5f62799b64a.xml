@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6a2b73370a0a0b240037050e42a58f5b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.XMLDocument&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;wrap GlideXMLDocument so that it can be used more conveniently in Javascript&amp;#13;
+http://docs.servicenow.com/?context=XMLDocument_Script_Object &lt;/description&gt;
+        &lt;name&gt;XMLDocument&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var XMLDocument = Class.create();
+
+XMLDocument.prototype = {
+  initialize: function(xml, namespaceAware) {
+    if (typeof xml == 'string' || (typeof xml == 'object' &amp;&amp; xml &amp;&amp; xml.trimLeft)) {
+        this.xmlDoc = new GlideXMLDocument();
+        if (namespaceAware) {
+          this.xmlDoc.setNamespaceAware(true);
+        }
+
+        this.xmlDoc.parse(xml);
+    } else {
+        this.xmlDoc = new GlideXMLDocument(); // it is a new XML document
+    }
+
+     this.setCurrent(this.xmlDoc.getDocumentElement());
+  },
+
+  createElement : function(name, value) {
+    if (value)
+      return this.xmlDoc.createElement(name, value);
+
+    return this.xmlDoc.createElement(name);
+  },
+
+  createCDATAElement : function(name, value) {
+ 
+      return this.xmlDoc.createCDATAElement(name, value);
+  },
+	
+  setCurrent : function(el) {
+    this.xmlDoc.setCurrent(el);
+  },
+
+  setAttribute : function(name, value) {
+    this.xmlDoc.setAttribute(name, value);
+  },
+
+  getChildTextByTagName: function(parent, tagName) {
+    return this.getDocument().getChildTextByTagName(parent, tagName);
+  },
+
+  getElementByTagName: function(tagName) {
+    return this.getDocument().getElementByTagName(tagName); // returns org.w3c.dom.Element
+  },
+
+  getElementValueByTagName: function(tagName) {
+    return this.getDocument().getElementValueByTagName(tagName);
+  },
+
+  getDocument: function() {
+    return this.xmlDoc;
+  },
+
+  getDocumentElement: function() {
+    return this.getDocument().getDocumentElement(); // returns org.w3c.dom.Element
+  },
+
+  getNodeText: function(xpath) {
+    return this.xmlDoc.selectSingleNodeText(xpath);
+  },
+
+  getNodeInt: function(xpath) {
+    var str = this.getDocument().selectSingleNodeText(xpath);
+    return Packages.java.lang.Integer.parseInt(str);
+  },
+
+  getNode: function(xpath) {
+    return this.getDocument().selectSingleNode(xpath); // returns org.w3c.dom.Node
+  },
+
+  getNodeName: function(xpath) {
+    return this.getDocument().selectSingleNode(xpath).getNodeName();
+  },
+
+  getNodeType: function(xpath) {
+    return this.getDocument().selectSingleNode(xpath).getNodeType();
+  },
+
+  getNodes: function(xpath) {
+    return this.getDocument().selectNodes(xpath); // returns org.w3c.dom.NodeList
+  },
+
+  getAttribute: function(xpath, attributeName) {
+    var node = this.getNode(xpath);
+    if (node == null) {
+      return null;
+    }
+
+    var atts = node.getAttributes();
+    for(i = 0; i &lt; atts.getLength(); i++) {
+      var att = atts.item(i);
+      if (att.getNodeName() == attributeName) {
+        return att.getNodeValue();
+      }
+    }
+
+    return null;
+  },
+
+  isValid: function() {
+    return this.getDocument().isValid();
+  },
+
+  load: function(f) {
+    this.getDocument().load(f);
+  },
+
+  toIndentedString: function() {
+    return this.getDocument().toIndentedString();
+  },
+
+  toString: function() {
+    return this.getDocument().toString();
+  }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-11-05 01:03:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6a2b73370a0a0b240037050e42a58f5b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;44&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;XMLDocument&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6a2b73370a0a0b240037050e42a58f5b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-03-04 01:52:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2872&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:14</sys_created_on>
+        <sys_id>03bccdfa2f331110d8a4d5f62799b64a</sys_id>
+        <sys_name>XMLDocument</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_03bccdfa2f331110d8a4d5f62799b64a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

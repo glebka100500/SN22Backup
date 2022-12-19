@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>985624c8230423001488dc1756bf65f6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeConflictAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ChangeConflictAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeConflictAPI = Class.create();
+ChangeConflictAPI.prototype = {
+
+	CHANGE_CONFLICT_ROLE: "change.conflict.role",
+
+	initialize: function(gr) {
+		this._log = new GSLog(ChangeCheckConflicts.CHANGE_CONFLICT_LOG, this.type);
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.logDebug("[initialize]");
+
+		this._gr = gr;
+	},
+
+	/**
+	 * Cancels and running detection progress jobs and starts a new one
+	 */
+	startConflictDetection: function() {
+		if (!this._gr)
+			return null;
+
+		//Check that the user can Check Conflicts
+		if (!this._canCheckConflict())
+			return gs.getMessage("Insufficient access to start conflict detection");
+
+		//check if there is an existing conflict and cancel the tracker.
+		this.cancelConflictDetection();
+
+		//Create tracker record for conflict detection
+		var worker = new GlideScriptedHierarchicalWorker();
+		worker.setProgressName(ChangeCheckConflicts.TRACKER_NAME);
+		worker.setScriptIncludeName("ChangeConflictWorker");
+		worker.setScriptIncludeMethod("start");
+		worker.putMethodArg("sysId", this._gr.getUniqueValue());
+		worker.setSourceTable(this._gr.getRecordClassName());
+		worker.setSource(this._gr.getUniqueValue());
+		worker.setBackground(true);
+		worker.start();
+
+		return worker.getProgressID();
+	},
+
+	/**
+	 * Cancels any running detection progress jobs
+	 */
+	cancelConflictDetection: function() {
+		if (!this._gr)
+			return false;
+
+		//Check that the user can Check Conflicts
+		if (!this._canCheckConflict())
+			return false;
+
+		// Find the id of any existing trackers running for this change
+		var trackerGr = new GlideRecordSecure("sys_execution_tracker");
+		trackerGr.addQuery("source", this._gr.getUniqueValue());
+		trackerGr.addQuery("name", ChangeCheckConflicts.TRACKER_NAME);
+		trackerGr.addQuery("state", "IN", "0,1");
+		trackerGr.orderByDesc('sys_created_on');
+		trackerGr.query();
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.logDebug("[cancelConflictDetection] " + trackerGr.getEncodedQuery());
+
+		if (trackerGr.next()) {
+			var execTracker = new SNC.GlideExecutionTracker(trackerGr.getUniqueValue());
+			execTracker.cancel(gs.getMessage("Conflict detection has been cancelled"));
+			return true;
+		}
+
+		return false;
+	},
+
+	/**
+	 * Retrieves number of conflict records for this change
+	 */
+	getConflictCount: function() {
+		if (!this._gr || !this._gr.canRead())
+			return 0;
+
+		var conflictCount = new GlideAggregate('conflict');
+		conflictCount.addQuery('change', this._gr.getUniqueValue());
+		conflictCount.addAggregate('COUNT');
+		conflictCount.query();
+
+		var conflict = 0;
+		if (conflictCount.next())
+			conflict = conflictCount.getAggregate('COUNT');
+
+		return conflict;
+	},
+
+	/**
+	 * Retrieves conflict records for this change
+	 */
+	getConflicts: function() {
+		if (!this._gr || !this._gr.canRead())
+			return null;
+
+		var conflictGR = new GlideRecordSecure('conflict');
+		conflictGR.addQuery('change', this._gr.getUniqueValue());
+		conflictGR.query();
+
+		return conflictGR;
+	},
+
+	/**
+	 * Retrieves a progress record for this change
+	 */
+	getProgressRecord: function() {
+		if (!this._gr || !this._gr.canRead())
+			return null;
+
+		var trackerGr = new GlideRecordSecure("sys_execution_tracker");
+		trackerGr.addQuery("source", this._gr.getUniqueValue());
+		trackerGr.addQuery("name", ChangeCheckConflicts.TRACKER_NAME);
+		trackerGr.orderByDesc("sys_created_on");
+		trackerGr.query();
+
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.logDebug("[getProgressRecord] " + trackerGr.getEncodedQuery());
+
+		if (trackerGr.next())
+			return trackerGr;
+
+		return;
+	},
+
+	_canCheckConflict: function() {
+		return gs.hasRole(gs.getProperty(this.CHANGE_CONFLICT_ROLE));
+	},
+
+	type: 'ChangeConflictAPI'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-15 21:28:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;985624c8230423001488dc1756bf65f6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;21&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeConflictAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Collision Detector" source="com.snc.change.collision"&gt;479385476da620100acb70b3534330f0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_985624c8230423001488dc1756bf65f6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-07-09 11:49:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3661&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:30:20</sys_created_on>
+        <sys_id>713d05be2f331110d8a4d5f62799b6d7</sys_id>
+        <sys_name>ChangeConflictAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_713d05be2f331110d8a4d5f62799b6d7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

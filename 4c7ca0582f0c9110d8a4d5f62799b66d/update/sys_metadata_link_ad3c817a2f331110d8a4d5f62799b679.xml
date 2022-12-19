@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0c3ae46077502300f03e270bba106114</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.VaRecordCardOutput&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;VaRecordCardOutput&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var VaRecordCardOutput = Class.create();
+var FIELDS_LIMIT = 250;
+
+VaRecordCardOutput.prototype = {
+	
+	initialize: function(columnNameLabels) {
+		this.columnNameLabels = columnNameLabels;
+	},
+	
+	build: function(refVar, tableName) {
+		return this._buildCardData(refVar, tableName);
+	},
+	
+	_buildCardData: function(refVar, tableName) {
+		var jsonStr = "{}";
+		var sysId = refVar.sys_id.toString();
+
+		if (sysId) {
+			if (!refVar.isValidRecord()) {
+				refVar = new GlideRecordSecure(tableName);
+				refVar.get(sysId);
+			}
+			var display_name = refVar.getClassDisplayValue();
+			var display_id = refVar.getDisplayValue();
+			jsonStr = this._generateJson(tableName, display_name, display_id, refVar, sysId);
+		} else {
+			return gs.getMessage("Can't find a valid record");
+		}
+		
+		var outMsg = new sn_cs.SinglePartOutMsg();
+		outMsg.setCardPart('Card', jsonStr);
+		return outMsg;
+	},
+	
+	_generateJson: function(tableName, display_name, display_id, refVar, sysId) {
+		var jsonObj = {};
+		jsonObj['table_name'] = tableName;
+		jsonObj['title'] = display_name;
+		jsonObj['subtitle'] = display_id;
+		jsonObj['sys_id'] = "" + sysId;
+		var fields = [];
+		for (var key in this.columnNameLabels) {
+			var fieldEntry = {};
+			var label = key;
+			var rec = refVar.getElement(label);
+			//column could be null if user does not have proper permissions, so skip the column if that is the case
+			if (rec == null)
+				continue;
+			var value = rec.getED().getLabel();
+
+			if (refVar[label].getDisplayValue() != '') {
+				var displayValue = gs.getMessage(refVar[label].getDisplayValue());
+
+				if (displayValue.length &gt; FIELDS_LIMIT) {
+					displayValue = displayValue.substring(0, FIELDS_LIMIT);
+					displayValue = displayValue + '...';
+				}
+				fieldEntry['fieldLabel'] = value;
+				fieldEntry['fieldValue'] = displayValue;
+				fields.push(fieldEntry);
+			}
+		}
+		jsonObj['fields'] = fields;
+		return JSON.stringify(jsonObj);
+	},
+
+	type: 'VaRecordCardOutput'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-29 21:13:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;0c3ae46077502300f03e270bba106114&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;132&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;VaRecordCardOutput&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server" source="com.glide.cs"&gt;f9f62e472f000110d8a4d5f62799b60c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_0c3ae46077502300f03e270bba106114&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-11-12 03:34:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1945&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:57</sys_created_on>
+        <sys_id>ad3c817a2f331110d8a4d5f62799b679</sys_id>
+        <sys_name>VaRecordCardOutput</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ad3c817a2f331110d8a4d5f62799b679</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

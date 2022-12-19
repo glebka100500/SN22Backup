@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6315d145c32113009cbbdccdf3d3ae8a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChatbotAttachmentSecurity&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ChatbotAttachmentSecurity&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChatbotAttachmentSecurity = Class.create();
+ChatbotAttachmentSecurity.prototype = {
+	initialize: function() {
+	},
+
+	canRead: function(sysAttachment) {
+		if (sysAttachment.table_name.nil() || (sysAttachment.table_name.indexOf("sys_cs_conversation") &lt;= -1 &amp;&amp; sysAttachment.table_name.indexOf("sys_cs_conversation_task") &lt;= -1)) {
+			return false;
+		}
+				
+		var vaConversationId = sysAttachment.table_sys_id;
+		
+		// Get VA conversation if table_name is "sys_cs_conversation_task"
+		if(sysAttachment.table_name.indexOf("sys_cs_conversation_task") &gt; -1) {
+			vaConversationId = this.getConversationFromTask(sysAttachment.table_sys_id);
+		}		
+				
+		// Check if handoff record exists for this VA conversationId
+		var handoffRecord = new GlideRecord("sys_cs_connect_handoff");
+		handoffRecord.addQuery("cs_conversation", vaConversationId);
+		handoffRecord.query();
+		if(!handoffRecord.next()) {
+			return false;
+		}
+		var connectGroup = handoffRecord.getValue("connect_group");
+		// Check if user is assigned a chat_entry with specified connect Group
+		var chatQueueRecord = new GlideRecord("chat_queue_entry");
+		chatQueueRecord.addQuery("assigned_to",gs.getUserID());
+		chatQueueRecord.addQuery("group",connectGroup);
+		chatQueueRecord.query();
+		return chatQueueRecord.next();
+	},
+		
+	getConversationFromTask: function(taskId) {
+		var conversationTaskRecord = new GlideRecord("sys_cs_conversation_task");
+		conversationTaskRecord.get(taskId);
+		if(conversationTaskRecord.isValidRecord()) {
+			return conversationTaskRecord.getValue("conversation");
+		}
+	},
+	
+type: 'ChatbotAttachmentSecurity'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-04-16 21:38:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6315d145c32113009cbbdccdf3d3ae8a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;60&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChatbotAttachmentSecurity&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server" source="com.glide.cs"&gt;f9f62e472f000110d8a4d5f62799b60c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6315d145c32113009cbbdccdf3d3ae8a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-14 23:01:07&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1597&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:59</sys_created_on>
+        <sys_id>a7ac89fa2f331110d8a4d5f62799b629</sys_id>
+        <sys_name>ChatbotAttachmentSecurity</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a7ac89fa2f331110d8a4d5f62799b629</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

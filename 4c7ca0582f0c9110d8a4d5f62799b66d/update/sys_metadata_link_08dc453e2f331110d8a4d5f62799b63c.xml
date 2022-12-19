@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>752014fc5bd31010da168d8fa881c752</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UIRuleOperationQualifier&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Dynamically set the Operation Reference Qual of Mobile UI Rule Action dictionary entry to only allow setVisible and applyStyle when parent is a Mobile View&lt;/description&gt;
+        &lt;name&gt;UIRuleOperationQualifier&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UIRuleOperationQualifier = Class.create();
+UIRuleOperationQualifier.prototype = {
+	MOBILE_VIEW_OPS : ["applyStyle", "disableButton", "setVisible","applyDateFormatter"],
+	PARAM_SCREEN_OPS : ["performCalculation", "performDateTimeCalculation", "setMandatory", "setReadOnly", "setVisible"],
+	
+    getQualifier: function() {		
+		if (current.ui_rule == "")
+			return "name=";
+		
+		var uiRule = new GlideRecord("sys_sg_ui_rule");
+		uiRule.get(current.ui_rule);
+		if (uiRule.parent_table == "sys_sg_view_config")
+			return "nameIN" + this.MOBILE_VIEW_OPS;
+		else if (uiRule.parent_table == "sys_sg_parameter_screen" || uiRule.parent_table == "sys_sg_parameter_section")
+			return "nameIN" + this.PARAM_SCREEN_OPS;
+
+		return "";
+    },
+
+    type: 'UIRuleOperationQualifier'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-14 05:43:15&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;752014fc5bd31010da168d8fa881c752&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UIRuleOperationQualifier&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile UI Rule Plugin" source="com.glide.sg.ui_rule"&gt;29edb8cb6d2220100acb70b353433009&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_752014fc5bd31010da168d8fa881c752&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-06 22:45:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;772&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:34</sys_created_on>
+        <sys_id>08dc453e2f331110d8a4d5f62799b63c</sys_id>
+        <sys_name>UIRuleOperationQualifier</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_08dc453e2f331110d8a4d5f62799b63c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

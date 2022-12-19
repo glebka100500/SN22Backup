@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7017831f3b102300c869c2c703efc4c4</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.EmailAddressValidator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;EmailAddressValidator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var EmailAddressValidator = Class.create();
+EmailAddressValidator.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	applyFilters: function() {
+		var emailAddress = this.getParameter("sysparm_email_address");
+		var filterIds = this.getParameter("sysparm_address_filters");
+		
+		var emailAddressResult = sn_notification.AddressFilter.filter(filterIds, emailAddress);
+		var isValid = emailAddressResult.isValid();
+		var invalidReason = emailAddressResult.getInvalidReason();
+
+		var result = this.newItem('result');
+		result.setAttribute('is_valid', isValid);
+		result.setAttribute('invalid_reason', invalidReason);
+		result.setAttribute('email_address', emailAddress);
+	},
+
+	type: 'EmailAddressValidator'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-09-07 21:43:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7017831f3b102300c869c2c703efc4c4&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;EmailAddressValidator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Email Address Filter" source="com.glide.email_address_filter"&gt;5ffc78c36d2220100acb70b35343305d&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7017831f3b102300c869c2c703efc4c4&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-11 04:17:37&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;715&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:25</sys_created_on>
+        <sys_id>75ccc13e2f331110d8a4d5f62799b66a</sys_id>
+        <sys_name>EmailAddressValidator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_75ccc13e2f331110d8a4d5f62799b66a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

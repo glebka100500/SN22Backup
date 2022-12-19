@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>46ff4f3b9f023200598a5bb0657fcf39</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PmRecordAccessHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PmRecordAccessHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PmRecordAccessHelper = Class.create();
+PmRecordAccessHelper.prototype = {
+    initialize: function() {
+    },
+
+    type: 'PmRecordAccessHelper'
+};
+
+PmRecordAccessHelper.canReadRecord = function(table, sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadRecord -&gt; " + table + " - " + sysId);
+    if(JSUtil.notNil(table) &amp;&amp; JSUtil.notNil(sysId)) {
+        var gr = new GlideRecord(table);
+        return gr.get(sysId);
+    }
+    return false;
+};
+
+PmRecordAccessHelper.canReadSecureRecord = function(table, sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadRecord -&gt; " + table + " - " + sysId);
+    if(JSUtil.notNil(table) &amp;&amp; JSUtil.notNil(sysId)) {
+        var gr = new GlideRecordSecure(table);
+        return gr.get(sysId);
+    }
+    return false;
+};
+
+
+PmRecordAccessHelper.canReadPortfolio = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadPortfolio -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('pm_portfolio', sysId);
+};
+
+PmRecordAccessHelper.canReadProgram = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadProgram -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('pm_program', sysId);
+};
+
+PmRecordAccessHelper.canReadProgramTask = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadProgramTask -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('pm_program_task', sysId);
+};
+
+PmRecordAccessHelper.canReadProject = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadProject -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('pm_project', sysId);
+};
+
+PmRecordAccessHelper.canReadProjectTask = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadProjectTask -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('pm_project_task', sysId);
+};
+
+PmRecordAccessHelper.canReadPlannedTask = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadPlannedTask -&gt; " + sysId);
+    return PmRecordAccessHelper.canReadRecord('planned_task', sysId);
+};
+
+PmRecordAccessHelper.canReadRelease = function(sysId) {
+    PPMDebug.log("Into PmRecordAccessHelper.canReadRelease -&gt; " + sysId);
+	if(gs.tableExists('rm_release'))
+		return PmRecordAccessHelper.canReadRecord('rm_release', sysId);
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-04-17 22:54:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;46ff4f3b9f023200598a5bb0657fcf39&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PmRecordAccessHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_46ff4f3b9f023200598a5bb0657fcf39&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-03-21 20:02:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2261&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:13</sys_created_on>
+        <sys_id>588c0dba2f331110d8a4d5f62799b689</sys_id>
+        <sys_name>PmRecordAccessHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_588c0dba2f331110d8a4d5f62799b689</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

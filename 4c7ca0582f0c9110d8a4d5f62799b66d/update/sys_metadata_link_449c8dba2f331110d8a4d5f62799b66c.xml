@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>511848bf87440300cfab6dd207cb0ba1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdMaskHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides utility functions to mask phone numbers, email addresses, etc. &lt;/description&gt;
+        &lt;name&gt;PwdMaskHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdMaskHelper = Class.create();
+
+var UNMASK_DIGIT_COUNT = 4;
+var UNMASK_CHAR_COUNT = 3;
+
+PwdMaskHelper.maskEmail = function(emailAddress) {
+	var parts = emailAddress.split('@');
+	var local = parts[0];
+	var domain = parts[1];
+	
+	var retStr = "";
+	if (local.length &lt; ((UNMASK_CHAR_COUNT*2) + 1)) {      // Mask half of(round up) the email if it is short
+		var maskLen = Math.ceil(local.length/2);
+		for (var j = 0; j &lt; maskLen; j++)
+			retStr += "*";
+		retStr += local.slice(maskLen);
+	} else {
+		retStr = local.slice(0, UNMASK_CHAR_COUNT);
+	    for(var i = 0; i &lt; (local.length - (UNMASK_CHAR_COUNT*2)); i++)
+		    retStr += "*";
+	
+	    retStr += local.slice(local.length - UNMASK_CHAR_COUNT);
+	}
+	var retDomain = "";
+		for (var j = 0; j &lt; domain.length; j++)
+			retDomain += "*";
+	return retStr + '@' + retDomain;
+};
+
+PwdMaskHelper.maskPhone = function(phoneNumber) {
+	var trimmed = phoneNumber.replace(/[^0-9]/gi, '');
+	var append = (function (text, times) {
+		return new Array(times + 1).join(text);
+	})('x', Math.max(10 - UNMASK_DIGIT_COUNT, trimmed.length - UNMASK_DIGIT_COUNT));
+
+	return append + trimmed.substr(trimmed.length - UNMASK_DIGIT_COUNT);
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-07-25 18:31:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;511848bf87440300cfab6dd207cb0ba1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdMaskHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_511848bf87440300cfab6dd207cb0ba1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-22 08:52:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1161&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:29</sys_created_on>
+        <sys_id>449c8dba2f331110d8a4d5f62799b66c</sys_id>
+        <sys_name>PwdMaskHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_449c8dba2f331110d8a4d5f62799b66c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

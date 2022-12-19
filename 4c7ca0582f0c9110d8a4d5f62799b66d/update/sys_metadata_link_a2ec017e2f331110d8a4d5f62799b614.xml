@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>83343a30eb2201003623666cd206fece</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CatalogMobileLayoutSync&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;CatalogMobileLayoutSync&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var CatalogMobileLayoutSync = Class.create();
+CatalogMobileLayoutSync.prototype = {
+	CATALOG_VIEW_DEFAULT: "catalog_default",
+	
+	// Log level property
+	GLIDE_SC_MOBILE_LAYOUT_SYNC_LOG_LEVEL: "glide.sc.mobile_layout_sync.log", 
+	 
+	initialize: function(mobileLayoutGr) {
+		this.mobileLayoutGr = mobileLayoutGr;
+		this.catalogView = null;
+		this.catalog = this.mobileLayoutGr.sc_catalog;
+		
+		var gr = new GlideRecord("sc_catalog_view_mtom");
+		gr.addQuery("sc_catalog", this.catalog);
+		gr.addQuery("default", true);
+		gr.query();
+		if (gr.next()) {
+            var portalPageGr = new GlideRecord("sys_portal_page");
+    		portalPageGr.addQuery("sys_id", gr.sys_portal_page);
+	    	portalPageGr.query();
+		    if (portalPageGr.next())
+			    this.catalogView = portalPageGr.getValue("view");
+		}
+		this.lu = new GSLog(this.GLIDE_SC_MOBILE_LAYOUT_SYNC_LOG_LEVEL, 'CatalogMobileLayoutSync');
+		this.categoryIds = [];
+	},
+	
+	updateCategories: function() {
+		this.lu.logDebug("Updating Mobile Layout categories for " + this.mobileLayoutGr.sc_catalog + " / " + this.catalogView);
+		if (!this.mobileLayoutGr) {
+			this._reportError("Failed to update categories - no Mobile Layout record specified", true);
+			return;
+		}
+		
+		if (!this.catalogView) {
+			this._reportError("Failed to update categories. No default view found in sc_catalog_view_mtom for catalog: " + this.catalog + " see Upgrading_to_Multiple_Service_Catalogs in wiki", true);
+			return;
+		}
+		
+		var homePage = this._getHomePage();
+		if (homePage == null) {
+			this._reportError("Failed to update categories - no matching home page for view \"" + this.catalogView + "\"", true);
+			return;
+  	  }
+		
+		var homePageSections = this._getPortalSections(homePage.getUniqueValue());
+		while (homePageSections.next()) {
+			this._getCategoryFromSection(homePageSections.getUniqueValue());
+		}
+		
+		if (this.categoryIds.length == 0) {
+			this._reportError("Failed to update Categories - no categories found in desktop Catalog home page " + homePage.title + " / " + homePage.view, true);
+			return;		
+	    }
+		
+		this._removeExistingCategories();
+		this._addNewCategories();
+	},
+	
+	_getHomePage: function() {
+		this.lu.logDebug("Searching for catalog home page with view name \"" + this.catalogView + "\"");
+		var gr = new GlideRecord('sys_portal_page');
+		if (gr.get('view', this.catalogView))
+			return gr;
+		
+		return null;
+	},
+	
+	_getPortalSections: function(pageId) {
+		if (JSUtil.nil(pageId))
+			return null;
+		
+		var gr = new GlideRecord('sys_portal');
+		gr.addQuery('page', pageId);
+		gr.orderBy('offset');
+		gr.orderBy('dropzone');
+		gr.query();
+		
+		return gr;
+	},
+	
+	_getCategoryFromSection: function(sectionId) {
+		if (JSUtil.nil(sectionId))
+			return;
+		
+		var portalPrefs = {};
+		var gr = new GlideRecord('sys_portal_preferences');
+		gr.addQuery('portal_section',sectionId);
+		gr.addQuery('name','IN','renderer,type,sys_id');
+		gr.query();
+		while (gr.next())
+			portalPrefs[gr.getValue('name')] = gr.getValue('value');
+							
+		if (portalPrefs.type == "category" &amp;&amp; portalPrefs.renderer == "com.glideapp.servicecatalog.RenderCategory" &amp;&amp; !JSUtil.nil(portalPrefs.sys_id)) {
+			this.lu.logDebug("Found category with sys_id of \"" + portalPrefs.sys_id + "\" in desktop catalog home page");
+			this.categoryIds.push(portalPrefs.sys_id);
+		}
+	},
+	
+	_removeExistingCategories: function() {
+		this.lu.logDebug("Removing existing categories from Mobile Layout");
+		var gr = new GlideRecord('sc_mobile_layout_cats_mtom');
+		gr.addQuery('mobile_layout', this.mobileLayoutGr.getValue('sys_id'));
+		gr.deleteMultiple();		
+	},
+	
+	_addNewCategories: function() {
+		var gr = new GlideRecord('sc_mobile_layout_cats_mtom');
+		var order = 0;
+		
+		for (var i = 0; i &lt; this.categoryIds.length; i++ ) {
+			order += 10;
+			gr.initialize();
+			gr.mobile_layout = this.mobileLayoutGr.sys_id;
+			gr.category = this.categoryIds[i];
+			gr.order = order;
+			gr.insert();
+			this.lu.logDebug("Added category " + gr.category.getDisplayValue() + " at order " + gr.order);
+		}
+	},
+	
+	_reportError: function(errorMsg,showOnUI) {
+		if (JSUtil.nil(errorMsg))
+			return;
+		
+		this.lu.logError(errorMsg);
+		if (gs.getSession().isInteractive() &amp;&amp; showOnUI == true)
+			gs.addErrorMessage(errorMsg);
+	},
+	
+	type: 'CatalogMobileLayoutSync'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-07-11 12:25:06&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;83343a30eb2201003623666cd206fece&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;33&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CatalogMobileLayoutSync&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_83343a30eb2201003623666cd206fece&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-08-17 12:57:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4265&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:01</sys_created_on>
+        <sys_id>a2ec017e2f331110d8a4d5f62799b614</sys_id>
+        <sys_name>CatalogMobileLayoutSync</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a2ec017e2f331110d8a4d5f62799b614</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

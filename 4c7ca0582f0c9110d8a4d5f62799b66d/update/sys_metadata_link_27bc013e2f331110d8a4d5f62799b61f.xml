@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6b4343a5b722001070492811ee11a95e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GraphQLPathsAndTypeNamesGenerator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;GraphQLPathsAndTypeNamesGenerator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var GraphQLPathsAndTypeNamesGenerator = (function() {
+    function getMappedFields(schemaId, mapping) {
+        var mappedFields = new GlideRecord(mapping.table);
+        mappedFields.addQuery('schema', schemaId);
+        mappedFields.query();
+
+        var fields = [];
+        while (mappedFields.next())
+            fields.push(mappedFields[mapping.column].toString());
+
+        return fields;
+    }
+
+    function getChoices(exclusions, fields) {
+        return fields.reduce(function(choices, field) {
+            if (exclusions.indexOf(field) === -1)
+                choices.add(field, field);
+
+            return choices;
+        }, new GlideChoiceList());
+    }
+
+    function getAvailableFields(schemaId, column) {
+        var schema = new GlideRecord('sys_graphql_schema');
+        if (JSUtil.nil(schemaId) || !schema.get(schemaId))
+            return [];
+
+        return schema[column].split(',');
+    }
+
+    function createMappingChoiceGenerator(options) {
+        return function(schemaId) {
+            var fields = getAvailableFields(schemaId, options.schemaColumn);
+            if (fields.length === 0)
+                return new GlideChoiceList();
+
+            var mappedFields = getMappedFields(schemaId, options.mapping);
+            return getChoices(mappedFields, fields);
+        };
+    }
+
+    return {
+        getPathMappingChoices: createMappingChoiceGenerator({
+            schemaColumn: 'paths',
+            mapping: {
+                table: 'sys_graphql_resolver_mapping',
+                column: 'path'
+            }
+        }),
+        getTypeMappingChoices: createMappingChoiceGenerator({
+            schemaColumn: 'type_names',
+            mapping: {
+                table: 'sys_graphql_typeresolver',
+                column: 'type_name'
+            }
+        })
+    };
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-01-24 23:45:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6b4343a5b722001070492811ee11a95e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;52&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GraphQLPathsAndTypeNamesGenerator&lt;/sys_name&gt;
+        &lt;sys_package display_value="GraphQL API Framework" source="com.glide.graphql.framework"&gt;d9214d0f6d2620100acb70b353433080&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6b4343a5b722001070492811ee11a95e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-23 23:20:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1803&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:16</sys_created_on>
+        <sys_id>27bc013e2f331110d8a4d5f62799b61f</sys_id>
+        <sys_name>GraphQLPathsAndTypeNamesGenerator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_27bc013e2f331110d8a4d5f62799b61f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

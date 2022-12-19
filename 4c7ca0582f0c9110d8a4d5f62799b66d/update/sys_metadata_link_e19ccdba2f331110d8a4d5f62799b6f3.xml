@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>54d44bff0a0001c300e02457cbf8678c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FormInfoHeader&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Add an HTML message as an InfoMessage&amp;#13;
+Example:&amp;#13;
+  gs.include("FormInfoHeader");&amp;#13;
+  var fi = new FormInfoHeader();&amp;#13;
+  fi.addMessage('This incident was opened on your behalf&amp;lt;br/&amp;gt;The IT department will contact you for further information or when the incident is resolved');&lt;/description&gt;
+        &lt;name&gt;FormInfoHeader&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var FormInfoHeader = Class.create();
+
+FormInfoHeader.prototype = {
+	initialize: function() {
+	},
+
+	addMessage: function(message) {
+      var jr = new GlideJellyRunner();
+      jr.setEscaping(false);
+      jr.setVariable('jvar_text', message);
+      var m = jr.runFromScript('&lt;g:form_info_header/&gt;');
+      gs.addInfoMessage(m);
+	}
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-11-18 22:15:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;54d44bff0a0001c300e02457cbf8678c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FormInfoHeader&lt;/sys_name&gt;
+        &lt;sys_package display_value="UI Pages (define HTML pages and their processing)" source="com.glide.ui_page"&gt;12acb4436d2220100acb70b353433096&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_54d44bff0a0001c300e02457cbf8678c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-06-26 17:00:27&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;366&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:34</sys_created_on>
+        <sys_id>e19ccdba2f331110d8a4d5f62799b6f3</sys_id>
+        <sys_name>FormInfoHeader</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e19ccdba2f331110d8a4d5f62799b6f3</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

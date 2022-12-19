@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>80195270c33211003d2ae219cdba8f38</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_BaseTypeDefnStaging&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base class for all type definition staging classes.&lt;/description&gt;
+        &lt;name&gt;sc_ic_BaseTypeDefnStaging&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_BaseTypeDefnStaging = Class.create();
+sc_ic_BaseTypeDefnStaging.prototype = Object.extendsObject(sc_ic_Base, {
+    initialize: function(_gr,_gs) {
+		sc_ic_Base.prototype.initialize.call(this,_gr,_gs);
+		
+		//This should be overloaded in sub-classes
+		this._toDraft = {};
+    },
+	
+	/**
+	 * Sets aa Type definition to draft and increments version number.
+	 * This will only set the approval definition to draft if one of the trigger fields is changed.
+	 */
+	setDraft: function() {
+		for (var fldName in this._toDraft) {
+			if ((this._gr[fldName].changes() &amp;&amp; this._toDraft[fldName])) {
+				this._gr.state = sc_ic.DRAFT;
+				this._gr.version = parseInt(this._gr.version+"") + 1;
+				this._gr.active = true;
+				
+				if (this._log.atLevel(GSLog.DEBUG))
+					this._log.debug("[setDraft] Draft: " + this._gr.name + " &lt;" + this._gr.getUniqueValue() + "&gt;");
+				
+				return this;
+			}
+		}
+		
+		return this;
+	},
+	
+	/**
+	 * Wrapper for setDraft which updates the record
+	 */
+	draft: function() {
+		this.setDraft();
+		this._gr.update();
+	},
+	
+	/**
+	 * Expires the current record
+	 */
+	setExpired: function() {
+	    this._gr[sc_ic.STATE] = sc_ic.EXPIRED;
+		this._gr[sc_.ACTIVE] = false;
+		return this;
+	},
+	
+	/**
+	 * Wrapper for setExpired which updates the record
+	 */
+	expire: function() {
+	    this.setExpired();
+		this._gr.update();
+	},
+	
+	/**
+	 * Publishes the glide record to a provided table.
+	 */
+	_publishToTable: function(tableName) {
+		if (this._log.atLevel(GSLog.DEBUG))
+			this._log.debug("[_publishToTable] Publishing: " + this._gr.name + " &lt;"+this._gr.getUniqueValue()+"&gt; to table " + tableName);
+		
+		// Expire the currently published definition
+	    if (JSUtil.notNil(this._gr[tableName])) {
+			var pubDefn = new GlideRecord(tableName);
+			if (pubDefn.get(this._gr[tableName])) {
+				
+				if (this._log.atLevel(GSLog.DEBUG))
+					this._log.debug("[publish] Expiring Published Def: " + pubDefn.name + " &lt;"+pubDefn.getUniqueValue()+"&gt;");
+				
+				sc_ic_Factory.wrap(pubDefn).expire();
+			}
+		}
+		
+		// Create the new definition
+		var newDefn = sc_ic_Factory.getWrapperClass(tableName).create(this._gr);
+		
+		// Update the current staged definition with newly published item.
+		// The field linking to the published item must be named the same as the publish table
+		this._gr[tableName] = newDefn.getUniqueValue();
+		this._gr[sc_ic.STATE] = sc_ic.PUBLISHED;
+		this._enableQuietUpdate();
+		this._gr.update();
+		gs.updateSave(this._gr);
+		this._disableQuietUpdate();
+	},
+	
+    type: 'sc_ic_BaseTypeDefnStaging'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-02-07 16:55:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;80195270c33211003d2ae219cdba8f38&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;13&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_BaseTypeDefnStaging&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_80195270c33211003d2ae219cdba8f38&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-11-10 11:36:11&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2524&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:55</sys_created_on>
+        <sys_id>49ec4d3e2f331110d8a4d5f62799b6ec</sys_id>
+        <sys_name>sc_ic_BaseTypeDefnStaging</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_49ec4d3e2f331110d8a4d5f62799b6ec</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

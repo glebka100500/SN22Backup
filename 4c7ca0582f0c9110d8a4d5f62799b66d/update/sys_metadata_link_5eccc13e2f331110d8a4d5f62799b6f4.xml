@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>71bf90ed0b223200a6acc93563673ae0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ConsoleDomainHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ConsoleDomainHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ConsoleDomainHelper = Class.create();
+ConsoleDomainHelper.prototype = {
+	initialize: function() {
+	},
+	
+	isSysDefaults: function(elementName) {
+		if(elementName.startsWith("sys_"))
+			return true;
+		var defaults = ['number'];
+		return defaults.indexOf(elementName) &gt; -1;
+	},
+	
+	handleDisplayColumnOverride: function(displayColumn) {
+		var consoleId = displayColumn.pm_console;
+		var consoleTableRecord = new GlideRecord('pm_console_table');
+		consoleTableRecord.addQuery('pm_console', consoleId);
+		consoleTableRecord.query();
+		while(consoleTableRecord.next()) {
+			var consoleColumnRecord = new GlideRecord('pm_console_column');
+			consoleColumnRecord.addQuery('pm_console_table',consoleTableRecord.sys_id);
+			consoleColumnRecord.addQuery('pm_console_display_column',displayColumn.sys_overrides);
+			consoleColumnRecord.query();
+			while(consoleColumnRecord.next()) {
+				var newConsoleColumnRecord = new GlideRecord('pm_console_column');
+				newConsoleColumnRecord.initialize();
+				var skipFields = ['pm_console_display_column'];
+				this.cloneRecord(consoleColumnRecord, newConsoleColumnRecord, skipFields);
+				newConsoleColumnRecord.pm_console_display_column = displayColumn.sys_id;
+				var newConsoleColumnId = newConsoleColumnRecord.insert();
+				if(consoleColumnRecord.getValue("advanced") == 'true' || consoleColumnRecord.getValue("advanced") == '1')
+					this.createConsoleAdvancedColumn(consoleColumnRecord.sys_id, newConsoleColumnId);
+			}
+		}
+	},
+	
+	handleConsoleColumnOverride: function(consoleColumn) {
+		if(consoleColumn.getValue("advanced") == 'true' || consoleColumn.getValue("advanced") == '1')
+			this.createConsoleAdvancedColumn(consoleColumn.sys_overrides, consoleColumn.sys_id);
+	},
+	
+	isColumnAggregate: function(consoleColumnGr){
+		var gr,table,type,currencyField = true;
+		var consoleColumn = new GlideRecord('pm_console_column');
+		consoleColumn.addQuery('pm_console_display_column',consoleColumnGr.getValue('pm_console_display_column'));
+		consoleColumn.query();
+		while(consoleColumn.next()){
+			 table = consoleColumn.getValue('table');
+			
+			if(table){
+				gr = new GlideRecord(table);
+			    type = gr.getElement(consoleColumn.getValue('column')).getED().getInternalType();
+				if(type != 'currency' &amp;&amp; type != 'decimal' &amp;&amp; type != 'number'){
+					currencyField = false;
+					break;
+				}
+			}
+		}
+		return currencyField;
+	},
+	
+	createConsoleAdvancedColumn: function(consoleColumnId, newConsoleColumnId) {
+		var consoleAdvancedColumn = new GlideRecord('pm_console_column_advanced');
+		consoleAdvancedColumn.get('pm_console_column',consoleColumnId);
+		while(consoleAdvancedColumn.isValidRecord()) {
+			var newAdvancedConsoleColumn = new GlideRecord('pm_console_column_advanced');
+			newAdvancedConsoleColumn.initialize();
+			var skipFields = ['pm_console_column'];
+			this.cloneRecord(consoleAdvancedColumn, newAdvancedConsoleColumn, skipFields);
+			newAdvancedConsoleColumn.pm_console_column = newConsoleColumnId;
+			return newAdvancedConsoleColumn.insert();
+		}
+	},
+	
+	cloneRecord: function(record, cloneRecord, skipFields) {
+		var elements = record.getElements();
+		for (var i = 0; i &lt; elements.size(); ++i) {
+			var element = elements.get(i);
+			var elementName = element.getName();
+			if(!this.isSysDefaults(elementName) &amp;&amp; skipFields.indexOf(elementName) == -1) {
+				cloneRecord[elementName] = record.getValue(elementName);
+			}
+		}
+		return cloneRecord;
+	},
+	
+	type: 'ConsoleDomainHelper'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-05-05 10:18:43&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;71bf90ed0b223200a6acc93563673ae0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ConsoleDomainHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_71bf90ed0b223200a6acc93563673ae0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-05-31 05:57:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3438&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:26</sys_created_on>
+        <sys_id>5eccc13e2f331110d8a4d5f62799b6f4</sys_id>
+        <sys_name>ConsoleDomainHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5eccc13e2f331110d8a4d5f62799b6f4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

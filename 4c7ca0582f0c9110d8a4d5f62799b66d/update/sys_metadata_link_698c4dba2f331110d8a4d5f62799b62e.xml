@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4b09def295b7d010f8773ca1dcdbe6d3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InteractionStatsProvider&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Implements extension point global.AWAStatsStore
+Extension point to store stats in AWAQueueStats,AWAChannelStats and AWAInstranceStats tables&lt;/description&gt;
+        &lt;name&gt;InteractionStatsProvider&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InteractionStatsProvider = Class.create();
+InteractionStatsProvider.prototype = {
+    initialize: function() {},
+
+    _addValueToKey: function(map, key, property, value) {
+        map[key] = map[key] || {};
+        map[key][property] = value;
+    },
+
+    _query: function(table, encodedQuery, query, groupBy, aggr) {
+        var ga = new GlideAggregate(table);
+        if (encodedQuery) ga.addEncodedQuery(encodedQuery);
+        if (query) ga.addQuery(query);
+        if (aggr) ga.addAggregate(aggr);
+        if (groupBy) ga.groupBy(groupBy);
+        ga.query();
+        return ga;
+    },
+
+    _queryAndGetAggregateCount: function(table, encodedQuery, query, groupBy, aggr) {
+        var ga = this._query(table, encodedQuery, query, groupBy, aggr);
+        var count = 0;
+        if (ga.next()) return ga.getAggregate(aggr);
+        return 0;
+    },
+
+    getQueueStats: function(queueVsGroups, windowStartTime, windowEndTime) {
+        var map = {};
+        var queueStats = {};
+        var statDefaultValue = {
+            interactions_closed: 0,
+            avg_duration_closed_interactions: 0
+        };
+        var interactionsClosed = new GlideAggregate('awa_interaction_work_item');
+        var dateQueryForClosedInteractions = "doc_closed_at&gt;=" + windowStartTime.getValue() + '^' + 'doc_closed_at&lt;=' + windowEndTime.getValue();
+        interactionsClosed.addQuery(dateQueryForClosedInteractions);
+        interactionsClosed.addEncodedQuery('doc_state=closed_complete^ORdoc_state=closed_abandoned');
+        interactionsClosed.groupBy('wi_queue');
+        interactionsClosed.addAggregate('COUNT');
+        interactionsClosed.addAggregate('AVG', 'doc_duration');
+        interactionsClosed.query();
+        while (interactionsClosed.next()) {
+            this._addValueToKey(queueStats, interactionsClosed.getValue('wi_queue'), "interactions_closed", interactionsClosed.getAggregate('COUNT'));
+            this._addValueToKey(queueStats, interactionsClosed.getValue('wi_queue'), "avg_duration_closed_interactions",
+                new GlideDuration(interactionsClosed.getAggregate('AVG', 'doc_duration')).getNumericValue() / 1000);
+        }
+        map["queueStats"] = queueStats;
+        map["statDefaultValue"] = statDefaultValue;
+        return map;
+    },
+
+    getChannelStats: function(channelVsGroups, windowStartTime, windowEndTime) {
+		var map = {};
+		map["channelStats"] = {};
+        map["statDefaultValue"] = {};
+        return map;
+	},
+
+    getInstanceStats: function(windowStartTime, windowEndTime) {
+        var map = {};
+        var vaInteractionsInLast15Min = this._queryAndGetAggregateCount('interaction', 'type=chat^virtual_agent=true^sys_created_onRELATIVEGE@minute@ago@15', null, null, 'COUNT');
+        var vaInteractionsInLastHour = this._queryAndGetAggregateCount('interaction', 'type=chat^virtual_agent=true^sys_created_onRELATIVEGE@hour@ago@1', null, null, 'COUNT');
+        var dateQuery = "closed_at&gt;=" + windowStartTime.getValue() + '^' + 'closed_at&lt;=' + windowEndTime.getValue();
+        var vaInteractionsResolved = this._queryAndGetAggregateCount('interaction', 'type=chat^virtual_agent=true^sys_created_onRELATIVEGE@hour@ago@1', dateQuery, null, 'COUNT');
+        dateQuery = "live_handoff_time&gt;=" + windowStartTime.getValue() + '^' + 'live_handoff_time&lt;=' + windowEndTime.getValue();
+        var vaInteractionsTransferred = this._queryAndGetAggregateCount('interaction', 'type=chat^virtual_agent=true^agent_chat=true', dateQuery, null, 'COUNT');
+        map["va_interactions_received_in_last_15_minutes"] = vaInteractionsInLast15Min;
+        map["va_interactions_received_in_last_hour"] = vaInteractionsInLastHour;
+        map["va_interactions_resolved"] = vaInteractionsResolved;
+        map["va_interactions_transferred"] = vaInteractionsTransferred;
+        return map;
+    },
+
+    type: 'InteractionStatsProvider'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-10-15 17:17:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4b09def295b7d010f8773ca1dcdbe6d3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InteractionStatsProvider&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agent Chat" source="com.glide.interaction.awa"&gt;2fe6aa472f000110d8a4d5f62799b6d7&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4b09def295b7d010f8773ca1dcdbe6d3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-10-20 13:25:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3863&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:18</sys_created_on>
+        <sys_id>698c4dba2f331110d8a4d5f62799b62e</sys_id>
+        <sys_name>InteractionStatsProvider</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_698c4dba2f331110d8a4d5f62799b62e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

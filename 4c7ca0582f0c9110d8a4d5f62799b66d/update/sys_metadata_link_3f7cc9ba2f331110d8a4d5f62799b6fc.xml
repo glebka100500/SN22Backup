@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>45858be29f3212000391b89a442e709b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OCRotaMember&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Class to represent a cmn_rota_member record for on-call scheduling.&lt;/description&gt;
+        &lt;name&gt;OCRotaMember&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var OCRotaMember = Class.create();
+OCRotaMember.prototype = {
+    initialize: function() {
+		this.log = new GSLog("com.snc.on_call_rotation.log.level", this.type);
+    },
+
+	deactivateUser: function(userId, deactivateDate) {
+		if (JSUtil.nil(deactivateDate))
+			deactivateDate = new GlideDateTime();
+
+		var gr = new GlideRecord('cmn_rota_member');
+		gr.addActiveQuery();
+		gr.addQuery('member', userId);
+		gr.addNullQuery('to');
+		gr.query();
+		while (gr.next()) {
+			gr.setValue('to', deactivateDate);
+			gr.update();
+		}
+	},
+
+	hasOrderChanged: function(current, previous) {
+		var highestOrder = current.order &gt; previous.order ? current.order : previous.order;
+		var lowestOrder = current.order &lt; previous.order ? current.order : previous.order;
+
+		if (this.log.atLevel(GSLog.DEBUG)) {
+			this.log.debug("[hasOrderChanged] highestOrder: " + highestOrder + " lowestOrder: " + lowestOrder);
+			this.log.debug("[hasOrderChanged] previous: " + previous.getUniqueValue());
+			this.log.debug("[hasOrderChanged] current: " + current.getUniqueValue());
+		}
+
+		// check if jumping members
+		var membersGr = new GlideRecord("cmn_rota_member");
+		membersGr.addQuery("sys_id", "!=", previous.getUniqueValue());
+		membersGr.addQuery("roster", current.roster + "");
+		membersGr.addQuery("order", "&gt;=", lowestOrder);
+		membersGr.addQuery("order", "&lt;=", highestOrder);
+		membersGr.query();
+		var rows = membersGr.getRowCount();
+		var changed = rows != 0;
+
+		if (this.log.atLevel(GSLog.DEBUG)) {
+			this.log.debug("[hasOrderChanged] changed: " + changed);
+			while (membersGr.next())
+				this.log.debug("[hasOrderChanged] membersGr.sys_id: " + membersGr.getUniqueValue() + " order: " + membersGr.order);
+		}
+
+		return changed;
+	},
+
+	validateDates: function(from, to) {
+		// ensure from date is before the to date
+		if (JSUtil.nil(from) &amp;&amp; JSUtil.nil(to))
+			return true;
+
+		var fromGd = new GlideDate();
+		fromGd.setValue(from);
+		var toGd = new GlideDate();
+		toGd.setValue(to);
+		return fromGd.compareTo(toGd) &lt;= 0;
+	},
+
+	hasChanged: function(current, previous) {
+		var changed = current.member.changes() || current.to.changes() || current.from.changes() || this.hasOrderChanged(current, previous);
+
+		if (this.log.atLevel(GSLog.DEBUG))
+			this.log.debug("[hasChanged] changed: " + changed);
+
+		return changed;
+	},
+
+	recalculate: function(current) {
+		if (this.log.atLevel(GSLog.DEBUG))
+			this.log.debug("[recalculate] roster: " + current.roster);
+
+		OnCallRotationRecalc.updateSchedules(current.roster.getRefRecord());
+	},
+	
+	rotaRepeatLimitExceeded: function(gr) {
+		if (!gr)
+			return false;
+
+		var rosterGR;
+		var tableName = gr.getRecordClassName();
+		if ("cmn_rota_roster" === tableName)
+			rosterGR = gr;
+		else if ("cmn_rota_member" === tableName) {
+			rosterGR = new GlideRecord("cmn_rota_roster");
+			if (!rosterGR.get(gr.getValue("roster")))
+				return false;
+		} else
+			return false;
+		
+		var rotationInterval = parseInt(rosterGR.getValue("rotation_interval_count"), 10);
+		var weeklyInterval = "weekly" === rosterGR.getValue("rotation_interval_type");
+		if (weeklyInterval)
+			rotationInterval *= 7;
+
+		var memberCount = 0;
+		var ga = new GlideAggregate("cmn_rota_member");
+		ga.addQuery("roster", rosterGR.getUniqueValue());
+		ga.addAggregate("COUNT");
+		ga.query();
+		if (ga.next())
+			memberCount = parseInt(ga.getAggregate("COUNT"), 10);
+		
+		// Add 1 to member Count as we are factoring the insert of a new cmn_rota_member record
+		if ("cmn_rota_member" === tableName)
+			memberCount++;
+		if (memberCount &gt; 0)
+			rotationInterval *= memberCount;
+
+		var maxRepeatCount = parseInt(gs.getProperty("com.snc.on_call_rotation.max_rotation_repeat_count", 182000), 10);
+
+		if (rotationInterval &lt;= maxRepeatCount)
+			return false;
+
+		var dailyIntervalCount = Math.floor(maxRepeatCount / memberCount);
+		
+		if ("cmn_rota_roster" === tableName)
+			if (weeklyInterval)
+				gs.addErrorMessage(gs.getMessage("The repeat count for each member has exceeded the limit of {0} years ({1} weeks/{2} days). For {3} members, the value of 'Rotate every' for the roster should be set to {4} weeks to be within the limit.", [Math.floor(maxRepeatCount / 364) + "", Math.floor(maxRepeatCount / 7) + "", maxRepeatCount + "", memberCount + "", Math.floor(dailyIntervalCount / 7) + ""]));
+			else
+				gs.addErrorMessage(gs.getMessage("The repeat count for each member has exceeded the limit of {0} years ({1} days/{2} weeks). For {3} members, the value of 'Rotate every' for the roster should be set to {4} days to be within the limit.", [Math.floor(maxRepeatCount / 364) + "", Math.floor(maxRepeatCount / 7) + "", maxRepeatCount + "", memberCount + "", dailyIntervalCount + ""]));
+		else
+			if (weeklyInterval)
+				gs.addErrorMessage(gs.getMessage("The repeat count for each member has exceeded the limit of {0} years ({1} weeks/{2} days). To add another member, the value of 'Rotate every' for the roster should be set to {3} weeks, for a total of {4} members to be within the limit.", [Math.floor(maxRepeatCount / 364) + "", Math.floor(maxRepeatCount / 7) + "", maxRepeatCount + "", Math.floor(dailyIntervalCount / 7) + "", memberCount + ""]));
+			else
+				gs.addErrorMessage(gs.getMessage("The repeat count for each member has exceeded the limit of {0} years ({1} weeks/{2} days). To add another member, the value of 'Rotate every' for the roster should be set to {3} days, for a total of {4} members to be within the limit.", [Math.floor(maxRepeatCount / 364) + "", Math.floor(maxRepeatCount / 7) + "", maxRepeatCount + "", dailyIntervalCount + "", memberCount + ""]));
+		
+		return true;
+	},
+
+    type: 'OCRotaMember'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;aqib.mushtaq&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-04-18 15:27:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;45858be29f3212000391b89a442e709b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;8&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OCRotaMember&lt;/sys_name&gt;
+        &lt;sys_package display_value="On-Call Scheduling" source="com.snc.on_call_rotation"&gt;37d4c9836de620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_45858be29f3212000391b89a442e709b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-07 02:13:37&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5600&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:11</sys_created_on>
+        <sys_id>3f7cc9ba2f331110d8a4d5f62799b6fc</sys_id>
+        <sys_name>OCRotaMember</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_3f7cc9ba2f331110d8a4d5f62799b6fc</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

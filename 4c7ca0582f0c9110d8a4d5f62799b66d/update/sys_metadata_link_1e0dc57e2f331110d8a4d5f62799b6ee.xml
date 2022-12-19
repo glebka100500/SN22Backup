@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8f620ce9c0a8002700f6971d7a179fb9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CatalogTransactionCheckoutTwo&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;If running in two step checkout mode, this handles the second step of the checkout sequence.&amp;#13;
+1) It updates your cart to contain the new delivery address and special instructions&amp;#13;
+2) It actually checks you out (same logic as a one step checkout)&lt;/description&gt;
+        &lt;name&gt;CatalogTransactionCheckoutTwo&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include('PrototypeServer');
+gs.include('AbstractTransaction');
+
+var CatalogTransactionCheckoutTwo = Class.create();
+
+CatalogTransactionCheckoutTwo.prototype = Object.extendsObject(CatalogTransactionCheckout, {
+
+    execute: function() {
+        var catalog = this.request.getParameter("sysparm_catalog");
+        var catalogView = this.request.getParameter("sysparm_catalog_view");
+        var cartName = null;
+        if (this.request.getParameter("sysparm_cart_name") != null)
+            cartName = '' + this.request.getParameter("sysparm_cart_name");
+        var cart;
+        if (!JSUtil.nil(cartName))
+            cart = GlideappCart.get(cartName);
+        else
+            cart = GlideappCart.get();
+        var isNewOrderNow = gs.getProperty("glide.sc.enable_order_now", "false");
+        if (isNewOrderNow == 'true' &amp;&amp; !JSUtil.nil(cartName) &amp;&amp; cartName.startsWith('cart_')) {
+            var default_cart_item_id = gs.getSession().getProperty("default_cart_item");
+
+            //for new order now, an entry was inserted in default cart, on successful checkout, that entry needs to be deleted
+            if (!JSUtil.nil(cartName) &amp;&amp; !JSUtil.nil(default_cart_item_id)) {
+                var def_cart = GlideappCart.get();
+                def_cart.remove(default_cart_item_id);
+                gs.getSession().clearProperty("default_cart_item");
+            }
+        }
+        if (!cart.getCartItems().hasNext()) {
+            gs.addInfoMessage(gs.getMessage("Cannot check out with an empty cart!"));
+            return gs.getSession().getStack().purge("com.glideapp.servicecatalog");
+        }
+        var conflictingCartDomain = cart.findConflictingDomain();
+        if (conflictingCartDomain) {
+            gs.addErrorMessage(gs.getMessage("Your cart has item(s) belonging to the '{0}' domain. Please change the domain to continue with the checkout.", conflictingCartDomain));
+            var urlStack = j2js(gs.getSession().getStack());
+            this.response.sendRedirect(urlStack.pop());
+            return;
+        }
+        this._updateCart();
+        var gotoURL = this.request.getParameter("sysparm_goto_url");
+        if (!GlideSecurityUtils.isURLWhiteListedStrict(gotoURL))
+        	gotoURL = GlideSecurityUtils.enforceRelativeURL(gotoURL);
+        if (gotoURL)
+            return gotoURL;
+        return this._checkout(catalog, catalogView, cartName);
+    },
+
+    _updateCart: function() {
+        var delivery_address = this.request.getParameter("requestor_location");
+        var special_instructions = this.request.getParameter("special_instructions");
+        var cartName = this.request.getParameter("sysparm_cart_name");
+        var requested_for = this.request.getParameter("sc_cart.requested_for");
+        var cart;
+        if (!JSUtil.nil(cartName))
+            cart = GlideappCart.get(cartName);
+        else
+            cart = GlideappCart.get();
+
+        if (JSUtil.notNil(requested_for))
+            cart.setRequestedFor(requested_for);
+
+        if (delivery_address !== null)
+            cart.setDeliveryAddress(delivery_address);
+
+        if (special_instructions !== null)
+            cart.setSpecialInstructions(special_instructions);
+
+        cart.update();
+    }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-09-23 13:24:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8f620ce9c0a8002700f6971d7a179fb9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;38&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CatalogTransactionCheckoutTwo&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8f620ce9c0a8002700f6971d7a179fb9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-05-21 04:09:46&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3214&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:32</sys_created_on>
+        <sys_id>1e0dc57e2f331110d8a4d5f62799b6ee</sys_id>
+        <sys_name>CatalogTransactionCheckoutTwo</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1e0dc57e2f331110d8a4d5f62799b6ee</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

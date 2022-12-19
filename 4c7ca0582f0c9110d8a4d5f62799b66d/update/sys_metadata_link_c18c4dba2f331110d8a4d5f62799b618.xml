@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4981290f73231300d406168d4ef6a70f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AllowCoverageProposalSwap&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AllowCoverageProposalSwap&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AllowCoverageProposalSwap = Class.create();
+AllowCoverageProposalSwap.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    allowAutomaticSwapOfCoverage: function() {
+        var rosterSpanPoposalSysId = this.getParameter('sysparm_sys_id');
+        var isSwapAllowed = this.getParameter('sysparm_is_swap_allowed');
+        var rosterSpanProposalGr = new GlideRecord("roster_schedule_span_proposal");
+        var result = this.newItem("result");
+
+        if (!rosterSpanProposalGr.get(rosterSpanPoposalSysId)) {
+            result.setAttribute("status", "error");
+            return result;
+        }
+        rosterSpanProposalGr.setValue("auto_swap_coverage", isSwapAllowed + "");
+        rosterSpanProposalGr.update();
+        result.setAttribute("status", "success");
+        return result;
+    },
+
+
+
+    type: 'AllowCoverageProposalSwap'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-07-31 13:07:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4981290f73231300d406168d4ef6a70f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;13&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AllowCoverageProposalSwap&lt;/sys_name&gt;
+        &lt;sys_package display_value="On-Call Scheduling" source="com.snc.on_call_rotation"&gt;37d4c9836de620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4981290f73231300d406168d4ef6a70f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-08 10:11:49&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;857&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:17</sys_created_on>
+        <sys_id>c18c4dba2f331110d8a4d5f62799b618</sys_id>
+        <sys_name>AllowCoverageProposalSwap</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c18c4dba2f331110d8a4d5f62799b618</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

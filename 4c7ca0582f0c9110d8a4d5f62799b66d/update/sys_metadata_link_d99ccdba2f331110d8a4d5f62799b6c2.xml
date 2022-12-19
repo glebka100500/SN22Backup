@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>54573868538313009961ddeeff7b1296</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AssetManagementBaseJob&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This is the base job for Asset Management jobs to extend. It supports Domain Separation.&lt;/description&gt;
+        &lt;name&gt;AssetManagementBaseJob&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/*
+This class is mostly used for Scheduled Jobs in Domain Separation case.
+How to use:
+Case A: Your job needs to be ran in all domains separately
+	1. Create a script include and extend it from this class
+	2. In the new script include, implement "runJob" function with the code that needs to be ran
+	3. In schedule job, run this script
+		new &lt;NewScriptIncludeName&gt;.process();
+Case B: Your job needs to be ran in current domain
+	1. Construct a script string which needs to ran
+	2. Run this script passing the constructed script string
+		new AssetManagementBaseJob().runScriptByJob("script to be ran;");
+*/
+var AssetManagementBaseJob = Class.create();
+AssetManagementBaseJob.prototype = {
+	
+	fIsDomainDataSeparationEnabled: GlideDomainSupport.isDataSeparationEnabled(),
+	
+	initialize: function() {
+	},
+	
+	/*
+	Get top domain under which all customer domains can be found.
+	By default, the top domain is 'primary' domain.
+	Overwrite this function in children classes if needed.
+	*/
+	getTopDomain: function() {
+		var domainTable = GlideDomainSupport.getDomainTable();
+		this.log(GSLog.INFO, 'Detected domain table is [' + domainTable + '].', this.type);
+		var gr = new GlideRecord(domainTable);
+		gr.addActiveQuery();
+		gr.addQuery('primary', true);
+		gr.query();
+		//there is only one active primary domain on an instance
+		if (!gr.next()) {
+			throw this.type + ': No primary domain found.';
+		}
+		var topDomainSysId = gr.getUniqueValue();
+		this.log(GSLog.INFO, "Detected top domain is '" + this.getDomainName(topDomainSysId) + "'(" + topDomainSysId + ")", this.type);
+		return topDomainSysId;
+	},
+	
+	/*
+	Get customer domains under top domain.
+	By default, the customer domains are leaf domains under top domain.
+	Overwrite this function in chilren classes if needed.
+	*/
+	getDomains: function() {
+		var topDomainSysId = this.getTopDomain();
+		var domainArray = this._getLeafDomains(topDomainSysId);
+		this.log(GSLog.INFO, "Detected customer domains are '" + this.getDomainNameArray(domainArray) + "'(" + domainArray + ")", this.type);
+		return domainArray;
+	},
+	
+	/*
+	Get leaf domains under top domain passed.
+	*/
+	_getLeafDomains: function(topDomainSysId) {
+		var domains = [];
+		if (this._isLeafDomain(topDomainSysId)) {
+			domains.push(topDomainSysId);
+		} else {
+			//get children domains and send them to recursion
+			var domainTable = GlideDomainSupport.getDomainTable();
+			var gr = new GlideRecord(domainTable);
+			gr.addActiveQuery();
+			gr.addQuery('parent', topDomainSysId);
+			gr.query();
+			while (gr.next()) {
+				domains = domains.concat(this._getLeafDomains(gr.getUniqueValue()));
+			}
+		}
+		return domains;
+	},
+	
+	/*
+	Check if a domain passed is leaf or not.
+	*/
+	_isLeafDomain: function(domainSysId) {
+		var domainTable = GlideDomainSupport.getDomainTable();
+		var gr = new GlideRecord(domainTable);
+		gr.addActiveQuery();
+		gr.addQuery('parent', domainSysId);
+		gr.query();
+		if (gr.next()) {
+			return false;
+		} else {
+			return true;
+		}
+	},
+	
+	getDomainNameArray: function(domainSysIdArray) {
+		var domainNameArray = [];
+		for (var i = 0; i &lt; domainSysIdArray.length; i++) {
+			var domainSysId = domainSysIdArray[i];
+			var domainName = this.getDomainName(domainSysId);
+			domainNameArray.push(domainName);
+		}
+		return domainNameArray;
+	},
+	
+	getDomainName: function(domainSysId) {
+		if (gs.nil(domainSysId) || domainSysId === 'null') {
+			return 'global';
+		} else {
+			return String(new GlideDomainDisplay(domainSysId).IDToDisplay());
+		}
+	},
+	
+	/*
+	Main function. Needs to be invoked by caller.
+	*/
+	process: function() {
+		//if the instance is domain separated, then loop each customer domains and run job.
+		//if not, run job immediately.
+		if (this.fIsDomainDataSeparationEnabled) {
+			this.log(GSLog.INFO, 'Detected domain data separation is enabled on this instance. Run job for each domains.', this.type);
+			this._processWithDomainSeparation();
+		} else {
+			this.log(GSLog.INFO, 'Detected domain data separation is not enabled on this instance. Run job immediately.', this.type);
+			try {
+				this.preRunJob();
+				this.runJob();
+			} catch (e) {
+				this.postRunJobOnError();
+				throw e;
+			}
+			this.postRunJobOnSuccess();
+		}
+	},
+	
+	/*
+	Loop each customer domains and run job.
+	If it fails at one domain, continue to next domains and error out in the end.
+	*/
+	_processWithDomainSeparation: function() {
+		var domainArray = this.getDomains();
+		var currentDomainSysId = this.getCurrentDomainSysId();
+		this.log(GSLog.INFO, "Detect current domain is '" + this.getDomainName(currentDomainSysId) + "'(" + currentDomainSysId + ")", this.type);
+		var isFailed = false;
+		for (var i = 0; i &lt; domainArray.length; i++) {
+			try {
+				var isFailedCurrDomain = false;
+				var customerDomainSysId = domainArray[i];
+				this.log(GSLog.INFO, "Setting session domain to '" + this.getDomainName(customerDomainSysId) + "'(" + customerDomainSysId + ")", this.type);
+				GlideSession.get().setDomainID(customerDomainSysId);
+				this.preRunJob();
+				this.runJob();
+				this.log(GSLog.INFO, "Successfully ran job under domain '" + this.getDomainName(customerDomainSysId) + "'(" + customerDomainSysId + ")", this.type);
+			} catch (e) {
+				this.log(GSLog.ERR, "Failed to run job under domain '" + this.getDomainName(customerDomainSysId) + "'(" + customerDomainSysId + ")\n" + e, this.type);
+				isFailedCurrDomain = true;
+				isFailed = true;
+			} finally {
+				this.log(GSLog.INFO, "Resetting session domain to '" + this.getDomainName(currentDomainSysId) + "'(" + currentDomainSysId + ")", this.type);
+				GlideSession.get().setDomainID(currentDomainSysId);
+			}
+			if (isFailedCurrDomain) {
+				this.postRunJobOnError();
+			} else {
+				this.postRunJobOnSuccess();
+			}
+		}
+		if (isFailed) {
+			throw this.type + ': Failed to run job. Please look into logs for more details.';
+		}
+	},
+	
+	getCurrentDomainSysId: function() {
+		var currentDomainSysId = GlideSession.get().getCurrentDomainID();
+		if (gs.nil(currentDomainSysId)) {
+			return 'global';
+		}
+		return String(currentDomainSysId);
+	},
+	
+	/*
+	Abstract function. Needs to be implemented in children classes.
+	*/
+	runJob: function() {
+		throw this.type + ': runJob() needs to be implemented';
+	},
+	
+	/*
+	Job to be run before runJob. Implement it if needed.
+	*/
+	preRunJob: function() {
+		
+	},
+	
+	/*
+	Job to be run after runJob if job succeeds. Implement it if needed.
+	*/
+	postRunJobOnSuccess: function() {
+		
+	},
+	
+	/*
+	Job to be run after runJob if job fails. Implement it if needed.
+	*/
+	postRunJobOnError: function() {
+		
+	},
+	
+	log: function(level, message, source) {
+		// system property "asset.log_level" set to GSLog level constant
+		_logger = new GSLog('asset.log_level', source);
+		_logger.log(level, message);
+	},
+	
+	runScriptByJob: function(script, time, name, domainSysId, documentKey, returnTriggerID) {
+		if (gs.nil(script)) {
+			throw this.type + ': Script is null or empty. Nothing to be ran.';
+		}
+		var so = new ScheduleOnce();
+		so.script = "";
+		if (this.fIsDomainDataSeparationEnabled) {
+			if (gs.nil(domainSysId)) {
+				domainSysId = this.getCurrentDomainSysId();
+			}
+			this.log(GSLog.INFO, "Detected domain data separation is enabled on this instance. Run job in current domain '" + this.getDomainName(domainSysId) + "'(" + domainSysId + ")", this.type);
+			so.script += "GlideSession.get().setDomainID('" + domainSysId + "');";
+		} else {
+			this.log(GSLog.INFO, 'Detected domain data separation is not enabled on this instance. Run job immediately.', this.type);
+		}
+		if(!gs.nil(time)){
+			so.setTime(time);
+		}
+		if(!gs.nil(name)){
+			so.setLabel(name);
+		}
+		if(!gs.nil(documentKey)){
+			so.document_key = documentKey;
+		}
+		so.script += script;
+		if (this.fIsDomainDataSeparationEnabled) {
+			so.script += "GlideSession.get().setDomainID('" + this.getCurrentDomainSysId() + "');";
+		}
+		this.log(GSLog.INFO, 'Running script:\n' + so.script, this.type);
+		if (!gs.nil(returnTriggerID) &amp;&amp; (returnTriggerID === true)) {
+			return so.schedule();
+		}
+		so.schedule();
+	},
+	
+	getDomainTable: function() {
+		return GlideDomainSupport.getDomainTable();
+	},
+
+	getDomainHierarchy: function(domain) {
+		var domains = [];
+		var domainHierarchyObject = GlideDomainSupport.getHierarchy(domain);	// returns a Collection&lt;Domain&gt; [collection of java objects]
+		var domainHierarchyIterator = domainHierarchyObject.iterator();
+		while (domainHierarchyIterator.hasNext()) {
+			domains.push('' + domainHierarchyIterator.next().getID()); // appending with empty string to convert to java script string
+		}
+		return domains;
+	},
+	
+	type: 'AssetManagementBaseJob'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-06-28 21:22:34&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;54573868538313009961ddeeff7b1296&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;15&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AssetManagementBaseJob&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_54573868538313009961ddeeff7b1296&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-09 17:00:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;8550&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:34</sys_created_on>
+        <sys_id>d99ccdba2f331110d8a4d5f62799b6c2</sys_id>
+        <sys_name>AssetManagementBaseJob</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d99ccdba2f331110d8a4d5f62799b6c2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

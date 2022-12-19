@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>944fcf31d7223100a70f42285e610385</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.JDBCConnectionWorker&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;JDBCConnectionWorker&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var JDBCConnectionWorker = Class.create();
+
+JDBCConnectionWorker.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	start: function() {
+		var credentialSysId = this.getParameter('sysparm_credential_id');
+		var jdbcConnectionSysId = this.getParameter('sysparm_jdbc_connection_id');
+		var connTimeout = this.getParameter('sysparm_connection_timeout');
+		var timeout = this._parseTimeout(connTimeout);
+		
+		var worker = new GlideJDBCConnectionWorker();
+		worker.setCredentialSysId(credentialSysId);
+		worker.setJDBCConnectionSysId(jdbcConnectionSysId);
+		worker.setTimeoutInSecs(timeout);
+		worker.setBackground(true);		
+		worker.start();
+		var progressId = worker.getProgressID();
+		return progressId;
+	},
+	
+	monitor: function() {
+		var progressId = this.getParameter('sysparm_progress_id');
+		var monitorGr = new GlideRecord('sys_progress_worker');
+		monitorGr.get(progressId);
+		if ((!gs.nil(monitorGr)) &amp;&amp; (monitorGr.getValue('state') == 'complete')){
+		    return true; 	
+		} else {
+			return false;
+		}
+	},
+	
+	retrieve: function() {
+		var progressId = this.getParameter('sysparm_progress_id');
+		var monitorGr = new GlideRecord('sys_progress_worker');
+		monitorGr.get(progressId);
+
+		var succeed = false;
+		var message;
+		if ((!gs.nil(monitorGr)) &amp;&amp; (monitorGr.getValue('state_code') == 'success')){
+			succeed = true;
+		}
+		
+		if (succeed)
+			message = "Connection Looks Good";
+		else
+			message = "Connection Failed: " + monitorGr.message;
+		
+		var result = this.newItem("result");
+		result.setAttribute('succeed', succeed);
+		result.setAttribute('message', message);
+	},
+	
+	_parseTimeout: function(timeout) {
+		var defaultTimeout = 60;
+		
+		if (JSUtil.notNil(timeout)) {
+			var parsedTimeout = parseInt(timeout, 10);
+			if (isNaN(parseInt(timeout, 10)) || parseInt(timeout, 10) &lt;= 0) {
+				return defaultTimeout;
+			}
+			return parsedTimeout;
+		}
+		return defaultTimeout;
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-03-03 05:30:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;944fcf31d7223100a70f42285e610385&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;JDBCConnectionWorker&lt;/sys_name&gt;
+        &lt;sys_package display_value="Orchestration - Runtime" source="com.snc.runbook_automation.runtime"&gt;f3d67d412f140110d8a4d5f62799b6d1&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_944fcf31d7223100a70f42285e610385&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;jim.spencer&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-01-05 18:11:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1894&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:45</sys_created_on>
+        <sys_id>611d4d7e2f331110d8a4d5f62799b628</sys_id>
+        <sys_name>JDBCConnectionWorker</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_611d4d7e2f331110d8a4d5f62799b628</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>57ad235167b302006cc275f557415ae6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DelegatedDevRoleManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Role manager for delegated development.  Controls creating/managing roles and allocating permissions to indivdual users within particular scopes.&amp;#13;
+&amp;#13;
+Usage:&amp;#13;
+&amp;#13;
+var mgr = DelegatedDevRoleManager.forScopeAndPermissionSet(myScopeId, myPermissionSetId);&amp;#13;
+mgr.allocatePermissionToUser(userId);&amp;#13;
+mgr.removePermissionFromUser(userId);&lt;/description&gt;
+        &lt;name&gt;DelegatedDevRoleManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DelegatedDevRoleManager = (function() {
+
+	function forScopeAndPermissionSet(scopeId, permissionSetId) {
+		
+		var scopeName = getScopeName();
+		var permissionSetName = getPermissionSetName();
+
+		gs.debug("Scope name " + scopeName);
+		gs.debug("Permission set name " + permissionSetName);
+		
+		return {
+			allocatePermissionToUser : function(userId) {
+				verifyUser(userId);
+				
+				// Look up a (permission, scope) pair to get any already existing roles
+				var roleId = findRoleId();
+				gs.debug("Found role " + roleId);
+
+				// If no (permission, scope) pair already there, create a role and assign the permission to it
+				if (gs.nil(roleId))
+					roleId = allocateRoleName();
+
+				gs.debug("Role we'll assign is " + roleId);
+				
+				// Assign the role to the user
+				assignRoleToUser(userId, roleId);
+				assignRoleToUser(userId, getRoleIdFromName('delegated_developer'));
+				
+			},
+
+			removePermissionFromUser : function(userId) {
+				verifyUser(userId);
+				
+				var roleId = findRoleId();
+
+				if (!gs.nil(roleId))
+					removeRoleFromUser(userId, roleId);
+			}
+		};
+		
+		function getRoleIdFromName(roleName) {
+			var gr = new GlideRecord('sys_user_role');
+			gr.addQuery('name', roleName);
+			gr.query();
+			if (gr.next())
+				return gr.getUniqueValue();
+		}
+
+		function getScopeName() {
+			var gr = new GlideRecord('sys_scope');
+			gr.get(scopeId);
+			if (!gr.isValid())
+				throw "Invalid scope ID " + scopeId;
+			return gr.name;
+		}
+
+		function getPermissionSetName() {
+			var gr = new GlideRecord('sys_development_permission_set');
+			gr.get(permissionSetId);
+			if (!gr.isValid())
+				throw "Invalid permission set ID " + permissionSetId;
+			return gr.name;
+		}
+		
+		function verifyUser(userId) {
+			var gr = new GlideRecord('sys_user');
+			gr.get(userId);
+			if (!gr.isValid())
+				throw "Invalid user id " + userId;
+		}
+
+		function findRoleId() {
+			var gr = new GlideRecord('sys_scope_permission_set_role_assignment');
+			gr.addQuery('scope', scopeId);
+			gr.addQuery('permission_set', permissionSetId);
+			gr.query();
+			if (gr.next())
+				return gr.role;
+			return null;
+		}
+
+		function allocateRoleName() {
+			var roleName = getAvailableRoleName(scopeId, permissionSetId);
+			var roleId = createRole(roleName);
+
+			var gr = new GlideRecord('sys_scope_permission_set_role_assignment');
+			gr.initialize();
+			gr.role = roleId;
+			gr.scope = scopeId;
+			gr.permission_set = permissionSetId;
+			if (!gr.insert())
+				throw "Failed to create role/permission_set/scope relationship for " + [roleId, permissionSetId, scopeId].join('/');
+
+			gs.debug("New role name: " + roleName + " with sys id " + roleId);
+			return roleId;
+		}
+
+		function getAvailableRoleName() {
+			var baseRoleName = ["dev", cleanName(scopeName), cleanName(permissionSetName)].join('_');
+			var maxIncrement = maxUsedRoleNameIncrement(baseRoleName);
+			var roleName = baseRoleName;
+			if (typeof maxIncrement !== 'undefined')
+				roleName = baseRoleName + '_' + maxIncrement++;
+
+			gs.debug("Role name will be " + roleName);
+			return roleName;
+		}
+		
+		function cleanName(name) {
+			return name.replace(/[^A-Za-z0-9_-]/, '');
+		}
+		
+		function maxUsedRoleNameIncrement(roleName) {
+			var gr = new GlideRecord('sys_user_role');
+			gr.addQuery('name', 'STARTSWITH', roleName);
+			gr.query();
+			var maxUniquifier;
+			var curUniquifier;
+			while (gr.next()) {
+				var name = gr.getValue('name');
+				name.replace(roleName + '_', '');
+				curUniquifier = ~~name;
+				if (typeof maxUniquifier === 'undefined' || curUniqifier &gt; maxUniquifier)
+					maxUniquifier = curUniquifier;
+			}
+			return maxUniquifier;
+		}
+		
+		function createRole(roleName) {
+			gs.debug("Starting process of creating role " + roleName);
+			var gr = new GlideRecord('sys_user_role');
+			gr.initialize();
+			gr.name = roleName;
+			gr.description = 'Delegated Development: ' + scopeName + ' -&gt;  ' + permissionSetName;
+			if (!gr.insert())
+				throw "Failed to create role " + roleName + ", aborting role assignment";
+			gs.debug("Created role " + roleName + " with sysId " + gr.getUniqueValue());
+			return gr.getUniqueValue();
+		}
+
+		function assignRoleToUser(userId, roleId) {
+			if (gs.nil(userId) || gs.nil(roleId))
+				return;
+				
+			var gr = new GlideRecord('sys_user_has_role');
+			gr.addQuery('user', userId);
+			gr.addQuery('role', roleId);
+			gr.query();
+			if (!gr.next()) {
+				gs.debug("Creating a new record for " + userId + " and role " + roleId);
+				gr.newRecord();
+				gr.user = userId;
+				gr.role = roleId;
+				if (!gr.insert())
+					throw "Failed to assign role [" + roleId + "] to user [" + userId + "]";
+			}
+			else {
+				gs.debug("Using existing role association " + gr.getUniqueValue());
+			}
+			gs.debug("sys id of sys_user_has_role record: " + gr.getUniqueValue());
+			return gr.getUniqueValue();
+		}
+
+		function removeRoleFromUser(userId, roleId) {
+			var gr = new GlideRecord('sys_user_has_role');
+			gr.addQuery('user', userId);
+			gr.addQuery('role', roleId);
+			gr.query();
+			if (gr.next())
+				return gr.deleteRecord();
+			return false;
+		}
+	}
+
+	return {
+		forScopeAndPermissionSet : forScopeAndPermissionSet
+	};
+
+})();
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-11-17 17:57:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;57ad235167b302006cc275f557415ae6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;32&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DelegatedDevRoleManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Delegated Development" source="com.glide.delegated_development"&gt;f1bdf04b6d2220100acb70b3534330f6&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_57ad235167b302006cc275f557415ae6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-01-13 23:49:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5118&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:39</sys_created_on>
+        <sys_id>e69c81fa2f331110d8a4d5f62799b610</sys_id>
+        <sys_name>DelegatedDevRoleManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e69c81fa2f331110d8a4d5f62799b610</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

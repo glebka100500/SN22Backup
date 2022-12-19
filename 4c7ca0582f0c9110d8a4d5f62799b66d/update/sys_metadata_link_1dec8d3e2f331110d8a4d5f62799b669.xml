@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>80982ba0c0a8026c23e3152db7638535</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ASTLicense&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Manages AST License related operations&lt;/description&gt;
+        &lt;name&gt;ASTLicense&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * License related calculations.
+ * 
+ * Aleck Lin aleck.lin@service-now.com
+ */
+
+var ASTLicense = Class.create();
+
+ASTLicense.prototype = {
+  initialize: function() {
+      this.installCount = 0;
+      this.licenseCache = {};
+  },
+
+  calcInstallCount: function() {
+      this.calcDiscoverableInstallCount();
+      this.calcNonDiscoverableInstallCount();
+  },
+
+  calcDiscoverableInstallCount: function() {
+      var gr = new GlideRecord("ast_license_base");
+      gr.addQuery("manual", "false");
+      gr.addQuery("discoverable_key", "true");
+      gr.query();
+      while (gr.next()) 
+          this.calcInstalledCountByInstalledOn(gr);
+  },
+
+  calcInstalledCountByInstalledOn: function(licenseGr) {
+    var ga = new GlideAggregate("ast_license_software_instance");
+    ga.addQuery("ast_license", licenseGr.sys_id);
+    ga.addAggregate('COUNT');
+    ga.query();
+    var count = 0;
+    if (ga.next())
+        count = ga.getAggregate('COUNT');
+
+    var gr = new GlideRecord("ast_license_base");
+    if (!gr.get(licenseGr.sys_id))
+        return;
+
+    gr.install_count = count;
+    gr.update();
+  },
+
+  calcNonDiscoverableInstallCount: function() {
+      var gr = new GlideRecord("ast_license_base");
+      gr.addQuery("manual", "false");
+      gr.addQuery("discoverable_key", "false");
+      gr.query();
+      while (gr.next()) 
+          this._calcInstallCount(gr);
+  },
+
+  _calcInstallCount: function(gr) {
+      if (this.licenseCache[gr.sys_id])
+          return;
+
+      var licenseArr = this.findAllLicenses([gr.sys_id]);
+
+      var count = 0;
+      var gr = new GlideRecord("ast_license_base");
+      gr.addQuery("sys_id", licenseArr);
+      gr.orderBy("sys_created_on");
+      gr.query();
+      while (gr.next()) {
+          this.licenseCache[gr.sys_id] = true;
+          count++;
+         
+          // If this is the last license, then give it all the rest of the install_count
+          if (count == licenseArr.length) {
+              gr.install_count = this.installCount;
+              this.installCount = 0;
+          } else {
+              if (this.installCount &gt;= gr.license_count)
+                  gr.install_count = gr.license_count;
+              else
+                  gr.install_count = this.installCount;
+
+              this.installCount -= gr.install_count;
+          }
+          gr.update();
+      }
+  },
+
+  findAllLicenses: function(licenseArr) {
+      var spkgArr = this.getSoftwarePackages(licenseArr);      
+      var spkg = new SoftwarePackage();
+      var licenseArr2 = spkg.getASTLicenses(spkgArr);   
+
+      if (licenseArr2.length == licenseArr.length)
+          return licenseArr2;
+      else
+          return this.findAllLicenses(licenseArr2);
+  },
+
+  /*
+   *  Get an array list of software packages based on licenses.
+   */ 
+  getSoftwarePackages: function(list) {
+      this.installCount = 0;
+      var spkgs = [];
+      var cache = {};
+      var gr = new GlideRecord('ast_license_package_instance');
+      gr.addQuery("ast_license", list);
+      gr.query();
+      while (gr.next()) {
+          var pkgSysId = gr.ci_item.sys_id;
+          if (cache[pkgSysId])
+              continue;
+          cache[pkgSysId] = true;
+
+          spkgs.push(pkgSysId);
+          this.installCount += gr.ci_item.install_count;
+      }
+
+      return spkgs;
+  },
+
+  calcManualManagedInstallCount: function(licenseGr) {
+    if (licenseGr.manual == false)
+        return;
+
+    this.calcInstalledCountByInstalledOn(licenseGr);
+  },
+
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;aleck.lin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-05-10 05:04:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;80982ba0c0a8026c23e3152db7638535&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;39&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ASTLicense&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Management Basics" source="com.snc.service"&gt;b89005876d2620100acb70b353433001&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_80982ba0c0a8026c23e3152db7638535&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;aleck.lin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2010-07-01 16:57:29&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3572&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:56</sys_created_on>
+        <sys_id>1dec8d3e2f331110d8a4d5f62799b669</sys_id>
+        <sys_name>ASTLicense</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1dec8d3e2f331110d8a4d5f62799b669</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

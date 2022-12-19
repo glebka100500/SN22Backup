@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>794a1461eb3201006a668c505206fed0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdVerificationParameterUtility&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Common methods shared in business rules for various verification parameter related business rules.&lt;/description&gt;
+        &lt;name&gt;PwdVerificationParameterUtility&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdVerificationParameterUtility = Class.create();
+PwdVerificationParameterUtility.prototype = {
+	initialize: function() {
+	},
+	
+	/*
+	Delete all the parameters related to this verification
+	except the paramaters given as an array
+ 	*/
+	clearOthers: function(params) {
+		if (params == undefined)
+			return;
+		
+		var g = new GlideRecord('pwd_verification_param');
+		g.addQuery('verification', current.sys_id);
+		for (var index in params) {
+			g.addQuery('name', '&lt;&gt;', params[index]);			
+		}
+		g.query();
+		g.deleteMultiple();
+	},
+	
+	/**
+	property: system property name for default value
+	order: the order of the parameter
+	desc: description of the parameter
+ 	*/
+	addParamWithProperty: function(param, property, order, desc) {
+		var g = new GlideRecord('pwd_verification_param');
+		g.addQuery('verification', current.sys_id);
+		g.addQuery('name', param);
+		g.query();
+		if (!g.next()) {
+			var p = new GlideRecord('pwd_verification_param');
+			p.initialize();
+			p.setValue('name', param);
+			p.setValue('verification', current.sys_id);
+			
+			if (property) {
+				p.setValue('value', GlideProperties.get(property,'0'));
+			}
+			if (order) {
+				p.setValue('order', order);
+			}
+			if (desc) {
+				p.setValue('description', desc);
+			}
+			return p.insert();
+		}
+		return false;
+	},
+	
+	/**
+	value: value to be set for the parameter
+	order: the order of the parameter
+	desc: description of the parameter
+ 	*/
+	addParamWithValue: function(param, value, order, desc) {
+		var g = new GlideRecord('pwd_verification_param');
+		g.addQuery('verification', current.sys_id);
+		g.addQuery('name', param);
+		g.query();
+		if (!g.next()) {
+			var p = new GlideRecord('pwd_verification_param');
+			p.initialize();
+			p.setValue('name', param);
+			p.setValue('verification', current.sys_id);
+			
+			if (value) {
+				p.setValue('value', value);
+			}
+			if (order) {
+				p.setValue('order', order);
+			}
+			if (desc) {
+				p.setValue('description', desc);
+			}
+			return p.insert();
+		}
+		return false;
+	},
+	// returns true/false whether the column on the table exists in the system
+	validateColumnExists:  function(table, column) {
+		var tableGr = new GlideRecord(table);
+		var columnExists = tableGr.isValidField(column);
+		tableGr.close();
+		return columnExists;
+	},
+	
+	isInteger:function (text) {
+		return /^-{0,1}\d+$/.test(text);
+	},
+	
+	
+	isPositiveInteger:function(text) {
+		return /^[0-9]\d*$/.test(text);
+	},
+	contains: function(list, value) {
+		for (var index in list) {
+			if (list[index] == value) {
+				return true;
+			}
+		}
+		return false;
+	},
+	
+	type: 'PwdVerificationParameterUtility'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-07-25 19:27:11&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;794a1461eb3201006a668c505206fed0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdVerificationParameterUtility&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_794a1461eb3201006a668c505206fed0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-26 23:02:27&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2583&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:44</sys_created_on>
+        <sys_id>1adc493e2f331110d8a4d5f62799b64c</sys_id>
+        <sys_name>PwdVerificationParameterUtility</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1adc493e2f331110d8a4d5f62799b64c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

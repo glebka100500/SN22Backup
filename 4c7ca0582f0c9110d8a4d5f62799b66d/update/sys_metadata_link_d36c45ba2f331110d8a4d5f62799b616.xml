@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>37a892f1d7311200f2d224837e610387</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScheduleTimeline&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ScheduleTimeline&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScheduleTimeline = Class.create();
+ScheduleTimeline.prototype = {
+	initialize: function() {
+		this.log = new GSLog("com.snc.schedule_timeline.log.level", this.type);
+	},
+	
+	getProperties: function(cmnTimelinePageSysId) {
+		var properties = {
+			"showGridLines" : false,
+			"showSummaryPane" : false,
+			"showLeftPane" : false,
+			"showSpanText" : false,
+			"auto_refresh" : "0"
+		};
+		
+		cmnTimelinePageSysId = SNC.GlideHTMLSanitizer.sanitize(cmnTimelinePageSysId);
+		
+		var pattern = /[0-9A-F]{32}/i;
+		if (!pattern.test(cmnTimelinePageSysId))
+			return properties;
+		
+		this.log.debug("[getProperties] cmnTimelinePageSysId: " + cmnTimelinePageSysId);
+		
+		var gr = new GlideRecord("cmn_timeline_page");
+		gr.addQuery("sys_id", cmnTimelinePageSysId);
+		gr.query();
+		if (gr.next()) {
+			properties.showGridLines = this._getBoolean(gr.getValue("show_grid_lines"));
+			properties.showSummaryPane = this._getBoolean(gr.getValue("show_summary_pane"));
+			properties.showLeftPane = this._getBoolean(gr.getValue("show_left_pane"));
+			properties.showSpanText = this._getBoolean(gr.getValue("show_span_text"));
+			properties.autoRefresh = gr.getValue("auto_refresh");
+		}
+		
+		this.log.debug("[getProperties] properties: " + new JSON().encode(properties));
+		return properties;
+	},
+	
+	getProperty: function(uriParam) {
+		var property = {
+			"key" : "",
+			"value" : "",
+			"add" : false
+		};
+		
+		if (JSUtil.nil(uriParam))
+			return property;
+		
+		var arr = uriParam.split('=');
+		if (arr.length != 2)
+			return property;
+		
+		property.key = SNC.GlideHTMLSanitizer.sanitize(arr[0]);
+		property.value = SNC.GlideHTMLSanitizer.sanitize(arr[1]);
+		property.add = property.key.indexOf('sysparm_timeline') &gt;= 0 ? true : false;
+		
+		this.log.debug("[getProperty] property: " + new JSON().encode(property));
+		return property;
+	},
+	
+	_getBoolean: function(value){
+		return value &amp;&amp; value == "1" ? true : false;
+	},
+	
+	type: 'ScheduleTimeline'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-02-26 11:56:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;37a892f1d7311200f2d224837e610387&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScheduleTimeline&lt;/sys_name&gt;
+        &lt;sys_package display_value="Advanced Schedules Support" source="com.glide.schedules"&gt;92a009c76d2620100acb70b353433070&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_37a892f1d7311200f2d224837e610387&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-02-26 14:31:17&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1936&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:52</sys_created_on>
+        <sys_id>d36c45ba2f331110d8a4d5f62799b616</sys_id>
+        <sys_name>ScheduleTimeline</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d36c45ba2f331110d8a4d5f62799b616</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

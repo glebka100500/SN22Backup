@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>64997d53c7031010dd7ab6c427c260e8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.LFGenerateLocalizationInsights&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;To generate localization framework insights.&lt;/description&gt;
+        &lt;name&gt;LFGenerateLocalizationInsights&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var LFGenerateLocalizationInsights = Class.create();
+LFGenerateLocalizationInsights.prototype = {
+    initialize: function() {
+        this.taskUtilsObject = new LFTaskUtils();
+        this.lfUtils = new LFUtils();
+        this.lfReadSaveScriptUtils = new LFReadSaveScriptUtils();
+        this.lfConstants = new LFConstants();
+        this.lfLogger = new LFLogger("LFGenerateLocalizationInsights");
+        var insightsScheduleJobSysId = "7faaf593c7031010dd7ab6c427c26075";
+        this.jobsExecutionTrackerAPI = new JobsExecutionTrackerAPI(insightsScheduleJobSysId);
+
+        var sysLangGR = new GlideRecord('sys_language');
+        sysLangGR.addActiveQuery();
+        sysLangGR.query();
+        this.languages = {};
+        while (sysLangGR.next()) {
+            this.languages[sysLangGR.getValue('sys_id')] = sysLangGR.getValue('id');
+        }
+    },
+
+    getLastTriggerTime: function() {
+        if (this.jobsExecutionTrackerAPI.isJobTracked()) {
+            var lastTriggerTime = this.jobsExecutionTrackerAPI.getLastCompletedJobTime();
+            if (lastTriggerTime) {
+                return lastTriggerTime;
+            }
+        }
+        return this._getLastTriggerTimeFromProperty();
+    },
+
+    canRunGenerateInsightsJob: function() {
+        if (this.jobsExecutionTrackerAPI.isJobTracked()) {
+            return !this.jobsExecutionTrackerAPI.isJobRunning();
+        } else {
+            var latestJobDetails = this._getLatestJobDetailsFromProperties();
+            if (!latestJobDetails.lastTriggerTime) {
+                return true;
+            }
+            var timeNow = new GlideDateTime();
+            var isRunning = latestJobDetails.jobRunning;
+            var duration = GlideDateTime.subtract(latestJobDetails.lastTriggerTime, timeNow);
+            var hoursSpent = duration.getNumericValue() / 1000 / 60 / 60; // Milliseconds to hours
+            return (!isRunning ||
+                (isRunning &amp;&amp; hoursSpent &gt;= gs.getProperty('com.glide.sn_lf.insights.max_run_time', 24)));
+        }
+    },
+
+    generateInsights: function() {
+        var activeArtifacts = [];
+        var configGr = new GlideRecord('sn_lf_config');
+        configGr.addActiveQuery();
+        configGr.addQuery('generate_insights', true);
+        configGr.query();
+
+        while (configGr.next()) {
+            activeArtifacts.push(configGr.getValue('table_name'));
+            this.generateInsightsForConfigRecord(configGr);
+        }
+        this._deleteStaleInsights(activeArtifacts);
+    },
+
+    generateInsightsForConfigRecord: function(configRecord) {
+        var internalName = configRecord.internal_name;
+        var baseTable = configRecord.table_name;
+        var artifactGR = new GlideRecord(baseTable);
+        artifactGR.setWorkflow(false);
+        artifactGR.query();
+        while (artifactGR.next()) {
+            for (var languageSysId in this.languages) {
+                var documentID = artifactGR.getUniqueValue();
+                if (this._isArtifactActive(artifactGR, internalName)) {
+                    var status = 2; // Translation in progress
+                    var percentage = -1;
+                    if (!this._translationInProgress(documentID, languageSysId)) {
+                        try {
+                            var docContent = this.lfReadSaveScriptUtils.generateDocumentContent(internalName, documentID, this.languages[languageSysId]);
+                        } catch (e) {
+                            this.lfLogger.logError(e.code + " : " + e.message);
+                            continue;
+                        }
+                        var statusAndPercentage = this.calculateStatusAndPercentage(docContent);
+                        status = statusAndPercentage.status;
+                        percentage = statusAndPercentage.percentage;
+                    }
+                    this._createOrUpdateInsightRecord(baseTable, documentID, languageSysId, status, percentage);
+                } else {
+                    this._deleteInsightRecord(baseTable, documentID);
+                    break;
+                }
+            }
+        }
+    },
+
+    getInvalidParamsForRequestTranslationsFromInsights: function(idArray) { // list of insight sysIds as input; Used to validate if lf tasks can be created for the insights
+        var invalidArtifactLanguagePairs = [];
+        var inactiveTables = [];
+        var tableNameToLanguagesMap = {};
+        var lfArtifactUtils = new LFArtifactUtils();
+        var gr = new GlideRecord('sn_lf_insight');
+        gr.addQuery('sys_id', 'IN', idArray);
+        gr.query();
+        while (gr.next()) {
+            var language = gr.getValue('language');
+            var tableName = gr.getValue('table_name');
+            // Insight records stores same table as of Artifact Configuration
+            var artifactConfigUtils = lfArtifactUtils.initFromTableName(tableName);
+            if (inactiveTables.length &gt; 0 || !lfArtifactUtils.isArtifactActive()) {
+                if (!lfArtifactUtils.isArtifactActive() &amp;&amp; inactiveTables.indexOf(tableName) === -1) {
+                    inactiveTables.push(tableName);
+                }
+                continue;
+            }
+            var instanceLanguages = tableNameToLanguagesMap[tableName];
+            if (!instanceLanguages) {
+                internalName = artifactConfigUtils.getInternalName();
+                instanceLanguages = this.lfUtils.getInstanceLanguages(internalName);
+                tableNameToLanguagesMap[tableName] = instanceLanguages;
+            }
+            for (var idx = 0; idx &lt; instanceLanguages.length; idx++) {
+                var instanceLanguage = instanceLanguages[idx];
+                var artifactLanguagePair = tableName + " - " + instanceLanguage.label;
+                if (instanceLanguage.sysId == language &amp;&amp; instanceLanguage.isDisabled &amp;&amp; invalidArtifactLanguagePairs.indexOf(artifactLanguagePair) === -1) {
+                    invalidArtifactLanguagePairs.push(artifactLanguagePair);
+                    break;
+                }
+            }
+        }
+        return {
+            "inactiveTables": inactiveTables,
+            "invalidArtifactLanguagePairs": invalidArtifactLanguagePairs
+        };
+    },
+
+    calculateStatusAndPercentage: function(docContent) {
+        var totalEntriesCount = 0,
+            translatedEntriesCount = 0;
+        var result = {
+            'percentage': 0
+        };
+        if (docContent &amp;&amp; docContent.version === "v1") {
+            var content = docContent.content;
+            for (var contentIdx = 0; contentIdx &lt; content.length; contentIdx++) {
+                var fieldInfoArray = content[contentIdx] ? content[contentIdx].fieldInfo : [];
+                for (var fieldIdx = 0; fieldIdx &lt; fieldInfoArray.length; fieldIdx++) {
+                    var fieldInfo = fieldInfoArray[fieldIdx];
+                    totalEntriesCount++;
+                    if (fieldInfo &amp;&amp; fieldInfo.translatedValue) {
+                        translatedEntriesCount++;
+                    }
+                }
+            }
+            result.percentage = translatedEntriesCount / totalEntriesCount * 100;
+        }
+        result.status = this._calculateStatus(result.percentage);
+        return result;
+    },
+
+    getTranslationStatus: function(documentContent) {
+        var result = this.calculateStatusAndPercentage(documentContent);
+        switch (result.status) {
+            case 1:
+                return this.lfConstants.REQUESTED_ITEM_STATUS.Translated;
+            case 3:
+                return this.lfConstants.REQUESTED_ITEM_STATUS.Partially_Translated;
+            case 4:
+                return this.lfConstants.REQUESTED_ITEM_STATUS.Not_Translated;
+            default:
+                return this.lfConstants.REQUESTED_ITEM_STATUS.Not_Translated;
+        }
+    },
+
+    generateInsightsLink: function(insights) {
+        var operatorType = (insights.length == 1) ? '=' : 'IN';
+        var insightsLink = "/sn_lf_insight_list.do?sysparm_query=sys_id" + operatorType;
+        for (var index = 0; index &lt; insights.length - 1; index++) {
+            insightsLink += insights[index] + ",";
+        }
+        insightsLink += insights[index];
+        return new GlideTinyURL().createTinyURL(insightsLink);
+    },
+
+    _deleteStaleInsights: function(activeArtifacts) {
+        var staleInsights = new GlideRecord("sn_lf_insight");
+        staleInsights.addQuery('table_name', 'NOT IN', activeArtifacts)
+            .addOrCondition("sys_updated_on", "&lt;", this.getLastTriggerTime());
+        staleInsights.query();
+        staleInsights.deleteMultiple();
+    },
+
+    _calculateStatus: function(percentage) {
+        var result = 1; // Completely translated
+        if (0 &lt; percentage &amp;&amp; percentage &lt; 100) {
+            result = 3; // Partially translated
+        } else if (percentage === 0) {
+            result = 4; // Not translated
+        }
+        return result;
+    },
+
+    _createOrUpdateInsightRecord: function(tableName, document, language, status, percentage) {
+        var insightsGR = new GlideRecord("sn_lf_insight");
+        insightsGR.addQuery("table_name", tableName);
+        insightsGR.addQuery("document", document);
+        insightsGR.addQuery("language", language);
+        insightsGR.query();
+
+        if (insightsGR.next()) {
+            insightsGR.setValue("status", status);
+            insightsGR.setValue("percentage", percentage);
+            insightsGR.setForceUpdate(true);
+            insightsGR.update();
+        } else {
+            insightsGR.initialize();
+            insightsGR.setValue("table_name", tableName);
+            insightsGR.setValue("document", document);
+            insightsGR.setValue("status", status);
+            insightsGR.setValue("percentage", percentage);
+            insightsGR.setValue("language", language);
+            insightsGR.insert();
+        }
+    },
+
+    _deleteInsightRecord: function(tableName, document) {
+        var insightsGR = new GlideRecord("sn_lf_insight");
+        insightsGR.addQuery("table_name", tableName);
+        insightsGR.addQuery("document", document);
+        insightsGR.query();
+        while (insightsGR.next()) {
+            insightsGR.deleteRecord();
+        }
+    },
+
+    _isArtifactActive: function(artifactGR, internalName) {
+        // Survey artifact evaluation method &amp; active check
+        if (internalName == "survey") {
+            return artifactGR.active &amp;&amp; artifactGR.evaluation_method == "survey";
+        }
+        if (artifactGR.active) {
+            // catalog item active check
+            return true;
+        } else if (artifactGR.compiled_topic &amp;&amp; artifactGR.compiled_topic.active) {
+            // VA topic active check
+            return true;
+        }
+        return false;
+    },
+
+    _translationInProgress: function(documentID, languageSysId) {
+        var response = this._getLatestRequestedItemStatusDetails(documentID, languageSysId);
+        if (response.exists) {
+            return response.isInProgress;
+        } else if (this._doesTaskHasRequiredFields()) {
+            return this._isTaskTranslationInProgress(documentID, languageSysId);
+        }
+        return false;
+    },
+
+    _getLatestRequestedItemStatusDetails: function(documentID, languageSysId) {
+        var response = {
+            "exists": false,
+            "isInProgress": false
+        };
+        var lritmGR = new GlideRecord("sn_lf_requested_item");
+        lritmGR.addQuery("document", documentID);
+        lritmGR.addQuery("target_language", languageSysId);
+        lritmGR.orderByDesc('sys_created_on');
+        lritmGR.setLimit(1);
+        lritmGR.query();
+        if (lritmGR.next()) {
+            var currentState = lritmGR.getValue("state");
+            var requestedItemStates = new LFConstants().REQUESTED_ITEM_STATES;
+            var inProgressStates = [requestedItemStates.Open, requestedItemStates.In_Progress]; // Localization requested item states that specify translations fulfillment is still in progress
+            response.isInProgress = (inProgressStates.indexOf(parseInt(currentState)) != -1);
+            response.exists = true;
+        }
+        return response;
+    },
+
+    _doesTaskHasRequiredFields: function() {
+        var gtd = new GlideTableDescriptor("sn_lf_task");
+        return gtd.isValidField("document") &amp;&amp; gtd.isValidField("target_language");
+    },
+
+    _isTaskTranslationInProgress: function(documentID, languageSysId) {
+        var isTranslationInProgress = false;
+        var taskGR = new GlideRecord("sn_lf_task");
+        taskGR.addQuery("document", documentID);
+        taskGR.addQuery("target_language", languageSysId);
+        taskGR.orderByDesc('sys_created_on');
+        taskGR.setLimit(1);
+        taskGR.query();
+        if (taskGR.next()) {
+            var currentState = taskGR.getValue("state");
+            var taskStates = new LFConstants().TASK_STATES;
+            var completedStates = [taskStates.Closed_Complete, taskStates.Error_In_Publishing_Translations, taskStates.Closed_Incomplete]; // Localization task states that specify translations fulfillment is completed
+            isTranslationInProgress = (completedStates.indexOf(parseInt(currentState)) == -1);
+        }
+        return isTranslationInProgress;
+    },
+
+    _getLastTriggerTimeFromProperty: function() {
+        var lastTriggerTime;
+        try {
+            var lastTriggerTimePropertyValue = gs.getProperty('com.glide.sn_lf.insights.trigger_time');
+            lastTriggerTime = new GlideDateTime(lastTriggerTimePropertyValue);
+        } catch (e) {
+            gs.logError("Error Occurred while reading last triggered time of insights job. " + e, "Localization Framework");
+        }
+        return lastTriggerTime;
+    },
+
+    _getLatestJobDetailsFromProperties: function() {
+        return {
+            'lastTriggerTime': this._getLastTriggerTimeFromProperty(),
+            'jobRunning': gs.getProperty('com.glide.sn_lf.insights.job_running', 'false') === 'true'
+        };
+    },
+
+    type: 'LFGenerateLocalizationInsights'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-09 21:31:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;64997d53c7031010dd7ab6c427c260e8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;29&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;LFGenerateLocalizationInsights&lt;/sys_name&gt;
+        &lt;sys_package display_value="Localization Framework" source="com.glide.localization_framework"&gt;be2124c92f241110d8a4d5f62799b640&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_64997d53c7031010dd7ab6c427c260e8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-15 13:24:46&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;13962&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:02</sys_created_on>
+        <sys_id>54bcc9fa2f331110d8a4d5f62799b62a</sys_id>
+        <sys_name>LFGenerateLocalizationInsights</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_54bcc9fa2f331110d8a4d5f62799b62a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

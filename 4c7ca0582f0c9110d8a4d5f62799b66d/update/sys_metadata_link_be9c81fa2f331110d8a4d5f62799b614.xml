@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>57f2247bb712230026778d78ee11a99b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeRefQualifiersSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Functions that return reference qualifiers for various&amp;#13;
+			reference fields in the knowledge application.  Customers should not change this class directly This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KnowledgeRefQualifiersSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KnowledgeRefQualifiersSNC = Class.create();
+KnowledgeRefQualifiersSNC.prototype = {
+    initialize: function() {
+    },
+	
+	getCanContributeKBs: function(tableName) {
+		if(gs.tableExists('kb_article_template')){
+			var gr = new GlideRecord('kb_article_template');
+			gr.addQuery('child_table', tableName);
+			gr.query();
+			if(gr.hasNext()){
+				var prefix = "sys_idIN";
+				gs.addInfoMessage(gs.getMessage('The list of knowledge bases is filtered based on the selected article template.'));
+				return prefix + Object.keys(new ArticleTemplateUtil().getCanContributeKBForTemplate(tableName)).join(',');
+			}
+		}
+		
+		if(tableName == "kb_knowledge" || tableName == "kb_knowledge_block"){
+			var kbs = JSON.parse(new SNC.KnowledgeHelper().getMyWritableKnowledgeBases());
+			kbs = kbs.map(function(kb){
+				return kb.sys_id;
+			});
+			if(tableName==="kb_knowledge_block")
+				return 'enable_blocks=true^sys_idIN'+kbs.join(',');
+			return 'sys_idIN'+kbs.join(',');
+		}
+		return '';
+	},
+
+	getCanReadKBs: function() {
+		var ids = "";
+		var kbHelper = new SNC.KnowledgeHelper();
+		
+		if(gs.hasRole("admin"))
+			return ids;
+		
+		ids = "sys_idIN";
+		var kb = new GlideRecord("kb_knowledge_base");
+		kb.addActiveQuery();
+		kb.query();
+		
+		while(kb.next()) {
+			if(kbHelper.canRead(kb))	
+				ids += kb.getUniqueValue() + ",";
+		}
+		
+		return ids;
+	},
+	
+	
+	/**
+	 * Generates a list of selectable knowledge base records based on a users roles for the
+	 * kb_uc many to many tables
+	 * 
+	 * @return String enodedQuery
+	 */
+	kbReferenceQualifierForUcTables: function() {
+		var kbAccess = new KnowledgeAccess();
+		var kbs = [];
+		var kbGR = new GlideRecord('kb_knowledge_base');
+		kbGR.addActiveQuery();
+		kbGR.addQuery('kb_version', '!=', '2');
+		kbGR.query();
+		while(kbGR.next()) {
+			if(kbAccess.managerRights(kbGR)) 
+				kbs.push(kbGR.sys_id + '');
+		}
+		return 'sys_idIN'+kbs.join(',');
+	},
+	
+	/**
+	 * Returns a list of workflows that run on the kb_knowledge table
+	 *
+	 * @return String enodedQuery
+	 */
+	knowledgeWorkflows: function() {
+		var wfIds = [];
+		var gr = new GlideRecord("wf_workflow_version");
+		gr.addQuery("published", true);
+		gr.addQuery("table", "kb_knowledge");
+		gr.addActiveQuery();
+		gr.query();
+		
+		while(gr.next()) {
+			wfIds.push(gr.workflow.toString());
+		}
+		
+		return "sys_idIN" + wfIds.join();
+	},
+		
+	/** Qualifier to return list of category ids belongs to a specified knowledge base
+	 *
+	 *
+	 * @return string qualifier using list of category id
+	**/
+	getRefQualCategoryIdsForKB: function(kbKnowledgeBaseId) {
+		return new global.GlobalKnowledgeUtil().getRefQualCategoryIdsForKB(kbKnowledgeBaseId);
+	},
+
+	getWritableArticles: function() {
+		var kbHelper = new SNC.KnowledgeHelper();
+		return kbHelper.filterContributableArticles();
+	},
+	
+	type: 'KnowledgeRefQualifiersSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-12-17 09:07:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;57f2247bb712230026778d78ee11a99b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeRefQualifiersSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_57f2247bb712230026778d78ee11a99b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-25 05:30:08&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2802&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:39</sys_created_on>
+        <sys_id>be9c81fa2f331110d8a4d5f62799b614</sys_id>
+        <sys_name>KnowledgeRefQualifiersSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_be9c81fa2f331110d8a4d5f62799b614</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

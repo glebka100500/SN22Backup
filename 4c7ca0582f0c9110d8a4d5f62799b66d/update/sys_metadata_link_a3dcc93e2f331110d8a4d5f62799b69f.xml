@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7d5a4da95b20320070e4492c11f91aeb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GuidedTourFindRelatedTableAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Given the table name, load the visible related lists that will show on Default view.&lt;/description&gt;
+        &lt;name&gt;GuidedTourFindRelatedTableAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var GuidedTourFindRelatedTableAjax = Class.create();
+GuidedTourFindRelatedTableAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getTable: function() {
+		var relationship = this.getParameter('jvar_relationship');
+		var result = this.newItem("result");
+		
+		var gr = new GlideRecord('sys_relationship');
+		var sysId = relationship.split('REL:')[1];
+		if (gr.get(sysId)) {
+			result.setAttribute("table" , gr.basic_query_from);
+		}
+		else {
+			result.setAttribute("table" , "");
+		}
+	},
+	
+    type: 'GuidedTourFindRelatedTableAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;nathan.holm&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-01-25 23:49:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7d5a4da95b20320070e4492c11f91aeb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GuidedTourFindRelatedTableAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Guided Tours" source="com.glide.guided_tours"&gt;89e3410b6da620100acb70b353433030&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7d5a4da95b20320070e4492c11f91aeb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;nathan.holm&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-01-26 00:10:54&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;547&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:49</sys_created_on>
+        <sys_id>a3dcc93e2f331110d8a4d5f62799b69f</sys_id>
+        <sys_name>GuidedTourFindRelatedTableAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a3dcc93e2f331110d8a4d5f62799b69f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

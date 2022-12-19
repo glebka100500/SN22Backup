@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>43d39b53371121009a80a0ffbe41f1ea</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.LiveFeedCommon&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Live Feed Common utility methods&lt;/description&gt;
+        &lt;name&gt;LiveFeedCommon&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var LiveFeedCommon = Class.create();
+LiveFeedCommon.prototype = {
+	// columns
+	NAME: "name",
+	SYS_DOMAIN: "sys_domain",
+	SYS_CREATED_ON: "sys_created_on",
+	SYS_ID: "sys_id",
+	SYS_UPDATED_ON: "sys_updated_on",
+	STATUS: "status",
+	
+	// operators
+	CONTAINS: "CONTAINS",
+	EQUALS: "=",
+	IN: "IN",
+	
+	// constants
+	DEFAULT_QUERY_LIMIT: 25,
+	MAX_QUERY_LIMIT: 200,
+	
+	// other
+	COUNT: "COUNT",
+	DESC: 'desc',
+	ORDER_BY: "order__by",
+	QUERY_LIMIT: "query__limit",
+	TEXTQUERY: "term",
+	
+	//DEFAULT_PROFILE_USER: "images/profile/buddy_default.pngx",
+	LIVE_PROFILE: "live_profile",
+	IMAGE: "image",
+	PHOTO: "photo",
+	PROFILE_MODE_BASIC: "BASIC",
+	PROFILE_MODE_STATS: "STATS",
+	PROFILE_MODE_FULL: "FULL",
+	
+	
+	OPERATOR_EXPRESSION: [
+			{wildcardExp: /^\*(.*)/, operator: 'CONTAINS', toExpression: function(filter){ return (filter === '*' ? filter : '*' + filter); }},
+			{wildcardExp: /^\.(.*)/, operator: 'CONTAINS', toExpression: function(filter){ return '.' + filter; }},
+			{wildcardExp: /^%(.*)/, operator: 'ENDSWITH', toExpression: function(filter){ return (filter === '%' ? filter : '%' + filter); }},
+			{wildcardExp: /(.*)%$/, operator: 'STARTSWITH', toExpression: function(filter){ return filter + '%'; }},
+			{wildcardExp: /^=(.*)/, operator: '=', toExpression: function(filter){ return (filter === '=' ? filter : '=' + filter); }},
+			{wildcardExp: /^!=(.*)/, operator: '!=', toExpression: function(filter){ return (filter === '!=' || filter === '!' ? filter : '!=' + filter); }},
+			{wildcardExp: /^!\*(.*)/, operator: 'DOES NOT CONTAIN', toExpression: function(filter){ return (filter === '!*' || filter === '!' ? filter : '!*' + filter); }},
+			{wildcardExp: /(.*)/, operator: 'STARTSWITH', toExpression: function(filter){ return filter; }}
+		],
+	
+	initialize: function() {
+	},
+	
+	addQueryParam: function(gr, field, param) {
+		if(!param)
+			return;
+		gr.addQuery(field, param);
+	},
+	
+	addBooleanQueryParam: function(gr, field, param) {
+		if(typeof param === 'undefined')
+			return;
+		gr.addQuery(field,param);
+	},
+	
+	setOrderBy: function(gr,params,defaultOrder) {
+		var orderBy = defaultOrder;
+		if(this.ORDER_BY in params) {
+			if("string" == typeof params[this.ORDER_BY])
+				orderBy = [params[this.ORDER_BY]];
+			else
+				orderBy = params[this.ORDER_BY];
+		}
+		for(var i=0;i&lt;orderBy.length;i++) {
+			var order = orderBy[i];
+			if("string" == typeof order)
+				gr.orderBy(order);
+			else {
+				if(order[1] == this.DESC)
+					gr.orderByDesc(order[0]);
+				else
+					gr.orderBy(order[0]);
+			}
+		}
+	},
+	
+	defaultQueryLimit: function(params) {
+		if(typeof params[this.QUERY_LIMIT] == 'undefined')
+			params[this.QUERY_LIMIT] = this.DEFAULT_QUERY_LIMIT;
+	},
+	
+	setLimit: function(gr, params) {
+		if(!params[this.QUERY_LIMIT])
+			return;
+		if(params[this.QUERY_LIMIT] &gt; this.MAX_QUERY_LIMIT)
+			params[this.QUERY_LIMIT] = this.MAX_QUERY_LIMIT;
+		gr.setLimit(params[this.QUERY_LIMIT]+1);
+	},
+	
+	listJSON: function(gr, elementJSONF, params) {
+		var json = [];
+		for(var i=0;i&lt;params[this.QUERY_LIMIT] &amp;&amp; gr.next();i++) {
+			var eJSON = elementJSONF(gr);
+			json.push(eJSON);
+		}
+		return json;
+	},
+	
+	listToHashJSON: function(ljson) {
+		var hjson = {};
+		for(var i=0;i&lt;ljson.length;i++) {
+			hjson[ljson[i].sys_id] = ljson[i];
+		}
+		return hjson;
+	},
+	
+	idvalue: function(gr, field) {
+		return { id: gr.getValue(field) , name : gr.getDisplayValue(field) };
+	},
+	
+	choicevalue: function(gr, field) {
+		var ge = gr.getElement(field);
+		return { id: ge.toString(), name: gr.getDisplayValue(field) };
+	},
+
+	getImages: function(profiles) {
+		var images = {};
+		var liveFeedApi = new SNC.LiveFeedApi();
+		for(var i=0; i&lt;profiles.length; i++) {
+			var user = liveFeedApi.getProfileDetails(profiles[i], this.PROFILE_MODE_BASIC);
+			user = new JSON().decode(user);
+			images[profiles[i]] = user.user_image;
+		}
+		return images;
+	},
+
+	getMemberDetails: function(profiles) {
+		var gr = new GlideRecord(this.LIVE_PROFILE);
+		this.addQueryParam(gr, this.SYS_ID, profiles);
+		gr.queryNoDomain();
+		var details = {};
+		var liveFeedApi = new SNC.LiveFeedApi();
+		while(gr.next()) {
+			var user = liveFeedApi.getProfileDetails(gr.sys_id,this.PROFILE_MODE_BASIC);
+			user = new JSON().decode(user);
+			if(!user.cross_domain_data &amp;&amp; (gr.sys_id == user.sys_id)) {
+				details[gr.sys_id] = {
+					name: gr.getValue(this.NAME),
+					status: gr.getValue(this.STATUS),
+					image: user.user_image
+				};
+			}
+			else {
+				//User is out of domain
+				details[gr.sys_id]= {
+					name: gr.getValue(this.NAME),
+					status: "",
+					image: ""
+				};
+			}
+		}
+		return details;
+	},
+
+	toBoolean: function(value) {
+		if(value === 'true')
+			return true;
+		if(value === 'false')
+			return false;
+		if(value === 1)
+			return true;
+		if(value === 0)
+			return false;
+		return value == true;
+	},
+
+	parseTerm: function(val, defaultOperator) {
+		var parsedValue = {filterText: val, operator: ""};
+
+		parsedValue.operator = defaultOperator || "STARTSWITH";
+
+		for (var i = 0; i &lt; this.OPERATOR_EXPRESSION.length; i++) {
+			var operatorItem = this.OPERATOR_EXPRESSION[i];
+			var match = val.match(operatorItem.wildcardExp);
+			if (match &amp;&amp; match[1] !== ""){
+				parsedValue.operator = operatorItem.operator;
+				parsedValue.filterText = match[1];
+				break;
+			}
+		}
+
+		return parsedValue;
+	},
+	
+	addExpressionQuery: function(gr, field, params) {
+		var filteredExpression = '';
+		if(params.search_mode)
+			filteredExpression = this.parseTerm('*' + params[this.TEXTQUERY]);
+		else
+			filteredExpression = this.parseTerm(params[this.TEXTQUERY]);
+		return gr.addQuery(field, filteredExpression.operator, filteredExpression.filterText);
+	},
+	
+	addExpressionOrCondition: function(qc, field, params) {
+		var filteredExpression = '';
+		if(params.search_mode)
+			filteredExpression = this.parseTerm('*' + params[this.TEXTQUERY]);
+		else
+			filteredExpression = this.parseTerm(params[this.TEXTQUERY]);
+		return qc.addOrCondition(field, filteredExpression.operator, filteredExpression.filterText);
+	},
+	
+	addExpressionCondition: function(qc, field, params) {
+		var filteredExpression = '';
+		if(params.search_mode)
+			filteredExpression = this.parseTerm('*' + params[this.TEXTQUERY]);
+		else
+			filteredExpression = this.parseTerm(params[this.TEXTQUERY]);
+		return qc.addCondition(field, filteredExpression.operator, filteredExpression.filterText);
+	},
+
+	addCondition: function(qc, field, param) {
+		if(typeof param === 'undefined')
+			return;
+		if (param instanceof Array)
+			qc.addCondition(field, this.IN, param.join());
+		else
+			qc.addCondition(field, param);
+	},
+
+	type: 'LiveFeedCommon'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-06-19 22:15:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;43d39b53371121009a80a0ffbe41f1ea&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;93&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;LiveFeedCommon&lt;/sys_name&gt;
+        &lt;sys_package display_value="Live Feed" source="com.glideapp.live_feed_v2"&gt;bc11410f6d2620100acb70b353433043&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_43d39b53371121009a80a0ffbe41f1ea&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-12-18 22:22:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6545&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:08</sys_created_on>
+        <sys_id>877c89ba2f331110d8a4d5f62799b6cd</sys_id>
+        <sys_name>LiveFeedCommon</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_877c89ba2f331110d8a4d5f62799b6cd</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

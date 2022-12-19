@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>74ebcf039f3121004d58decf857fcfe7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MIDExtensionConstants&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Constants used by MID server extensions.&lt;/description&gt;
+        &lt;name&gt;MIDExtensionConstants&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[function MIDExtensionConstants() {}
+MIDExtensionConstants.EXTENSION_DEF_TABLE = 'ecc_agent_ext';
+MIDExtensionConstants.CONTEXT_TABLE = 'ecc_agent_ext_context';
+MIDExtensionConstants.EXECUTING_ON = 'executing_on';
+MIDExtensionConstants.COMMAND_START = 'START';
+MIDExtensionConstants.COMMAND_STOP = 'STOP';
+MIDExtensionConstants.COMMAND_RESTART = 'RESTART';
+MIDExtensionConstants.COMMAND_RESELECT = 'RESELECT';
+MIDExtensionConstants.COMMAND_UPDATE_PARAMETERS = 'UPDATE_PARAMETERS';
+MIDExtensionConstants.COMMAND_CLEAR_ERROR = 'CLEAR_ERROR';
+MIDExtensionConstants.STATUS = 'status';
+MIDExtensionConstants.AGENT_STATUS_UP = 'Up';
+MIDExtensionConstants.AGENT_STATUS_DOWN = 'Down';
+MIDExtensionConstants.CHOICE_MID_SERVER = 'Specific MID Server';
+MIDExtensionConstants.CHOICE_MID_SERVER_CLUSTER = 'Specific MID Server Cluster';
+MIDExtensionConstants.CHOICE_AUTOSELECT_MID = 'Autoselect MID';
+MIDExtensionConstants.CONTEXT_STATUS_STARTING = 'Starting';
+MIDExtensionConstants.CONTEXT_STATUS_STARTED = 'Started';
+MIDExtensionConstants.CONTEXT_STATUS_RESTARTING = 'Restarting';
+MIDExtensionConstants.CONTEXT_STATUS_STOPPING = 'Stopping';
+MIDExtensionConstants.CONTEXT_STATUS_STOPPED = 'Stopped';
+MIDExtensionConstants.CONTEXT_STATUS_OFFLINE = 'Offline';
+MIDExtensionConstants.CONTEXT_STATUS_ERROR = 'Error';
+MIDExtensionConstants.CONTEXT_STATUS_WARNING = 'Warning';
+MIDExtensionConstants.PARAMETERS = 'parameters';
+MIDExtensionConstants.PARAMETER = 'parameter';
+MIDExtensionConstants.PARAMETER_NAME = 'name';
+MIDExtensionConstants.PARAMETER_VALUE = 'value';
+MIDExtensionConstants.PARAMETER_CONTEXT_SYS_ID = 'ContextSysId';
+MIDExtensionConstants.PARAMETER_CONTEXT_NAME = 'ContextName';
+MIDExtensionConstants.PARAMETER_CONTEXT_DATA = 'ContextData';
+MIDExtensionConstants.PARAMETER_EXTENSION_COMMAND = 'ExtensionCommand';
+MIDExtensionConstants.PARAMETER_COMMAND_REASON = 'ExtensionCommandReason';
+MIDExtensionConstants.PARAMETER_EXTENSION_NAME = 'ExtensionName';
+MIDExtensionConstants.PARAMETER_EXTENSION_CLASS_NAME = 'ExtensionClassName';]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;thanh.phan&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-07-13 23:45:46&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;74ebcf039f3121004d58decf857fcfe7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;12&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MIDExtensionConstants&lt;/sys_name&gt;
+        &lt;sys_package display_value="MID Server" source="com.glideapp.agent"&gt;881201476d6620100acb70b3534330fa&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_74ebcf039f3121004d58decf857fcfe7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;varsha.srinivas&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-01-20 14:11:48&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2026&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:33</sys_created_on>
+        <sys_id>73cc453e2f331110d8a4d5f62799b638</sys_id>
+        <sys_name>MIDExtensionConstants</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_73cc453e2f331110d8a4d5f62799b638</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

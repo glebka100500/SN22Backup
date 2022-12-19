@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8849d538c33a3200daa79624a1d3aeed</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ServiceMappingRecomputationUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;API for managing Service Mapping Recomputation jobs&lt;/description&gt;
+        &lt;name&gt;ServiceMappingRecomputationUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ServiceMappingRecomputationUtils = Class.create();
+ServiceMappingRecomputationUtils.prototype = {
+    initialize: function() {
+		this.PREFIX = 'Service Mapping Recomputation';
+		this.SCRIPT = 'SNC.ServiceMappingFactory.recompute();';
+		this.PREFIX_FAST = 'Service Mapping Fast Recomputation';
+		this.SCRIPT_FAST = 'SNC.ServiceMappingFactory.recompute(true);';
+    },
+	
+	removeScheduledJobs: function() {
+		this.removeRecompScheduledJobs(this.PREFIX);
+	},
+	
+	removeFastScheduledJobs: function() {
+		this.removeRecompScheduledJobs(this.PREFIX_FAST);		
+	},
+	
+	removeRecompScheduledJobs: function(jobName) {
+		var triggerGr = this._getSchedulerRecord();
+		triggerGr.addQuery('name', 'STARTSWITH', jobName);
+		triggerGr.query();
+		triggerGr.deleteMultiple();
+	},
+	
+	deployScheduledJobs: function(jobCount) {
+	    var jobPriority = gs.getProperty('glide.service_mapping.recomputation_job_priority', 150);			
+		var enableMultiNode = gs.getProperty('glide.service_mapping.recomputation.multi_node_enabled', true);
+		this.deployRecompScheduledJobs(jobCount, jobPriority, enableMultiNode, this.PREFIX, this.SCRIPT);
+	},
+	
+	deployFastScheduledJobs: function(jobCount) {
+		var jobPriority = gs.getProperty('glide.service_mapping.fast_recomputation_job_priority', 150);			
+		var enableMultiNode = gs.getProperty('glide.service_mapping.fast_recomputation.multi_node_enabled', true);
+		this.deployRecompScheduledJobs(jobCount, jobPriority, enableMultiNode, this.PREFIX_FAST, this.SCRIPT_FAST);
+	},
+	
+	deployRecompScheduledJobs: function(jobCount, jobPriority, enableMultiNode, jobName, script) {
+		var isWorkflowEnabled = gs.getSession().getWorkflow();
+		var interval = this._calculateInterval(jobCount);
+		
+		var logMessage = 'About to deploy ' + jobCount + ' ' + jobName + ' jobs with priority ' + jobPriority + ', interval ' + interval + '(ms)';
+		if (enableMultiNode)
+			logMessage += ' on all active nodes';
+		
+		gs.log(logMessage);
+		
+		var when = new GlideDateTime();
+		var triggerGr = this._getSchedulerRecord();
+		for (var i = 1 ; i &lt;= jobCount ; i++) {
+			triggerGr.initialize();
+			var name = jobName;
+			if (jobCount &gt; 1)
+				name +=' ' + i;
+
+			gs.log('About to deploy scheduled job ' + name);
+
+			triggerGr.setValue('name', name);
+			if (enableMultiNode == 'true')
+				triggerGr.setValue('system_id', 'ACTIVE NODES');
+			triggerGr.setValue('priority', jobPriority);
+			triggerGr.setValue('trigger_type', 1); // REPEAT
+			triggerGr.setValue('state', 0); // READY
+			var duration = new GlideDuration(interval);
+			triggerGr.setValue('repeat', duration);
+			triggerGr.setValue('next_action', when);
+			triggerGr.setValue('script', script);
+			triggerGr.insert();
+
+			// In case workflow is disabled, we need to propagate nodes for the scheduled job
+			if (enableMultiNode == 'true' &amp;&amp; !isWorkflowEnabled) {
+				var s = new Scheduler();
+				s.propagateRANodesForTrigger(triggerGr);
+			}
+			
+			when.addSeconds(1);
+		}
+	},
+	
+	defaultJobCount: function() {
+		var workers = gs.getProperty('glide.sys.schedulers', 8);
+		var jobCount = parseInt(Math.floor(workers / 2));
+		return Math.min(2, jobCount);
+	},
+	
+	_calculateInterval: function(jobCount) {
+		var interval = jobCount * 1000;
+		var minInterval = 5000; // At least 5 seconds interval between jobs
+		if (interval &lt; minInterval)
+			interval = minInterval;
+		
+		return interval;
+	},
+	
+	_getSchedulerRecord: function() {
+		return new GlideRecord('sys_trigger');
+	},
+
+    type: 'ServiceMappingRecomputationUtils'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-05-15 13:28:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8849d538c33a3200daa79624a1d3aeed&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;13&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ServiceMappingRecomputationUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Application Service" source="com.snc.cmdb.it_service"&gt;72b4cdcf6da620100acb70b353433039&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8849d538c33a3200daa79624a1d3aeed&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-11-13 13:00:00&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3462&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:14</sys_created_on>
+        <sys_id>31fc057e2f331110d8a4d5f62799b68b</sys_id>
+        <sys_name>ServiceMappingRecomputationUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_31fc057e2f331110d8a4d5f62799b68b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

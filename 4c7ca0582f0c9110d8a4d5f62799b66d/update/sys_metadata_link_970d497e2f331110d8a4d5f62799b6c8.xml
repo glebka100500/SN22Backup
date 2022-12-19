@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9083d4690a0a0b8277155ea2ab428f1f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WindowsOSNameHelper&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Handles the formatting of Windows OS name&lt;/description&gt;
+        &lt;name&gt;WindowsOSNameHelper&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// Discovery class
+
+/**
+ * Handles all the details of formatting windows OS name
+ * 
+ * Aleck Lin aleck.lin@service-now.com
+ */
+var WindowsOSNameHelper = Class.create();
+
+WindowsOSNameHelper.prototype = {
+	initialize: function() { /* do nothing */ },
+	
+    formatWindowsOSName: function(name) {
+        // do not classify this as a Windows computer if OS name is not found
+        if (JSUtil.nil(name))
+			return null;
+
+        var newName = this.osCleanupName(name);
+        OSChoice.reconcile(newName);
+        return newName;
+    },
+
+    osCleanupName: function(name) {
+        //Strip out the first word "Microsoft"
+        var sp = name.indexOf(" ");
+        var value = name.substring(sp + 1);
+
+        var replaceArr = [];
+        replaceArr.push({'Â®': ""});           // For fixing Windows 2008 DC (ie. Windows ServerÂ® 2008 Datacenter)
+        replaceArr.push({"\\(R\\)"  : ""});
+        replaceArr.push({"Windowsr" : "Windows"});
+        replaceArr.push({"Serverr"  : ""});
+        replaceArr.push({"Server"   :  ""});
+        replaceArr.push({"WINDOWS"  : "Windows"});
+        replaceArr.push({"â&#132;¢"     : ""});            // For fixing Vista (ie. "Vistaâ&#132;¢")
+        replaceArr.push({"VistaT"   : "Vista"});
+        replaceArr.push({" Edition" : ""});
+        replaceArr.push({","        : ""});            // Replace anything like "2003, Standard" with just "2003 Standard"
+
+        for(var i=0; i&lt;replaceArr.length; i++) {
+            replaceObj = replaceArr[i];
+
+            for(var name in replaceObj) {
+                var re = new RegExp(name, "g");
+	        value = value.replace(re, replaceObj[name]);
+            }
+        }		
+
+        //Remove any spaces more than one (ie. "Windows  2008" should be "Windows 2008")
+        value = value.replace(/\s\s+/g, " ");
+
+        // Remove any leading and trailing spaces...
+        value = value.trim();
+
+        return value;
+    },
+
+	/**
+	 * Deprecated. Use OSChoice.reconcile()
+	 */
+    makeOSChoiceValid: function(value) {
+        OSChoice.reconcile(value);
+    },
+    
+    type: "WindowsOSNameHelper"
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;aleck.lin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-07-02 00:17:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9083d4690a0a0b8277155ea2ab428f1f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;42&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WindowsOSNameHelper&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9083d4690a0a0b8277155ea2ab428f1f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-10-09 20:40:11&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2083&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:37</sys_created_on>
+        <sys_id>970d497e2f331110d8a4d5f62799b6c8</sys_id>
+        <sys_name>WindowsOSNameHelper</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_970d497e2f331110d8a4d5f62799b6c8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4db9a6311b2321008de2b9088f0713e7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WorkflowVersionUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Client callable methods to get information about workflow and workflow versions.&lt;/description&gt;
+        &lt;name&gt;WorkflowVersionUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WorkflowVersionUtils = Class.create();
+WorkflowVersionUtils.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	isWorkflowNameUnique: function() {
+		var name = this.getParameter('sysparm_workflow_name');
+		var id = new Workflow().getWorkflowFromName(name) + '';
+		if (id == 'null')
+			return 'true'; // Did not find a sys_id, the name is unique, it does not yet exist in the database
+		
+		return 'false'; // We found a sys_id, the name is not unique, it is a duplicate 
+	},
+	
+	// get the wf_workflow id given a wf_workflow_version id 
+	getWorkflow: function() {
+		var version = new GlideRecord("wf_workflow_version");
+		var id =  this.getParameter('sysparm_id');
+		
+		if (version.get(id)) {
+			gs.log("Cannot locate workflow version: " + id);
+			return "-1";
+		}
+	
+		return version.workflow+"";
+	},
+	
+	/** Return 'true' if the given table has a type=workflow field
+	 *  or 'false' it does not.
+	 */
+	hasStageField: function (tableName) {
+		return this.getStageFields(tableName).length == 0 ? 'false' : 'true';
+	},
+	
+	/** Return array of any type=workflow field for the given table.
+	 *  It is empty if there are none.
+	 *
+	 * Call this either as Client Ajax or public script
+	 */
+	getStageFields: function (table) {
+		var tbl = table ? table : this.getParameter('sysparm_table');		
+		if (!tbl)
+		    return [];
+		
+	    var gr = tbl instanceof String ? loadRecord(tbl) : tbl;
+		var elements = gr.getElements();
+		
+		var fieldNames = [];
+		for (var i = 0; i &lt; elements.size(); i++) 
+			if (elements.get(i).getED().getInternalType()+'' == 'workflow')
+				fieldNames.push(elements.get(i).name);
+		
+		return fieldNames;
+
+		
+		function loadRecord(tableName) {
+			var gr = new GlideRecord(tableName);
+			gr.initialize();
+			return gr;
+		}
+	},
+	
+    type: 'WorkflowVersionUtils'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;rick.crawford&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-10-04 23:38:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4db9a6311b2321008de2b9088f0713e7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;33&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WorkflowVersionUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Runtime Engine" source="com.glideapp.workflow"&gt;42a009c76d2620100acb70b35343304a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4db9a6311b2321008de2b9088f0713e7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;john.maher&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-03-24 12:48:42&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1787&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:23</sys_created_on>
+        <sys_id>ae8c4dba2f331110d8a4d5f62799b6b9</sys_id>
+        <sys_name>WorkflowVersionUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ae8c4dba2f331110d8a4d5f62799b6b9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

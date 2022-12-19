@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>955a5797c0a8006f002349c2505883ab</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UpgradeClient&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Client Upgrade Process&lt;/description&gt;
+        &lt;name&gt;UpgradeClient&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+
+var UpgradeClient = Class.create();
+
+// This variable is used in upgrade_complete.js to check if upgrade_complete was invoked from upgrade client or directly
+var upgradeStartedByUpgradeClient = true;
+
+/**
+ * There are several entry points on this script:
+ * 
+ * 1) process &lt;- DistUpgrade, the process of upgrading code (ie: WAR)
+ * 2) upgradeScript &lt;- DataUpgrade, the process of upgrading data on the first boot with the new code (ie: DB records, etc.)
+ * 3) runUpdateScript &lt;- A partial DistUpgrade used for cluster upgrades (called via ClusterMessage)
+ * 
+ * This will be separated into two scripts (upgrade vs. update) when war upgrade functionality is removed (and only dist functionality is available).
+ */
+UpgradeClient.prototype = {
+   UPGRADE_VERSION : 'glide.war.assigned',
+   WAR_VERSION : 'glide.war',
+   BUILD_VERSION: 'glide.node.dist',
+   NO_UPGRADE_VERSION : 'glide.war.no_upgrade', // set by Rollback
+   UPGRADE_SCRIPT : gs.getProperty("glide.sys.upgrade_script"),
+   LOGGER : new UpgradeLogger(),
+   
+   initialize: function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      this.upgrade_server_url = gs.getProperty("upgrade_server_url");
+      this.instance_id = gs.getProperty("instance_id");
+   },
+   
+   // Called from event: Upgrade
+   upgradeScript : function() {
+		gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+		SNC.UpgradeAPI.dbUpgradeAfterCheck();
+   },
+   
+   execUpgrade : function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release"); 
+      gs.loadBatchScript("sys.scripts/" + this.UPGRADE_SCRIPT);
+   },
+   
+   notifySuccess : function(desired) {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      SNC.UpgradeAPI.notifySuccess(desired);
+   },
+   
+   // Since .zip.war's are not "first-class" artifacts, and since older glide
+   // UpgradeClient versions (which cannot be changed since we must support a
+   // one-step upgrade) write .zip.war into these DB properties, they need to 
+   // be "corrected" to .zip before they are read by the new UpgradeClient
+   // version.
+   sanitizeDBProperties: function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      var war_version = gs.getProperty(this.WAR_VERSION)
+      if (war_version != null &amp;&amp; war_version.match(/\.zip\.war$/)) {
+         this.LOGGER.log("Converting " + this.WAR_VERSION + " from .zip.war to a .zip (" + war_version + ")");
+         war_version = war_version.replace(/\.zip\.war$/, ".zip");
+	     gs.setProperty(this.WAR_VERSION, war_version, "Current Version");
+	  }
+      var upgrade_version = gs.getProperty(this.UPGRADE_VERSION)
+      if (upgrade_version != null &amp;&amp; upgrade_version.match(/\.zip\.war$/)) {
+         this.LOGGER.log("Converting " + this.UPGRADE_VERSION + " from .zip.war to a .zip (" + upgrade_version + ")");
+         upgrade_version = upgrade_version.replace(/\.zip\.war$/, ".zip");
+	     gs.setProperty(this.UPGRADE_VERSION, upgrade_version, "Assigned version");
+	  }	   
+   },
+   
+   // Called from script include: UpgradeClient
+   process: function() {
+		gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+		SNC.UpgradeAPI.distDBUpgradeAfterCheck();
+   },
+   
+   processWar: function(war_file) {
+         gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+         var ujob = new GlideWarDownloader();
+         var success = ujob.downloadWar(war_file);
+         if (success)
+            this.LOGGER.log("Successful download of " + war_file);
+         else {
+            this.LOGGER.log("Failed to download " + war_file + ". Will retry in 1 hour");
+            return;
+         }
+         gs.setProperty(this.UPGRADE_VERSION, war_file, "Assigned version");
+         new GlideWarDeleter().deleteOldWars(war_file);
+         
+         this.shutdownAndRestart(war_file);
+   },
+   
+   processDist: function(dist_file) {
+       gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+	   var manager = new GlideUpgradeArtifactManager();
+	   var success = manager.download(dist_file);
+	   if (success)
+		   this.LOGGER.log("Successful download of " + dist_file);
+	   else {
+		   this.LOGGER.log("Failed to download " + dist_file + ". Will retry in 1 hour");
+		   return;
+	   }
+	   gs.setProperty(this.UPGRADE_VERSION, dist_file, "Assigned version");
+	   manager.deleteArtifactsExcept(dist_file);
+	   
+	   this.shutdownAndRestart(dist_file);
+   },
+   
+   shutdownAndRestart : function(artifact_filename) {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      // find our startup Job and set it to run on our node on next restart
+      this.LOGGER.log("Assigning upgrade startup job to this cluster node, " + GlideServlet.getSystemID());
+      this.setStartupJob();
+      
+      // reschedule the upgrade job in the future... this needs to happen before the scheduler
+      // is shutdown, otherwise the recover stuck jobs code will revert our schedule/claimed_by
+      this.LOGGER.log("Rescheduling the upgrade job");
+      this.setUpgradeJob();
+      
+      try {
+            // Send a beat to indicate the node is still online
+            new global.EventHeartbeat().beat();
+      } catch (e) {
+            this.LOGGER.warn(this.UPGRADE_SCRIPT + " Could not send Heartbeat before shutdownAndRestart: " + e.toString());
+      }
+      
+      //report node.dist.upgrade OPEN event for this node, next server restart will report 
+      //node.dist.upgrade close event from a sys_trigger
+      SNC.UpgradeUtil.reportNodeDistUpgradeOpenEvent("Upgrading to " + artifact_filename);
+      
+      //record node upgrade start event
+      SNC.UpgradeUtil.recordNodeUpgradeStartForLUA(artifact_filename);
+      
+      this.LOGGER.log("Shutting down workers and cluster synchronizer");
+      // shut down everything
+      GlideSystemStatus.setShuttingDown();
+      GlideWorkerThreadManager.get().shutdownEverything();
+      gs.sleep(10000); // wait 10 seconds to give things an opportunity to shut down gracefully
+      
+      // Tell our peer cluster nodes and replication slaves that a new war has arrived,
+      // and they need to follow suit.
+      this.notifyPeers(artifact_filename);
+      
+      this.runUpdateScript(artifact_filename);
+   },
+   
+   // Tell our peer cluster nodes and replication slaves that a new war has arrived,
+   // and they need to follow suit.
+   notifyPeers: function(artifact_filename) {
+		gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+		SNC.UpgradeAPI.notifyPeers(artifact_filename);
+   },
+   
+   // Called from Upgrade
+   runUpdateScript: function(artifact_filename) {
+		gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+		SNC.UpgradeAPI.runDistUpgrade(artifact_filename);
+   },
+   
+   setStartupJob : function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      var gr = new GlideRecord("sys_trigger");
+      gr.addQuery("name", "Check database for possible upgrade");
+      gr.query();
+      if (gr.next()) {
+         var myID = GlideServlet.getSystemID();
+         gr.system_id = myID;
+         gr.update();
+      }
+   },
+   
+   setUpgradeJob : function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      var nextAction = gs.hoursAgo(-1); // set the next action to be an hour ahead
+      this.LOGGER.log('Rescheduling next action for ' + nextAction);
+
+      // Access the global schedule record:
+      if (typeof g_schedule_record != 'undefined') {
+        var gr = g_schedule_record;
+
+        gr.next_action.setValue(nextAction); 
+        gr.claimed_by = null;
+        gr.state = 0;
+        gr.update();
+
+      } else {
+        gs.log("WARNING: 'g_schedule_record' is undefined, unable to reschedule upgrade job")
+      }
+   },
+   
+   getWarFile: function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      // create the soap document
+      var soapdoc = new SOAPEnvelope("GetWarFile", "http://www.service-now.com/");
+      soapdoc.setFunctionName("execute");
+      soapdoc.addFunctionParameter("instance_id", this.instance_id);
+      soapdoc.addFunctionParameter("current_war", SNC.UpgradeUtil.getCurrentBuild());
+      
+      // post the request
+      var soapRequest = new SOAPRequest(this.upgrade_server_url + "GetWarFile.do?SOAP");
+      var soapResponse = soapRequest.post(soapdoc);
+      var war_file = gs.getXMLText(soapResponse, "//executeResponse/war_file");
+      
+      return war_file;
+   },
+
+   // Check if it is a developer instance or if the instance id is null.
+   // Return true if the instance has no id or it is a developer instance, otherwise, return false.
+   // Error will be logged in case of null instance id.
+   _shouldSkip: function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      if (this._isDeveloperInstance()) {
+        this.LOGGER.log("Developer instance - skipped upgrade");
+        return true;
+      } else if (GlideJSUtil.isNilJavaObject(this.instance_id)) {
+        this.LOGGER.error("Instance ID is null - skipped upgrade");
+        return true;
+      }
+      return false;
+   },
+
+   // Check if the instance is a developer instance - test seam
+   _isDeveloperInstance: function() {
+      gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+      return GlideUtil.isDeveloperInstance();
+   },
+
+	/**
+	 * Checks the current, assigned and revertedFrom WAR values and determines if upgrade needs to run
+ 	 * @returns {boolean} true if upgrade needs to be run, false otherwise
+	 */
+	shouldRunUpgrade: function() {
+		gs.warn("DEPRECATED API: The UpgradeClient Script Include has been deprecated, and will be removed in a future release");
+		var desired = gs.getProperty(this.UPGRADE_VERSION);
+		if (!desired) {
+			this.LOGGER.log('No desired war specified. Upgrade will not run');
+			return false;
+		}
+		var current = gs.getProperty(this.WAR_VERSION);
+		var revertedFrom = gs.getProperty(this.NO_UPGRADE_VERSION);
+		if (!current) {
+			this.LOGGER.log('No current war specified. Upgrade will run and set current war');
+		} else if (current == desired) {
+			this.LOGGER.log('Already on desired war ' + desired +'. Upgrade will NOT run');
+			return false;
+		} else if (desired == revertedFrom) {
+			this.LOGGER.log('Desired war matches reverted war specified by property [' + this.NO_UPGRADE_VERSION + ']. Upgrade script will NOT run');
+			return false;
+		}
+
+		// check if glide.war.assigned matches the distribution build version in glide.node.dist.
+		var build_version = GlideProperties.get(this.BUILD_VERSION);
+		// skip comparing if build version is not set
+		if (!build_version)
+			return true;
+
+		// glide.node.dist doesn't contain .war or .zip suffix, so we ignore comparing that part
+		var desired_no_suffix = desired.replace(/\.war$/, "");
+		desired_no_suffix = desired_no_suffix.replace(/\.zip$/, "");
+		if (desired_no_suffix != build_version) {
+		    this.LOGGER.error('The desired war does not match the distribution build, desired war (without suffix): ' + desired_no_suffix + ', distribution build: ' + build_version + '. Upgrade will not run');
+			return false;
+		}
+		return true;
+	},
+   
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-06-17 07:08:23&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;955a5797c0a8006f002349c2505883ab&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;150&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UpgradeClient&lt;/sys_name&gt;
+        &lt;sys_package display_value="Upgrade Client" source="com.glide.upgrade_client"&gt;76f041cb6d2620100acb70b35343307c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_955a5797c0a8006f002349c2505883ab&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-12-18 17:39:25&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;12076&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:48</sys_created_on>
+        <sys_id>0e1d4d7e2f331110d8a4d5f62799b6ee</sys_id>
+        <sys_name>UpgradeClient</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0e1d4d7e2f331110d8a4d5f62799b6ee</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1e3f425287180300cfab6dd207cb0b5d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdVerifyGoogleAuthProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;A verification processor extension that will check the validity of a Google Authenticator (OTP) code&lt;/description&gt;
+        &lt;name&gt;PwdVerifyGoogleAuthProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdVerifyGoogleAuthProcessor = Class.create();
+
+PwdVerifyGoogleAuthProcessor.prototype = {
+    category: 'password_reset.extension.verification_form_processor',   // DO NOT REMOVE THIS LINE!
+    
+    /**********
+     * Initialization stuff here...
+     **********/
+    initialize: function() {
+    },
+
+    /**********
+    * Process the verification form request, and return whether the user was successfully verified
+    * 
+    * @param params.resetRequestId The sys-id of the current password-reset request (table: pwd_reset_request)
+    * @param params.userId         The sys-id of the user trying to be verified (table: sys_user)
+    * @param params.verificationId The sys-id of the verification to be processed (table: pwd_verification)
+    * @param request               The form request object. fields in the form can be accessed using: request.getParameter('&lt;element-id&gt;')
+    * @return boolean telling whether the user is successfully verified
+    **********/
+    processForm: function(params, request) {
+        return this.verify(params.resetRequestId, params.userId, params.verificationId, request);
+    },
+    	
+    /*********
+     * verify - returns true/false whether the user is verified for this verification method.
+     *
+	 * This will compare the OTP code provided by the user to the one generated using their secret key on the server, and return true
+	 * if there is a match (within a certain clock skew)
+     *
+     * Params: 
+	 * @enrolled_user_id
+	 * @verification
+	 * @request - the request object that was submitted by the user in the verification form
+     *********/
+    verify: function(reset_request_id, enrolled_user_id, verification, request) {
+		
+        // If we already validated the code (e.g. in step 1 of the reset process) then return that result since we validate
+        // everything at the end, and the code could have expired causing a false negative
+		var reqVerGr = new GlideRecord('pwd_map_request_to_verification');
+		reqVerGr.addQuery('verification', verification);
+		reqVerGr.addQuery('request', reset_request_id);
+		reqVerGr.query();
+
+		var recordExists = reqVerGr.next();
+		if (recordExists &amp;&amp; reqVerGr.getValue('status') == 'verified')
+            return true;
+
+        var isValid = SNC.PwdMultifactorAuthUtilWrapper.isResponseValid(request.getParameter("sysparm_otp_code").trim(), enrolled_user_id);
+
+        reqVerGr.setValue('status', isValid? 'verified' : 'not_verified');
+        if (!recordExists) {
+            reqVerGr.setValue('request', reset_request_id);
+            reqVerGr.setValue('verification', verification);
+            reqVerGr.insert();
+        }
+        else
+            reqVerGr.update();
+
+        return isValid;
+    },
+    
+    type: 'PwdVerifyGoogleAuthProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-08-02 22:41:38&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1e3f425287180300cfab6dd207cb0b5d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdVerifyGoogleAuthProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_1e3f425287180300cfab6dd207cb0b5d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;adam.moguel&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-09-08 22:09:25&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2749&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:19</sys_created_on>
+        <sys_id>cb4c897a2f331110d8a4d5f62799b613</sys_id>
+        <sys_name>PwdVerifyGoogleAuthProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cb4c897a2f331110d8a4d5f62799b613</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

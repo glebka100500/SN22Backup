@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>87539c5247222200a03a19fbac9a7146</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.UpdateSetHierarchyCommitVisible&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Used by Update Set Commit UI Action and Notice business rule&lt;/description&gt;
+        &lt;name&gt;UpdateSetHierarchyCommitVisible&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var UpdateSetHierarchyCommitVisible = Class.create();
+UpdateSetHierarchyCommitVisible.prototype = Object.extendsObject(AbstractUpdateUIActionUtil, {
+    initialize: function() {
+    },
+
+	_userHasAccess: function(gr) {
+		return ((gr.state == "previewed" || gr.state == "partial") &amp;&amp; gr.remote_base_update_set == gr.sys_id &amp;&amp; 
+			this._isCurrentDomainSafe() &amp;&amp;
+			gr.canWrite() &amp;&amp;
+			!GlidePreviewProblemHandler.hasUnresolvedProblemsForHierarchy(gr.sys_id) &amp;&amp;
+			SNC.UpdateSetAccessUtil.checkDelegatedDeveloperAccessToHierarchy(gr.sys_id));
+	},
+
+    type: 'UpdateSetHierarchyCommitVisible'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-20 17:39:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;87539c5247222200a03a19fbac9a7146&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;UpdateSetHierarchyCommitVisible&lt;/sys_name&gt;
+        &lt;sys_package display_value="Update Set Batching" source="com.glide.system_hierarchy_update_set"&gt;8ab2450f6d6620100acb70b3534330a6&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_87539c5247222200a03a19fbac9a7146&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-01-09 23:19:03&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;591&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:12</sys_created_on>
+        <sys_id>15fcc17e2f331110d8a4d5f62799b6c2</sys_id>
+        <sys_name>UpdateSetHierarchyCommitVisible</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_15fcc17e2f331110d8a4d5f62799b6c2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>34e438b207011010220b0a701ad3003c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NLUSystemUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;All system related utilites used in NLP Workbench&lt;/description&gt;
+        &lt;name&gt;NLUSystemUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NLUSystemUtil = Class.create();
+
+(function() {
+    var nluService = sn_ml.MLServiceUtil;
+
+    var constants = NLUConstants.constants;
+    var tables = NLUConstants.tables;
+
+    NLUSystemUtil.prototype = {
+        initialize: function() {},
+
+        type: 'NLUSystemUtil'
+    };
+
+    NLUSystemUtil.getCount = function(table, filter) {
+        var ga = new GlideAggregate(table);
+        if (filter) ga.addEncodedQuery(filter);
+        ga.addAggregate('COUNT');
+        ga.query();
+        return (ga.next() &amp;&amp; parseInt(ga.getAggregate('COUNT'))) || 0;
+    };
+
+    NLUSystemUtil.getGroupByCount = function(table, groupBy, filter) {
+        if (!groupBy) return {};
+
+        var groupByCount = {};
+        var ga = new GlideAggregate(table);
+        if (filter) ga.addEncodedQuery(filter);
+        ga.addAggregate('COUNT', groupBy);
+        ga.query();
+        while (ga.next()) {
+            groupByCount[ga.getValue(groupBy)] = parseInt(ga.getAggregate('COUNT', groupBy)) || 0;
+        }
+        return groupByCount;
+    };
+
+    NLUSystemUtil.getScope = function(appName) {
+        var gr = new GlideRecord(tables.SYS_SCOPE);
+        return gr.get('scope', appName) &amp;&amp; gr.getUniqueValue();
+    };
+
+    NLUSystemUtil.checkScope = function(scopeId) {
+        var gr = new GlideRecord(tables.SYS_APP);
+        if (gr.get(scopeId)) return true;
+
+        gr = new GlideRecord(tables.STORE_APP);
+        return (
+            gr.get(scopeId) &amp;&amp;
+            gr.isValidField('can_edit_in_studio') &amp;&amp;
+            gr.getValue('can_edit_in_studio') == 1
+        );
+    };
+
+    NLUSystemUtil.getCurrentDomain = function() {
+        return gs.getSession().getCurrentDomainID();
+    };
+
+    NLUSystemUtil.getTableFieldValues = function(tableName, fieldName) {
+        var records = [],
+            value;
+        if (tableName &amp;&amp; fieldName) {
+            try {
+                var tableRec = new GlideRecord(tableName);
+                var glideElement = tableRec.getElement(fieldName);
+                var descriptor = glideElement.getED();
+                if (
+                    descriptor.getInternalType() === 'choice' ||
+                    (descriptor.getInternalType() === 'string' &amp;&amp;
+                        descriptor.getChoiceField())
+                ) {
+                    var cList = new GlideChoiceList();
+                    if (new GlideRecord(tableName).isValidField(fieldName)) {
+                        var clg = new GlideChoiceListGenerator(tableName, fieldName);
+                        clg.setCache(false);
+                        clg.setNone(false);
+                        clg.get(cList);
+                        cList.removeChoice('NULL_OVERRIDE');
+                        for (var i = 0, l = cList.getSize(); i &lt; l; i++) {
+                            records.push(cList.getChoice(i).getLabel());
+                        }
+                    }
+                } else {
+                    var count = 0;
+                    var gAgg = new GlideAggregate(tableName);
+                    gAgg.addNotNullQuery(fieldName);
+                    gAgg.groupBy(fieldName);
+                    gAgg.orderBy(fieldName);
+                    gAgg.query();
+                    while (gAgg.next() &amp;&amp; count &lt; constants.TABLE_VALUES_LIMIT) {
+                        records.push(gAgg.getValue(fieldName));
+                        count++;
+                    }
+                }
+            } catch (e) {
+                gs.addErrorMessage(
+                    gs.getMessage('Unable to fetch field values from : {0}', tableName)
+                );
+            }
+        }
+        return records;
+    };
+
+    NLUSystemUtil.copyRecord = function(table, fields, obj) {
+        var gr = new GlideRecord(table);
+        gr.newRecord();
+        fields.forEach(function(field) {
+            gr[field] = obj[field];
+        });
+        return gr.insert();
+    };
+
+    NLUSystemUtil.createRecord = function(table, obj) {
+        return NLUSystemUtil.copyRecord(table, Object.keys(obj), obj);
+    };
+
+    NLUSystemUtil.updateRecords = function(table, filter, data) {
+        if (!filter || !data) return null;
+        var gr = new GlideRecord(table);
+        gr.addEncodedQuery(filter);
+        for (var key in data) {
+            gr.setValue(key, data[key]);
+        }
+        return gr.updateMultiple();
+    };
+
+    NLUSystemUtil.copyRecordFromGR = function(
+        table,
+        fields,
+        srcGr,
+        newProps,
+        disableBr
+    ) {
+        var gr = new GlideRecord(table);
+        if (disableBr) gr.setWorkflow(false);
+        gr.newRecord();
+        fields.forEach(function(field) {
+            gr[field] = srcGr.getValue(field);
+        });
+        NLUHelper.extend(gr, newProps);
+        return gr.insert();
+    };
+
+    NLUSystemUtil.updateOrInsert = function(table, field, value, data) {
+        var gr = new GlideRecord(table);
+        var sysId = null;
+        if (gr.get(field, value)) {
+            var changed = false;
+            if (data) {
+                for (var key in data) {
+                    var currentVal = gr.getValue(key);
+                    if (currentVal != data[key]) {
+                        gr.setValue(key, data[key]);
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) sysId = gr.update();
+        } else {
+            gr.setValue(field, value);
+            data &amp;&amp;
+                Object.keys(data).forEach(function(key) {
+                    gr.setValue(key, data[key]);
+                });
+            sysId = gr.insert();
+        }
+        return sysId;
+    };
+
+    NLUSystemUtil.getLastUpdatedOn = function(table, filter) {
+        var gr = new GlideRecord(table);
+        if (filter) gr.addEncodedQuery(filter);
+        gr.orderByDesc('sys_updated_on');
+        gr.setLimit(1);
+        gr.query();
+
+        if (gr.next()) return new GlideDateTime(gr.getValue('sys_updated_on'));
+        return null;
+    };
+
+    /**
+      Returns an object from Glide Record.
+      'fields' can be an array ex: ['name', 'display_name', 'description'];
+      OR a map ex: {name: 'name', label: 'display_name', desc: 'description'};
+      */
+    NLUSystemUtil.getObjectFromGR = function(gr, fields) {
+        if (!gr || gs.nil(gr)) return {};
+
+        var obj = {};
+        for (var key in fields) {
+            var fieldKey = Array.isArray(fields) ? fields[key] : key;
+            if (gr.isValidField(fields[key])) {
+                obj[fieldKey] = gr.getValue(fields[key]);
+            }
+        }
+        return obj;
+    };
+
+    NLUSystemUtil.getUserName = function(userId) {
+        var userName,
+            user = gs.getUser().getUserByID(userId);
+        if (user) {
+            userName = user.getFullName();
+        }
+        return userName;
+    };
+
+    NLUSystemUtil.getNLUEditors = function() {
+        var gr = new GlideRecord('sys_user');
+        gr.addQuery('roles=nlu_editor');
+        gr.query();
+        var editors = [];
+        while (gr.next()) {
+            editors.push({
+                firstName: gr.getValue('first_name') || '',
+                lastName: gr.getValue('last_name') || '',
+                email: gr.getValue('email') || '',
+                sysId: gr.getUniqueValue()
+            });
+        }
+        return editors;
+    };
+
+    NLUSystemUtil.isMaint = function() {
+        return gs.getUser().hasRole('maint');
+    };
+
+    NLUSystemUtil.isRecordChanged = function(fields, previous, current) {
+        if (!previous) return current;
+        for (var i in fields) {
+            if (previous.getValue(fields[i]) != current.getValue(fields[i]))
+                return true;
+        }
+        return false;
+    };
+
+    NLUSystemUtil.getLanguageCode = function(langSysId) {
+        var langGr = new GlideRecord(tables.SYS_LANGUAGE);
+        return langGr.get(langSysId) &amp;&amp; langGr.getValue('id');
+    };
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-05-31 17:08:16&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;34e438b207011010220b0a701ad3003c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;56&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NLUSystemUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="NLU Workbench - Core" source="com.glide.nlu"&gt;04dd388b6d2220100acb70b35343302f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_34e438b207011010220b0a701ad3003c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-03 18:45:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;7839&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:49</sys_created_on>
+        <sys_id>126cc1ba2f331110d8a4d5f62799b6a1</sys_id>
+        <sys_name>NLUSystemUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_126cc1ba2f331110d8a4d5f62799b6a1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

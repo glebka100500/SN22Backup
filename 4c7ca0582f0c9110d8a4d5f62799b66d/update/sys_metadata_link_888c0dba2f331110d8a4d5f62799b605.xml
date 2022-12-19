@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>461bee5f87c5130049e94c2c59cb0bb0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TeamspaceConsoleSeededDataSync&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This is called from fix script (Sync Seeded data on TSpace for Upgrade) , to sync any new seeded planning console configuration from base project configuration to team space configuration&lt;/description&gt;
+        &lt;name&gt;TeamspaceConsoleSeededDataSync&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TeamspaceConsoleSeededDataSync = Class.create();
+TeamspaceConsoleSeededDataSync.prototype = {
+
+    PM_CONSOLE: "pm_console",
+    PM_CONSOLE_TABLE: "pm_console_table",
+    PM_CONSOLE_DISPLAY_COLUMN: "pm_console_display_column",
+    PM_CONSOLE_COLUMN: "pm_console_column",
+    PM_CONSOLE_COLUMN_ADVANCED: "pm_console_column_advanced",
+    PM_CONSOLE_DEPENDENCIES: "pm_console_dependencies",
+
+    initialize: function() {
+    },
+
+
+    getTeamspaceTable: function(tableName, teamspaceConfig) {
+        var gr = new GlideRecord(tableName);
+        if(gr.instanceOf("pm_portfolio"))
+            return SNC.PPMConfig.getPortfolioTable(teamspaceConfig);
+        if(gr.instanceOf("pm_program"))
+            return SNC.PPMConfig.getProgramTable(teamspaceConfig);
+        if(gr.instanceOf("pm_project"))
+            return SNC.PPMConfig.getProjectTable(teamspaceConfig);
+        if(gr.instanceOf("pm_project_task"))
+            return SNC.PPMConfig.getProjectTaskTable(teamspaceConfig);
+        if(gr.instanceOf("dmn_demand"))
+            return SNC.PPMConfig.getDemandTable(teamspaceConfig);
+		if(gr.instanceOf("project_status"))
+            return SNC.PPMConfig.getProjectStatusTable(teamspaceConfig);
+        return tableName;
+    },
+
+    console: function(tableName) {
+        var gr = new GlideRecord(this.PM_CONSOLE);
+        gr.addQuery("table", tableName);
+		gr.addQuery("seeded", true);
+        gr.query();
+        return gr;
+    },
+
+    consoleTables: function(consoleId) {
+        var gr = new GlideRecord(this.PM_CONSOLE_TABLE);
+        gr.addQuery("pm_console", consoleId);
+		gr.addQuery("seeded", true);
+        gr.query();
+        return gr;
+    },
+
+    consoleColumns: function(consoleTableId) {
+        var gr = new GlideRecord(this.PM_CONSOLE_COLUMN);
+        gr.addQuery("pm_console_table", consoleTableId);
+		gr.addQuery("seeded", true);
+        gr.query();
+        return gr;
+    },
+
+    consoleDependencies: function(consoleTableId) {
+        var gr = new GlideRecord(this.PM_CONSOLE_DEPENDENCIES);
+        gr.addQuery("pm_console_table", consoleTableId);
+		gr.addQuery("seeded", true);
+        gr.query();
+        return gr;
+    },
+
+    consoleAdvancedColumn: function(consoleColumnId) {
+        var gr = new GlideRecord(this.PM_CONSOLE_COLUMN_ADVANCED);
+        gr.addQuery("pm_console_column", consoleColumnId);
+		gr.addQuery("seeded", true);
+		gr.query();
+        return gr;
+    },
+
+    consoleDisplayColumns: function(consoleId) {
+        var gr = new GlideRecord(this.PM_CONSOLE_DISPLAY_COLUMN);
+        gr.addQuery("pm_console", consoleId);
+		gr.addQuery("seeded", true);
+        gr.query();
+        return gr;
+    },
+
+    checkCustomRecord: function(recordName) {
+        var gr = new GlideRecord('sys_update_xml');
+        gr.addQuery("name", recordName);
+		gr.addQuery("seeded", true);
+        gr.query();
+        if(gr.next())
+            return true;
+        return false;
+    },
+
+   
+
+    syncConsole: function(consoleName, teamspaceConsoleName) {
+        //gs.info("Into createConsole: consoleName -&gt; " + consoleName + " | teamspaceConsoleName -&gt; " + teamspaceConsoleName);
+        var console = this.console(consoleName);
+        while(console.next()) {
+            //if(this.checkCustomRecord(this.PM_CONSOLE+"_"+console.getValue("sys_id")))
+              //  continue;//Don't clone custom records to teamspace 
+            var teamspaceConsoleId;
+            var teamspaceConsole = new GlideRecord(this.PM_CONSOLE);
+            teamspaceConsole.addQuery('table',teamspaceConsoleName);
+            teamspaceConsole.addQuery('context',console.getValue('context'));
+            teamspaceConsole.query();
+            if(teamspaceConsole.next()){
+				teamspaceConsoleId = teamspaceConsole.getValue("sys_id");
+				var baseSeededValue = console.getValue('seeded');
+				teamspaceConsole.setValue('seeded', baseSeededValue);
+				teamspaceConsole.setWorkflow(false);
+				teamspaceConsole.update();
+				var displayMappings = this.syncDisplayColumns(console, teamspaceConsoleId);
+				this.syncConsoleTables(console, teamspaceConsoleId, teamspaceConsoleName, displayMappings);
+			}
+        }
+    },
+
+    syncDisplayColumns: function(console, teamspaceConsoleId) {
+        var teamspaceConsoleDisplayColumnId;
+        var displayMappings = {};
+        var consoleDisplayColumns = this.consoleDisplayColumns(console.getValue("sys_id"));
+        while(consoleDisplayColumns.next()) {
+            var consoleDisplayColumnId = consoleDisplayColumns.getValue("sys_id");
+            //if(this.checkCustomRecord(this.PM_CONSOLE_DISPLAY_COLUMN+"_"+consoleDisplayColumnId))
+              //  continue;//Don't clone custom records to teamspace 
+            var teamspaceConsoleDisplayColumn = new GlideRecord(this.PM_CONSOLE_DISPLAY_COLUMN);
+            teamspaceConsoleDisplayColumn.addQuery('json_column',consoleDisplayColumns.getValue('json_column'));
+            teamspaceConsoleDisplayColumn.addQuery('pm_console',teamspaceConsoleId);
+            teamspaceConsoleDisplayColumn.query();
+            if(teamspaceConsoleDisplayColumn.next()){
+                teamspaceConsoleDisplayColumnId = teamspaceConsoleDisplayColumn.getValue("sys_id");
+				var baseSeededValue = consoleDisplayColumns.getValue('seeded');
+				teamspaceConsoleDisplayColumn.setValue('seeded', baseSeededValue);
+				teamspaceConsoleDisplayColumn.setWorkflow(false);
+				teamspaceConsoleDisplayColumn.update();
+			}
+			displayMappings[consoleDisplayColumnId] = teamspaceConsoleDisplayColumnId;
+            }
+		return displayMappings;
+    },
+
+    syncConsoleTables: function(console, teamspaceConsoleId, teamspaceConsoleName, displayMappings) {
+        gs.info("Into syncConsoleTables: " + console.getValue("sys_id") + " - " + teamspaceConsoleId + " - " + teamspaceConsoleName);
+        var consoleTables = this.consoleTables(console.getValue("sys_id"));
+        while(consoleTables.next()) {
+            var teamspaceConsoleTableId;
+            var consoleTableId = consoleTables.getValue("sys_id");
+            var consoleTableName = consoleTables.getValue("table");
+           // if(this.checkCustomRecord(this.PM_CONSOLE_TABLE+"_"+consoleTableId))
+             //   continue;//Don't clone custom records to teamspace 
+            var teamspaceConsoleTableName = this.getTeamspaceTable(consoleTableName, teamspaceConsoleName);
+            //gs.info(consoleTableName + " -&gt; " + teamspaceConsoleTableName);
+            var teamspaceConsoleTable = new GlideRecord(this.PM_CONSOLE_TABLE);
+            teamspaceConsoleTable.addQuery('pm_console',teamspaceConsoleId);
+            teamspaceConsoleTable.addQuery('table',teamspaceConsoleTableName);
+            teamspaceConsoleTable.query();
+            if(teamspaceConsoleTable.next()){
+                teamspaceConsoleTableId = teamspaceConsoleTable.getValue("sys_id");
+				var baseSeededValue = consoleTables.getValue('seeded');
+				teamspaceConsoleTable.setValue('seeded', baseSeededValue);
+				teamspaceConsoleTable.setWorkflow(false);
+				teamspaceConsoleTable.update();
+				this.syncConsoleColumns(consoleTableId, teamspaceConsoleTableId, teamspaceConsoleTableName, displayMappings);
+				this.syncConsoleDependencies(consoleTableId, teamspaceConsoleTableId, teamspaceConsoleTableName);
+			}
+            
+        }
+    },
+
+    syncConsoleColumns: function(consoleTableId, teamspaceConsoleTableId, teamspaceConsoleTableName, displayMappings) {
+        gs.info("Into syncConsoleColumns: " + consoleTableId + " - " + teamspaceConsoleTableId + " - " + teamspaceConsoleTableName);
+        var consoleColumns = this.consoleColumns(consoleTableId);
+        while(consoleColumns.next()) {
+            var consoleColumnId = consoleColumns.getValue("sys_id");
+            var consoleColumnDisplayId = consoleColumns.getValue("pm_console_display_column");
+           // if(this.checkCustomRecord(this.PM_CONSOLE_COLUMN+"_"+consoleColumnId))
+             //   continue;//Don't clone custom records to teamspace 
+            var teamspaceConsoleColumn = new GlideRecord(this.PM_CONSOLE_COLUMN);
+            teamspaceConsoleColumn.addQuery('pm_console_table',teamspaceConsoleTableId);
+            teamspaceConsoleColumn.addQuery('table',teamspaceConsoleTableName);
+            teamspaceConsoleColumn.addQuery('pm_console_display_column',displayMappings[consoleColumnDisplayId]);
+            teamspaceConsoleColumn.query();
+            if(teamspaceConsoleColumn.next()){
+				var teamspaceConsoleColumnId = teamspaceConsoleColumn.getValue('sys_id');
+				var baseSeededValue = consoleColumns.getValue('seeded');
+				teamspaceConsoleColumn.setValue('seeded', baseSeededValue);
+				teamspaceConsoleColumn.setWorkflow(false);
+				teamspaceConsoleColumn.update();
+                if(teamspaceConsoleColumn.getValue("advanced") == 'true' || teamspaceConsoleColumn.getValue("advanced") == '1')
+                    this.syncConsoleAdvancedColumn(consoleColumnId, teamspaceConsoleColumnId,teamspaceConsoleTableName);
+            }
+        }
+    },
+
+    syncConsoleDependencies: function(consoleTableId, teamspaceConsoleTableId, teamspaceConsoleTableName) {
+        gs.info("Into syncConsoleDependencies: " + consoleTableId + " - " + teamspaceConsoleTableId + " - " + teamspaceConsoleTableName);
+        var consoleDependencies = this.consoleDependencies(consoleTableId);
+        while(consoleDependencies.next()) {
+            var consoleDependencyId = consoleDependencies.getValue("sys_id");
+            var consoleColumnDisplayId = consoleDependencies.getValue("pm_console_display_column");
+            //if(this.checkCustomRecord(this.PM_CONSOLE_DEPENDENCIES+"_"+consoleDependencyId))
+              //  continue;//Don't clone custom records to teamspace 
+            var teamspaceDependency = new GlideRecord(this.PM_CONSOLE_DEPENDENCIES);
+            teamspaceDependency.addQuery('pm_console_table',teamspaceConsoleTableId);
+            // We dont have specifc teamspace table for relations
+            teamspaceDependency.addQuery('table',consoleDependencies.getValue('table'));
+            teamspaceDependency.addQuery('join',consoleDependencies.getValue('join'));
+            teamspaceDependency.addQuery('type',consoleDependencies.getValue('type'));
+            teamspaceDependency.query();
+            if(teamspaceDependency.next()){
+				var teamspaceDependencyId = teamspaceDependency.getValue('sys_id');
+				var baseSeededValue = consoleDependencies.getValue('seeded');
+				teamspaceDependency.setValue('seeded', baseSeededValue);
+				teamspaceDependency.setWorkflow(false);
+				teamspaceDependency.update();
+            }
+        }
+    },
+
+    syncConsoleAdvancedColumn: function(consoleColumnId, teamspaceConsoleColumnId,teamspaceConsoleTableName) {
+        gs.info("Into syncConsoleAdvancedColumn: " + consoleColumnId + " - " + teamspaceConsoleColumnId+ " - "+teamspaceConsoleTableName);
+        var consoleAdvancedColumn = this.consoleAdvancedColumn(consoleColumnId);
+        while(consoleAdvancedColumn.next()) {
+			var teamspaceAdvancedConsoleColumn = new GlideRecord(this.PM_CONSOLE_COLUMN_ADVANCED);
+				teamspaceAdvancedConsoleColumn.addQuery('pm_console_column',teamspaceConsoleColumnId);
+				teamspaceAdvancedConsoleColumn.addQuery('reference_table',teamspaceConsoleTableName);
+				teamspaceAdvancedConsoleColumn.addQuery('column',consoleAdvancedColumn.getValue('column'));		
+				teamspaceAdvancedConsoleColumn.query();
+			
+			if(teamspaceAdvancedConsoleColumn.next()){
+				var baseSeededValue = consoleAdvancedColumn.getValue('seeded');
+				teamspaceAdvancedConsoleColumn.setValue('seeded', baseSeededValue);
+				teamspaceAdvancedConsoleColumn.setWorkflow(false);
+				teamspaceAdvancedConsoleColumn.update();
+			}
+        }
+    },
+
+    process: function(teamspaceConfig) {
+        gs.info('Into process: ' + teamspaceConfig);
+        var teamspacePortfolioTable = SNC.PPMConfig.getPortfolioTable(teamspaceConfig);
+        var teamspaceProgramTable = SNC.PPMConfig.getProgramTable(teamspaceConfig);
+        var teamspaceProjectTable = SNC.PPMConfig.getProjectTable(teamspaceConfig);
+		var teamspaceDemandTable = SNC.PPMConfig.getDemandTable(teamspaceConfig);
+        this.syncConsole("pm_portfolio", teamspacePortfolioTable);
+        this.syncConsole("pm_program", teamspaceProgramTable);
+        this.syncConsole("pm_project", teamspaceProjectTable);
+		this.syncConsole("dmn_demand", teamspaceDemandTable);
+    },
+    
+    
+    type: 'TeamspaceConsoleSeededDataSync'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-03-30 06:15:52&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;461bee5f87c5130049e94c2c59cb0bb0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TeamspaceConsoleSeededDataSync&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_461bee5f87c5130049e94c2c59cb0bb0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-03-31 10:50:57&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;12396&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:12</sys_created_on>
+        <sys_id>888c0dba2f331110d8a4d5f62799b605</sys_id>
+        <sys_name>TeamspaceConsoleSeededDataSync</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_888c0dba2f331110d8a4d5f62799b605</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

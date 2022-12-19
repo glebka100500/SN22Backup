@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6bf2247bb712230026778d78ee11a9fb</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeSecurityManagerSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Granting knowledge_manager role to newly added managers.&amp;#13;
+Revoking knowledge_manager role for users who are no longer managers.  Customers should not change this class directly This class is never called directly.&lt;/description&gt;
+        &lt;name&gt;KnowledgeSecurityManagerSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KnowledgeSecurityManagerSNC = Class.create();
+KnowledgeSecurityManagerSNC.prototype = {
+	initialize: function() {
+	},
+	
+	updateKnowledgeManagers: function(currentManagers, previousManagers){
+		var manager_role = new GlideRecord("sys_user_role");
+		manager_role.get("name", "knowledge_manager");
+		
+		// Grant knowledge_manager role to currently selected managers if needed
+		for(var i = 0; i &lt; currentManagers.length; i ++)
+			this.addRole(currentManagers[i], manager_role.getUniqueValue());
+		
+		// Revoke knowledge_manager role from previously selected managers if needed
+		for(var i = 0; i &lt; previousManagers.length; i ++)
+			this.removeRole(previousManagers[i], manager_role.getUniqueValue());
+	},
+	
+	addRole: function(userId, roleId){
+		// Skip this elelemnt if empty
+		if(JSUtil.nil(userId))
+			return;
+		
+		// Check if the user has knowledge_manager role
+		var role = new GlideRecord("sys_user_has_role");
+		role.addQuery("user", userId);
+		role.addQuery("role", roleId);
+		role.addQuery("granted_by","not-applicable").addOrCondition("granted_by","");
+		role.query();
+		
+		// return if the user already has the knowledge_manager role
+		if(role.hasNext())
+			return;
+		
+		// otherwise grant the knowledge_manager role to the user
+		role.initialize();
+		role.user = userId;
+		role.role = roleId;
+		role.state = "active";
+		role.insert();
+		
+		// and add info message indicating what has happened
+		var msgArray = new Array();
+		msgArray.push(role.role.name + "");
+		msgArray.push(role.user.name + "");
+		gs.addInfoMessage(gs.getMessage('Adding role {0} to {1}', msgArray));
+	},
+	
+	removeRole: function(userId, roleId){
+		if(JSUtil.nil(userId) || JSUtil.nil(roleId))
+			return;
+		
+		// Make sure that the user is not a manager of another KB 
+		// before revoking the knowledge_manager role
+		var encodedQuery = "kb_managersLIKE" + userId + "^ORowner=" + userId;
+		var isManager = new GlideRecord("kb_knowledge_base");
+		isManager.addEncodedQuery(encodedQuery);
+		isManager.query();
+		
+		if(isManager.hasNext())
+			return;
+		
+		// Revoke the knowledge_manager role
+		var userHasRole = new GlideRecord("sys_user_has_role");
+		userHasRole.addQuery("user", userId);
+		userHasRole.addQuery("role", roleId);
+		userHasRole.addQuery("granted_by","not-applicable").addOrCondition("granted_by","");
+		userHasRole.deleteMultiple();
+		
+		// and add info message indicating what has happened
+		var msgArray = new Array();
+		msgArray.push(userHasRole.role.name + "");
+		msgArray.push(userHasRole.user.name + "");
+		gs.addInfoMessage(gs.getMessage('Removing role {0} from {1}', msgArray));
+	},
+	
+	type: 'KnowledgeSecurityManagerSNC'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-12-17 09:07:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6bf2247bb712230026778d78ee11a9fb&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeSecurityManagerSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6bf2247bb712230026778d78ee11a9fb&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-12-17 09:07:31&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2627&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:17</sys_created_on>
+        <sys_id>00cc013e2f331110d8a4d5f62799b688</sys_id>
+        <sys_name>KnowledgeSecurityManagerSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_00cc013e2f331110d8a4d5f62799b688</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

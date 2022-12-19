@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>786376d4539a01105400ddeeff7b12e0</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AISearchGlideSignalsSearchEvent&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Collects SEARCH_EVENT metrics of AI search. The payload will be sent to Glide Signals API &lt;/description&gt;
+        &lt;name&gt;AISearchGlideSignalsSearchEvent&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AISearchGlideSignalsSearchEvent = Class.create();
+
+AISearchGlideSignalsSearchEvent.prototype = Object.extendsObject(global.AISearchGlideSignalsEvent, {
+	
+	initialize: function(searchResultMetadata, paramBag) {
+
+		global.AISearchGlideSignalsEvent.prototype.initialize.call(this, searchResultMetadata, paramBag);	
+		
+		var matchedIntents = searchResultMetadata[global.AISearchConstants.MATCHED_QEURY_INTENTS];
+		this.setValue(global.AISearchConstants.MATCHED_QEURY_INTENTS, matchedIntents);
+		
+		var matchedGeniusIntents = searchResultMetadata[global.AISearchConstants.MATCHED_GENIUS_RESULT_INTENTS];
+		this.setValue(global.AISearchConstants.MATCHED_GENIUS_RESULT_INTENTS, matchedGeniusIntents);
+		
+		var responseTime = searchResultMetadata[global.AISearchConstants.RESPONSE_TIME_IN_MS];
+		
+		this.setValue(global.AISearchConstants.RESPONSE_TIME_IN_MS, responseTime);
+		
+		this.setValue(global.AISearchConstants.QUERY_LANGUAGE, this._getQueryLanguage(paramBag));
+	},
+	
+	/**
+	* Build the events
+	*/
+	buildPayload: function(resultType, searchResult) {
+	
+		if (gs.nil(resultType))
+			return;
+		
+		if (gs.nil(searchResult) || gs.nil(searchResult.propValues) || gs.nil(searchResult.propValues.model))
+			return;
+		
+		var model = searchResult.propValues.model;
+		
+		if (gs.nil(this.getPayload().searchResults))
+			this.getPayload().searchResults = [];
+		
+		var payload = this.getPayload();
+		var result = {};
+		
+		result[global.AISearchConstants.RECORD_ID] 
+			= global.AISearchHelper.getResourceIdFromModel(model);
+		
+		var tableName = global.AISearchHelper.getResourceTableFromModel(model);
+		
+		result[global.AISearchConstants.TABLE_NAME] = tableName;
+		result[global.AISearchConstants.RESULT_TYPE] = resultType;
+		
+		if (resultType == global.AISearchGlideSignalsSearchEvent.RESULT_TYPE_GENIUS)
+			result[global.AISearchConstants.CARD_TYPE] = model.model||'';
+		
+		payload.searchResults.push(result);
+		this._increaseOccurences(tableName);
+	},
+	
+	/**
+	* Returns the query language
+	*/
+	_getQueryLanguage: function(paramBag) {
+		
+		var language 
+			= AISearchGlideSignalsSearchEvent.getQueryLanguageFromSearchResultMetadata(
+				this.getSearchResultMetadata());
+		
+		// if not found, get it from the paramBag
+		if (gs.nil(language)) 
+			language = paramBag[global.AISearchConstants.LANGUAGE]; 
+		
+		// if not found, let's get it from session
+		if(gs.nil(language)) 
+			language = gs.getSession().getLanguage();
+	
+		return language;
+	},
+	
+	_increaseOccurences: function(tableName) {
+		
+		if (gs.nil(this.getPayload().searchResultsPerSource))
+			this.getPayload().searchResultsPerSource = [];
+		
+		var data;
+		
+		var payload = this.getPayload();
+		
+		for (var i=0; i&lt; payload.searchResultsPerSource.length; i++) {
+			
+			data = payload.searchResultsPerSource[i];
+			
+			if(data.sourceId == tableName) {
+				++data.numberOfResults;
+				return;
+			}
+		}
+		
+		// if not found, create a new entry.
+		data = {sourceId:tableName, numberOfResults:1};
+		payload.searchResultsPerSource.push(data);
+	},
+	
+	getEventType : function() {
+		return global.AISearchConstants.EVENT_TYPE_SEARCH_EVENT;
+	},
+	type: 'AISearchGlideSignalsSearchEvent'
+});
+
+/**
+* Returns the query language from searchResultMetadata
+*/
+AISearchGlideSignalsSearchEvent.getQueryLanguageFromSearchResultMetadata = function(searchResultMetadata) {
+	return searchResultMetadata[global.AISearchConstants.QUERY_LANGUAGE];
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-13 23:46:35&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;786376d4539a01105400ddeeff7b12e0&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;48&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AISearchGlideSignalsSearchEvent&lt;/sys_name&gt;
+        &lt;sys_package display_value="Glide Conversation Server" source="com.glide.cs"&gt;f9f62e472f000110d8a4d5f62799b60c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_786376d4539a01105400ddeeff7b12e0&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-27 07:00:04&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3372&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:42</sys_created_on>
+        <sys_id>42dc093e2f331110d8a4d5f62799b6b2</sys_id>
+        <sys_name>AISearchGlideSignalsSearchEvent</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_42dc093e2f331110d8a4d5f62799b6b2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

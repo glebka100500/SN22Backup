@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>97042fd987740300de96de05b7cb0b22</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AgileUsageAnalytics&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Called by rest api for usageAnalytics&lt;/description&gt;
+        &lt;name&gt;AgileUsageAnalytics&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AgileUsageAnalytics = Class.create();
+
+AgileUsageAnalytics.prototype = {
+    initialize: function() {
+    },
+	
+	logStandardListVisits: function(view) {
+		var data = {};
+		if(gs.hasRole('product_owner'))
+			data['role'] = "product_owner";
+		else if(gs.hasRole('scrum_master'))
+			data['role'] = "scrum_master";
+		else if (gs.hasRole('scrum_user'))
+			data['role'] = "scrum_user";
+		else 
+			data['role'] = "other";
+	
+		data["event.type"] = "view_standard_list";
+		data["app.view"] = view;
+		
+		this.logAnalytics(data);
+	},
+	
+	logTaskProgressBoardVisits: function(){
+		var data = {};
+		data["event.type"] = "task_progress_board_open";
+		this.logAnalytics(data);
+	},
+	
+	logAnalytics: function(data) {
+		var streamId = "snc.agile";
+	
+		if(AnalyticsFramework.isDisabled() &amp;&amp; AnalyticsFramework.isBlocked(streamId))
+			return;
+	
+		var obfuscationList = [];
+		data["app.name"] = "agile";
+		var status = AnalyticsFramework.open(streamId);
+		if (status === 0) {
+			status = AnalyticsFramework.sendJSON(streamId, obfuscationList, JSON.stringify(data));
+			status = AnalyticsFramework.close(streamId);
+		}
+	},
+	
+	type: 'AgileUsageAnalytics'
+};
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-08-24 22:50:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;97042fd987740300de96de05b7cb0b22&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;18&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AgileUsageAnalytics&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_97042fd987740300de96de05b7cb0b22&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-25 22:41:51&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1138&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:51</sys_created_on>
+        <sys_id>721d8d7e2f331110d8a4d5f62799b6d5</sys_id>
+        <sys_name>AgileUsageAnalytics</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_721d8d7e2f331110d8a4d5f62799b6d5</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

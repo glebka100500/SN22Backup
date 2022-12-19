@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>65313d7c670203008b52f3b457415a4b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdAjaxNotificationProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PwdAjaxNotificationProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdAjaxNotificationProcessor = Class.create();
+PwdAjaxNotificationProcessor.prototype = Object.extendsObject(PwdAjaxRequestProcessor, {
+	INVALID_PHONE_NUMBER: -4,
+    INVALID_REQUEST_RESPONSE: -3,
+	PAUSE_WINDOW_RESPONSE: -2,
+	PER_DAY_LIMIT_RESPONSE: -1,
+	GENERIC_FAIL_RESPONSE: 0,
+	SUCCESS_RESPONSE: 1,
+	
+	// Handle response code and return response message
+	_handleResponse: function(response, verificationId, retVal) {
+		if (response == this.SUCCESS_RESPONSE) {
+			var expiry = new SNC.PwdSMSManager().getExpiryByVerificationId(verificationId);
+			var msgKey = "Verification Code Sent Message";
+			var responseMsg = gs.getMessage(msgKey, expiry);  // I18N_OK 08-04-16
+			
+			this._setResponseMessage("success", responseMsg, retVal);
+		}
+		else {
+			var msg;
+			switch (response) {
+				case this.PER_DAY_LIMIT_RESPONSE:
+					var per_day_limit = this._getVerificationParam(verificationId, "max_per_day", "password_reset.sms.max_per_day");
+					msg = gs.getMessage('Cannot send more than {0} verification codes in a day', [per_day_limit]);
+					break;
+				case this.PAUSE_WINDOW_RESPONSE:
+					var pause_window = this._getVerificationParam(verificationId, "pause_window", "password_reset.sms.pause_window");
+					msg = gs.getMessage('You can send a new verification code after {0} minutes', pause_window);
+					break;
+				case this.INVALID_REQUEST_RESPONSE:
+					msg = gs.getMessage('Your password reset request is no longer valid. Submit another request.');
+					break;
+				case this.INVALID_PHONE_NUMBER:
+					msg = gs.getMessage('Could not deliver the code via SMS text. The number is not a valid phone number (not E.164 compliant).');
+					break;
+				default:
+					msg = gs.getMessage('Could not generate a verification code');
+			}		
+		    this._setResponseMessage("fail", msg, "false");	
+		}
+	},
+	
+	// Handle sending enrollment code response
+	_handleEnrollResponse: function(response, deviceId, userId) {
+		if (response) {
+			new PwdNotificationHelper().subscribeDevice(deviceId, userId);
+			var msg = gs.getMessage('The device has been authorized');
+            this._setResponseMessage("success", msg, deviceId);
+        }
+		else  
+            this._setResponseMessage("fail", gs.getMessage("The verification code does not match"), "false");
+	},
+	
+	_getVerificationParam: function (verificationId, parameter, property) {
+		var value = new SNC.PwdVerificationManager().getVerificationParamValue(verificationId, parameter);
+		if (value == null) {
+			value = GlideProperties.get(property,'0');
+		}
+		return value;
+	},
+	
+    type: 'PwdAjaxNotificationProcessor'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-10-24 04:38:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;65313d7c670203008b52f3b457415a4b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdAjaxNotificationProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_65313d7c670203008b52f3b457415a4b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-04-05 20:45:21&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2572&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:03</sys_created_on>
+        <sys_id>e0bcc9fa2f331110d8a4d5f62799b680</sys_id>
+        <sys_name>PwdAjaxNotificationProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e0bcc9fa2f331110d8a4d5f62799b680</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

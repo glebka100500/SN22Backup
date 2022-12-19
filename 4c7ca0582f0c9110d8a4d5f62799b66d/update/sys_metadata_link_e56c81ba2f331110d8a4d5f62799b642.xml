@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3193cd349f122200598a5bb0657fcf34</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ShadowTaskHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;One of the PostEngineHandlers called by Recalculation Engine&amp;#13;
+It checks if a Shadow Task in project is modified (this will happen in predecessor project) or&amp;#13;
+it checks if a Shadow Task in project is deleted (this will happen in successor project)&amp;#13;
+&amp;#13;
+For updates, we raise events and notifications&amp;#13;
+For deletes, we perform cleanup by deleting relations in other projects, external relations, and other project shadow tasks&lt;/description&gt;
+        &lt;name&gt;ShadowTaskHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[ShadowTaskHandler = Class.create();
+
+ShadowTaskHandler.prototype = {
+    initialize: function() {
+        this.topTask = new GlideRecord('planned_task');
+    },
+    
+    process: function(topTaskId, jsonData) {
+        PPMDebug.log("Into ShadowTaskHandler: process -&gt; " + topTaskId + " | jsonData -&gt; " + jsonData);
+        if(this.topTask.get(topTaskId) &amp;&amp; JSUtil.notNil(jsonData)) {
+            var jsonDataObj = (new JSON()).decode(jsonData);
+            // we only need to trigger recalculate on hard depdencies for updated tasks
+            this.triggerRecalculateOnShadowTasks(topTaskId, jsonDataObj);
+            // delete of task(s) will delete the relations
+            this.checkAndDeleteExternalRelations(topTaskId, jsonDataObj);
+        }
+    },
+
+    checkAndDeleteExternalRelations: function (topTaskId, jsonDataObj) {
+        PPMDebug.log("Into ShadowTaskHandler: checkAndDeleteExternalRelations -&gt; " + topTaskId);
+        var data = {};
+        data.tasks = [];
+        data.relations = [];
+        
+        var links = jsonDataObj.links || [];
+        var tasks = jsonDataObj.tasks || [];
+        
+        var deletedTasks = tasks.filter(function(task) {  
+            PPMDebug.log(task.short_description + ' ' +task.is_deleted + ' ' +task.orig_sys_id);
+            return task.is_deleted; 
+        }); 
+        var deletedRelations = links.filter(function(link) { return link.is_deleted &amp;&amp; JSUtil.notNil(link.orig_sys_id); });
+        data.tasks = deletedTasks;
+        data.relations = deletedRelations;
+        
+        PPMDebug.log('Into ShadowTaskHandler: '+ deletedTasks.length + ' ' + deletedRelations.length);
+        PPMDebug.log('Into ShadowTaskHandler tasks: ' + JSON.stringify(deletedTasks));
+        PPMDebug.log('Into ShadowTaskHandler relations: ' + JSON.stringify(deletedRelations));
+        
+        if( deletedTasks.length &gt; 0 ) {
+            PPMDebug.log("Into ShadowTaskHandler: shadows deleted -&gt; " + JSON.stringify(data));
+            (new InterProjectTaskDeletionHandler()).process(JSON.stringify(data));
+        } else if(deletedRelations.length &gt; 0) {
+            PPMDebug.log("Into ShadowTaskHandler: relations deleted -&gt; " + JSON.stringify(deletedRelations));
+            this.processDeletedRelations(deletedRelations);
+        }
+    },
+
+    triggerRecalculateOnShadowTasks: function(topTaskId, jsonDataObj) {
+        PPMDebug.log("Into ShadowTaskHandler: triggerRecalculateOnShadowTasks -&gt; " + topTaskId);
+        var shadowTaskIds = this.shadowTaskIds(jsonDataObj);
+        PPMDebug.log("Into ShadowTaskHandler: shadowTaskIds -&gt; " + JSON.stringify(shadowTaskIds));
+        if(shadowTaskIds.length &gt; 0) {
+            (new ProjectChangeNotifier()).broadcastDownStream(shadowTaskIds);
+        }
+    },
+
+    shadowTaskIds: function (jsonDataObj) {
+        PPMDebug.log("Into ShadowTaskHandler: shadowTaskIds");
+        var shadowTaskIds = [];
+        var tasks = jsonDataObj.tasks;
+        if(JSUtil.notNil(tasks) &amp;&amp; tasks.length &gt; 0) {
+            for (var i = 0; i &lt; tasks.length; i++) {
+                var task = tasks[i];
+                if(!task.is_deleted &amp;&amp; (task.shadow == "true" || task.shadow == "1")) {
+                    // Only Hard depdencies has to handles - ideally new/dirty once reaches here
+                    PPMDebug.log("shadowTask -&gt; " + JSON.stringify(task));
+                    if(!task.is_new) {
+                        shadowTaskIds.push({ sys_id: task.id || task.sys_id,
+                                 orig_sys_id: task.orig_sys_id,
+                                 orig_top_task_id: task.orig_top_task_id,
+                                 relation_applied: task.relation_applied,
+                                 previous_start_date: task.previous_start_date,
+                                 previous_end_date: task.previous_end_date,
+                                 start_date: task.start_date,
+                                 end_date: task.end_date
+                             });
+                    }
+                }
+            }
+        }
+        PPMDebug.log("shadowTaskIds -&gt; " + JSON.stringify(shadowTaskIds));
+        return shadowTaskIds;
+    },
+
+    processDeletedRelations: function (relations) {
+        PPMDebug.log("Into ShadowTaskHandler: processDeletedRelations -&gt; " + JSON.stringify(relations));
+        if(relations &amp;&amp; relations.length &gt; 0) {
+            var origRelations = [];
+            for (var i = 0; i &lt; relations.length; i++) {
+                var rel = relations[i];
+                PPMDebug.log("Into ShadowTaskHandler: deletedRelation -&gt; " + JSON.stringify(relations[i]));
+                if(JSUtil.notNil(rel.orig_sys_id)) {
+                    var origRel = PlannedTaskRelation.get(rel.orig_sys_id);
+                    if(origRel.isValidRecord()) {
+                        PPMDebug.log("Into ShadowTaskHandler: deleting origRel -&gt; " + rel.orig_sys_id);
+                        origRel.deleteRecord(true);
+                    }
+                }
+            }
+        }
+    },
+
+    type: 'ShadowTaskHandler'
+    
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-03 19:03:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3193cd349f122200598a5bb0657fcf34&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;51&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ShadowTaskHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3193cd349f122200598a5bb0657fcf34&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-29 23:01:18&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5030&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:45</sys_created_on>
+        <sys_id>e56c81ba2f331110d8a4d5f62799b642</sys_id>
+        <sys_name>ShadowTaskHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e56c81ba2f331110d8a4d5f62799b642</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8301c23b9723100031af390ddd2975e3</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.EmailUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utility class for parsing emails; provides helper function that determines if VCAL calendar invitation is present in body of email message.&lt;/description&gt;
+        &lt;name&gt;EmailUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var EmailUtils = Class.create();
+EmailUtils.prototype = {
+    initialize: function() {
+    },
+
+    containsCalendarInvite: function(/* com.glide.notification.Email */ email) {
+        // Cheap way of parsing for VCAL attachment: look for BEGIN:VCALENDAR followed by END:VCALENDAR
+        var vCalBeginIndex_text = email.body_text.toLowerCase().indexOf('begin:vcalendar');
+        var vCalEndIndex_text = email.body_text.toLowerCase().indexOf('end:vcalendar');
+        if (vCalBeginIndex_text &gt; -1 &amp;&amp; vCalEndIndex_text &gt; vCalBeginIndex_text)
+            return true;
+        else
+            return false;
+    },
+
+    type: 'EmailUtils'
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-01-20 20:52:29&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8301c23b9723100031af390ddd2975e3&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;25&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;EmailUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="Email Filters" source="com.glide.email_filter"&gt;7fdc34c36d2220100acb70b35343307a&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8301c23b9723100031af390ddd2975e3&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-01-23 21:40:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;653&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:00</sys_created_on>
+        <sys_id>1aec017e2f331110d8a4d5f62799b60d</sys_id>
+        <sys_name>EmailUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1aec017e2f331110d8a4d5f62799b60d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

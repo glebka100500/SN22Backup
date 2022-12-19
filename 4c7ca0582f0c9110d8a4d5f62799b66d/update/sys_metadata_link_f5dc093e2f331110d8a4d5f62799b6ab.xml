@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>78130de0ef403100438236caa5c0fb07</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KBMyKnowledgeAJAXSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;[WARNING: Customers should NOT modify this script]&amp;#13;
+&amp;#13;
+The purpose of this script include is to provide default AJAX behaviours for the widgets on My Knowledge page.&amp;#13;
+To change the behaviour of these methods (or add new methods), customers should override/add new methods to the KBMyKnowledgeAJAX script include.&lt;/description&gt;
+        &lt;name&gt;KBMyKnowledgeAJAXSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KBMyKnowledgeAJAXSNC = Class.create();
+
+KBMyKnowledgeAJAXSNC.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+    getArticles: function() {
+        var type = this.getParameter("sysparm_type");
+        var windowStart = this.getParameter("sysparm_window_start");
+		var isDoctype = this.getParameter("sysparm_is_doctype");
+        var response = {};
+
+        var myKnowledge = new KBMyKnowledge(type, windowStart);
+        var articles = myKnowledge.getArticles();
+
+        var jr = new GlideJellyRunner();
+        jr.setEscaping(false);
+        jr.setVariable("jvar_type", type);
+		jr.setVariable("jvar_is_doctype", isDoctype);
+        jr.setVariable("jvar_results", articles.results);
+
+        response["htmlResult"] = jr.runMacro("kb_my_" + type);
+        response["data"] = articles;
+
+        return (new JSON()).encode(response);
+    }
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-10-25 15:28:06&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;78130de0ef403100438236caa5c0fb07&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KBMyKnowledgeAJAXSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Core" source="com.glideapp.knowledge"&gt;e011410f6d2620100acb70b353433002&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_78130de0ef403100438236caa5c0fb07&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-11-10 15:06:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;856&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:42</sys_created_on>
+        <sys_id>f5dc093e2f331110d8a4d5f62799b6ab</sys_id>
+        <sys_name>KBMyKnowledgeAJAXSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f5dc093e2f331110d8a4d5f62799b6ab</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

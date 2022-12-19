@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>35fd7ecdc3331000b959fd251eba8f17</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.StockRuleFilters&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;StockRuleFilters&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var StockRuleFilters = Class.create();
+StockRuleFilters.prototype = {
+	initialize : function() {
+	},
+
+	getStockRooms : function(model) {
+		/**
+		 * Description: Used as RefQual for stockroom list in Stock Rule, return
+		 * stockrooms for model
+		 */
+		var sr = new GlideRecord('alm_m2m_stockroom_model');
+		sr.addQuery('model', model);
+		sr.query();
+
+		var strQuery = 'sys_idIN';
+		while (sr.next())
+			strQuery += ',' + sr.stockroom;
+
+		return strQuery;
+	},
+	getParentStockRooms : function(stockRuleGr) {
+		/**
+		 * Description: Used as RefQual for stockroom list in Stock Rule, return
+		 * stockrooms for model
+		 */
+		var sr = new GlideRecord('alm_m2m_stockroom_model');
+		sr.addQuery('model', stockRuleGr.model);
+		if (new global.AssetManagementBaseJob().fIsDomainDataSeparationEnabled) {
+			sr.addQuery('stockroom.sys_domain', 'IN', ['global', stockRuleGr.sys_domain]);
+		}
+		sr.query();
+
+		var strQuery = 'sys_idIN';
+		while (sr.next()) {
+			strQuery += ',' + sr.stockroom;
+		}
+
+		return strQuery;
+	},
+
+	type : 'StockRuleFilters'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-01-24 22:32:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;35fd7ecdc3331000b959fd251eba8f17&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;7&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;StockRuleFilters&lt;/sys_name&gt;
+        &lt;sys_package display_value="Asset Management" source="com.snc.asset_management"&gt;0ea009c76d2620100acb70b353433049&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_35fd7ecdc3331000b959fd251eba8f17&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-04-04 02:09:15&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1074&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:51</sys_created_on>
+        <sys_id>7e6c05ba2f331110d8a4d5f62799b682</sys_id>
+        <sys_name>StockRuleFilters</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7e6c05ba2f331110d8a4d5f62799b682</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

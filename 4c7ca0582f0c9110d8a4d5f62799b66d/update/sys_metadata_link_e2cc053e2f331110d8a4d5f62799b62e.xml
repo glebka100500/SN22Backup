@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>729329239f1322001e3a77a0942e702e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RoleManagementVerify&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;A script to verify inherited roles for all users.&amp;#13;
+It is recommended to run this script before activating the  com.glide.role_management.inh_count plugin, in order to detect all discrepancies for inherited roles.&amp;#13;
+For example, some current inherited roles after re-calculation might be removed, so the customer might need to add them explicitely to the user.&amp;#13;
+&amp;#13;
+Usage example from background scripts:&amp;#13;
+    new RoleManagementVerify().verifyInheritedRoles();&amp;#13;
+&amp;#13;
+Also, if needed, inherited roles can be verified for a specific user:&amp;#13;
+   new RoleManagementVerify().verifyInheritedRolesForUser('47de9c73c61122930033f6521d1bb785',  'itam');&lt;/description&gt;
+        &lt;name&gt;RoleManagementVerify&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RoleManagementVerify = Class.create();
+RoleManagementVerify.prototype = {
+    initialize: function() {
+		var summary = {};
+		summary.currInhCount = 0;
+		summary.calcInhCount = 0;
+		summary.discrepCount = 0;
+		this.summary = summary;
+    },
+	
+	// verify inherited roles for all users, and show diff between current and re-calculted ones
+	verifyInheritedRoles: function() {
+		gs.log(''+new GlideDateTime() + ' Starting checking of inherited roles for all users...');
+		var user = new GlideRecord('sys_user');
+		user.initialize();
+		user.setWorkflow(false);
+		user.query();
+		while (user.next()) {
+			var userSysId = user.getValue('sys_id');
+			var userName = user.getValue('user_name');
+			this.verifyInheritedRolesForUser(userSysId, userName);
+		}
+		this.summary.currInhCount = this._getInhRolesCount();
+		gs.log('Number of inherited-role records in sys_user_has role, current: ' + this.summary.currInhCount 
+			   + ', after re-calculation: ' + this.summary.calcInhCount);
+		gs.log('Number of users with discrepancies for inherited roles: ' + this.summary.discrepCount);
+		gs.log(''+new GlideDateTime() + ' Finished checking of inherited roles for all users!');
+	},
+	
+	// verify roles for the specified user, and report any discrepancies if any
+	verifyInheritedRolesForUser: function(userSysId, userName) {
+		var rolesCurr = this.getInheritedRolesCurr(userSysId);
+		var rolesCalc = this.getInheritedRolesCalc(userSysId);
+		if (rolesCurr.length == 0 &amp;&amp; rolesCalc.length == 0)
+			return;
+
+		this.summary.calcInhCount += rolesCalc.length;
+
+		var rolesToBeDeleted = this.getArr1NotInArr2(rolesCurr, rolesCalc);
+		var rolesToBeAdded = this.getArr1NotInArr2(rolesCalc, rolesCurr);
+		if (rolesToBeDeleted.length == 0 &amp;&amp; rolesToBeAdded.length == 0)
+			return;
+		this.summary.discrepCount++;	
+		if (rolesToBeDeleted.length &gt; 0)
+			gs.log('User: ' + userName + ', inherited roles to be DELETED: ' + this.getRoleNamesByIds(rolesToBeDeleted));
+		if (rolesToBeAdded.length &gt; 0)
+			gs.log('User: ' + userName + ', inherited roles to be ADDED: ' + this.getRoleNamesByIds(rolesToBeAdded));
+	},
+
+	// get inherited roles for the specified user from sys_user_has_role
+	getInheritedRolesCurr: function(userSysId) {
+		var rRoles = [];
+		var ga = new GlideAggregate('sys_user_has_role');
+		ga.addQuery('user', userSysId);
+		ga.addQuery('inherited', true);
+		ga.groupBy('role');
+		ga.addAggregate('COUNT');
+		ga.query();
+		while (ga.next()) {
+			var role = '' + ga.getValue('role');
+			if (!rRoles.includes(role))
+				rRoles.push(role);
+		}
+		rRoles.sort();
+		return rRoles;
+	},
+	
+	// get recalculated inherited roles for the specified user
+	getInheritedRolesCalc: function(userSysId) {
+		var rRoles = [];
+		var rmAPI = new GlideUserHasRoleInhCountFixer();
+		var mapRoleCount = rmAPI.findAllInheritedRoleCountsForUser(userSysId); // Map&lt;String, Integer&gt; mapInhRoleCounts = 
+		var roles = mapRoleCount.keySet().toArray();
+		for (var i = 0; i &lt; roles.length; i++) {
+			var role = '' + roles[i];
+			rRoles.push(role);
+		}
+		rRoles.sort();
+		return rRoles;
+	},
+	
+	// find values from array1 that are not present in array2
+	getArr1NotInArr2: function(arr1, arr2) {
+		var res = arr1.filter(
+			function(value) {
+					if (arr2.indexOf(value) === -1) 
+							return value;
+				});
+		return res;
+	},
+
+	// return array with role names from array with sys_ids
+	getRoleNamesByIds: function(roles) {
+		var rmAPI = new GlideUserHasRoleInhCountFixer();
+		var names = [];
+		for (var i = 0; i &lt; roles.length; i++) {
+			var name = rmAPI.getRoleNameById(roles[i]);
+			names.push(name);
+		}
+		return names;
+	},
+	
+	// get count for inherited roles from sys_user_has_roel
+	_getInhRolesCount: function() {
+		var res = 0;
+		var aggr = new GlideAggregate('sys_user_has_role');
+		aggr.addQuery('inherited', true);
+		aggr.addAggregate('COUNT');
+		aggr.query();
+		if (aggr.next())
+			res = aggr.getAggregate('COUNT');
+		return res;
+	},
+	
+    type: 'RoleManagementVerify'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-12-01 03:31:09&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;729329239f1322001e3a77a0942e702e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RoleManagementVerify&lt;/sys_name&gt;
+        &lt;sys_package display_value="Contextual Security: Role Management" source="com.glide.role_management"&gt;46ccf0836d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_729329239f1322001e3a77a0942e702e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-12-01 03:33:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3927&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:28</sys_created_on>
+        <sys_id>e2cc053e2f331110d8a4d5f62799b62e</sys_id>
+        <sys_name>RoleManagementVerify</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e2cc053e2f331110d8a4d5f62799b62e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

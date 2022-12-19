@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0cc4469c53621010e414ddeeff7b12ce</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AJAXUpdateDMTRollbackState&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Update state for data management rollback operation&lt;/description&gt;
+        &lt;name&gt;AJAXUpdateDMTRollbackState&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AJAXUpdateDMTRollbackState = Class.create();
+AJAXUpdateDMTRollbackState.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    setRollbackState: function() {
+        var sys_id = this.getParameter('sysparm_sysId');
+        var dm_table = this.getParameter('sysparm_dm_table');
+
+        var gr = new GlideRecord(dm_table);
+        if (gr.get(sys_id)) {
+            if (gr.rollback_context.state == 'rolled_back') {
+                gr.state = "rolled_back";
+                gr.update();
+            }
+        }
+        return '';
+
+    },
+
+    type: 'AJAXUpdateDMTRollbackState'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-08-06 18:10:16&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;0cc4469c53621010e414ddeeff7b12ce&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;13&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AJAXUpdateDMTRollbackState&lt;/sys_name&gt;
+        &lt;sys_package display_value="Data Management" source="com.glide.data_management"&gt;5a5355e12f221110d8a4d5f62799b631&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_0cc4469c53621010e414ddeeff7b12ce&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-17 19:46:09&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;591&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:57</sys_created_on>
+        <sys_id>6d3c817a2f331110d8a4d5f62799b682</sys_id>
+        <sys_name>AJAXUpdateDMTRollbackState</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6d3c817a2f331110d8a4d5f62799b682</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

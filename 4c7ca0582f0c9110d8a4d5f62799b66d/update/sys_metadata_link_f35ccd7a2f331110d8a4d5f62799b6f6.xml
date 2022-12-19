@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2e59b165ac11014e0009d5929f0b2cc2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SchedulePage&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Provides support for Schedule Page server script.&lt;/description&gt;
+        &lt;name&gt;SchedulePage&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// This class provides support for Schedule Page server script code that is called to
+// provide the schedule items to be displayed for a Schedule Page
+gs.include("PrototypeServer");
+
+var SchedulePage = Class.create();
+SchedulePage.prototype = {
+   
+   initialize: function() {
+   },
+
+   /**
+    * Set the AJAXSchedulePage we will be using to keep track of the AJAXScheduleItem's as we create them
+    */
+   setPage: function(page) {
+      this.page = page;
+   },
+	
+   getPage: function() {
+	   return this.page;
+   },
+	
+   clear: function() {
+	   this.page.clear();
+   },
+    
+   /**
+   * Get a request parameter
+   */
+   getParameter: function(name) {
+      return this.page.getParameter(name);
+   },
+
+   /**
+    * Get a color based on an id (so that we can get the same color for the id later on)
+    */
+   getColor: function(id) {
+      return this.page.getColor(id);
+   },
+   
+   /**
+    * Darken a color to provide some contrast
+    */
+   darkenColor: function(color) {
+      return this.page.darkenColor(color);   
+   },
+   
+   /**
+    * Add the items for a schedule
+    */
+   addSchedule: function(sysId, color, query, editable) {
+      if (!query) 
+         query = "";
+         
+      if (!color)
+         color = "";
+      
+      var readOnly = !editable;
+      this.page.setReadOnly(readOnly);
+
+      return this.page.addSchedule(sysId, color, query, editable);
+   },
+   
+   /**
+    * Add a schedule span item to the calendar display
+    */
+   addScheduleSpan: function(gr, scheduleTZ, altName, color) {
+      return this.page.addScheduleSpan(gr, scheduleTZ, altName, color);
+   },
+   
+   /**
+    * Add a Schedule object that was returned by createSchedule()
+    */
+   addScheduleObject: function(schedule, name, color) {
+      return this.page.addScheduleObject(schedule, name, color, false);
+   },
+   
+   /**
+    * Add a Schedule object that was returned by createSchedule()
+    * ignoring any items that have the same start and end time
+    */
+   addScheduleObjectIgnoreEmpty: function(schedule, name, color) {
+      return this.page.addScheduleObject(schedule, name, color, true);
+   },
+   
+   /**
+    * Create a schedule object
+    */
+   createSchedule: function(sysId) {
+      return GlideSchedule(sysId + '');
+   },
+   
+   /**
+    * Add a schedule item from a glide record and a start and end date/time
+    * (start and end date/times are passed as a string in yyyy-mm-dd hh:mm:ss format)
+    */
+   addItem: function(record, start, end, altName, color) {
+      if (end == '')
+         end = null;
+      return this.page.addItem(record, start, end, altName, color);
+   },
+	
+   getStartUtc: function() {
+      var start = this.getParameter('start');
+      var gdt = new GlideDateTime();
+      gdt.setDisplayValue(start);
+      return gdt.getValue();
+   },
+
+   getEndUtc: function() {
+      var end = this.getParameter('end');
+      var gdt = new GlideDateTime();
+      gdt.setDisplayValue(end);
+      return gdt.getValue();
+   },
+    
+   z: null,
+
+   type: "SchedulePage"
+};
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2007-08-04 00:50:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2e59b165ac11014e0009d5929f0b2cc2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;35&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SchedulePage&lt;/sys_name&gt;
+        &lt;sys_package display_value="Advanced Schedules Support" source="com.glide.schedules"&gt;92a009c76d2620100acb70b353433070&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2e59b165ac11014e0009d5929f0b2cc2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-06-12 20:42:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2993&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:38</sys_created_on>
+        <sys_id>f35ccd7a2f331110d8a4d5f62799b6f6</sys_id>
+        <sys_name>SchedulePage</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f35ccd7a2f331110d8a4d5f62799b6f6</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

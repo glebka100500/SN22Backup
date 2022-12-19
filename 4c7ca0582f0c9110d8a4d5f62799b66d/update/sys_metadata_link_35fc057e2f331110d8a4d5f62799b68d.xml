@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8859a99f0a0a0bb000a4d4fdd90d4482</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RelatedListDiffer&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Diff logic specific to Related Lists&lt;/description&gt;
+        &lt;name&gt;RelatedListDiffer&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RelatedListDiffer = Class.create();
+
+RelatedListDiffer.prototype = Object.extendsObject(ListDiffer, {
+    _getFieldType: function(){
+        return "related_list";
+    },
+    _getParentRecord: function(root){
+        var table = root.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
+        var view = root.getElementsByTagName("view").item(0).getFirstChild().getNodeValue();
+        var gr1 = new GlideRecord("sys_ui_related_list");
+        gr1.addQuery("name", table);
+        gr1.addQuery("view", view);
+        gr1.query();
+        gr1.next();
+        var sys_id = gr1.getValue("sys_id");
+        if (sys_id == null) 
+            sys_id = "";
+        var gr = new GlideRecord(root.getFirstChild().getTagName());
+        gr.query(this._getParentType(), sys_id);
+        return gr;
+    },
+    getURL: function(root){
+        var sysIds = root.getElementsByTagName("sys_id");
+        var sys_id = sysIds.item(sysIds.getLength() - 1).getFirstChild().getNodeValue();
+        var url = "sys_ui_related_list.do?sys_id=" + sys_id;
+        return url;
+    }
+    
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;juell.solaegui&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-03-23 00:11:28&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8859a99f0a0a0bb000a4d4fdd90d4482&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;37&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RelatedListDiffer&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8859a99f0a0a0bb000a4d4fdd90d4482&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-02-11 04:28:12&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1086&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:14</sys_created_on>
+        <sys_id>35fc057e2f331110d8a4d5f62799b68d</sys_id>
+        <sys_name>RelatedListDiffer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_35fc057e2f331110d8a4d5f62799b68d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

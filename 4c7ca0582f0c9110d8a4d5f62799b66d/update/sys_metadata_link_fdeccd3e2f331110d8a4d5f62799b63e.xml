@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>821e17e69f323100598a5bb0657fcfea</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PlanningConsoleAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Ajax Util for Planning Console&lt;/description&gt;
+        &lt;name&gt;PlanningConsoleAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PlanningConsoleAjax = Class.create();
+PlanningConsoleAjax.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    json: function() {
+        return new JSON();
+    },
+
+    projectManagementApi: function() {
+        return new SNC.PlannedTaskAPI();
+    },
+
+    projectSysId: function() {
+        return this.getParameter('sysparm_project');
+    },
+
+    entitySysId: function() {
+        return this.getParameter('sysparm_entity_id');
+    },
+
+    sysClassName: function() {
+        return this.getParameter('sysparm_sys_class_name');
+    },
+
+    entity: function() {
+        return this.getParameter('sysparm_entity');
+    },
+
+    fiscalYearId: function() {
+        return this.getParameter('sysparm_fiscal_year_id');
+    },
+
+    deferSave: function() {
+        // Here the Defer is mapped to isSave in the Code, Hence otherway around
+        var deferSave = this.getParameter("sysparm_deferred_save");
+        if (!deferSave || deferSave == "false") return true;
+        else return false;
+    },
+
+    task: function() {
+        var taskJson = this.getParameter('sysparm_task');
+        return taskJson;
+    },
+
+    link: function() {
+        var link = this.getParameter('sysparm_link');
+        return link;
+    },
+
+    response: function(result) {
+        var response = this.newItem('response');
+        response.setAttribute('status', result.status);
+        response.setAttribute('message', result.message);
+        response.setAttribute('data', result.data);
+        //response.setAttribute("info", result.info);
+        //response.setAttribute("full_reload", result['full_reload']);
+    },
+
+    applyChanges: function() {
+		var entity = this.entity();
+		if (entity == 'portfolio') {
+			PPMDebug.log(this.getParameter('sysparm_current_action'));
+			entityChange = new PPMPortfolioEntityChange(this.json().decode(this.getParameter('sysparm_current_action')));
+			this.response(entityChange.applyChanges(this.fiscalYearId()));
+		} else {
+			var entityId = this.entitySysId();
+			var sysClass = this.sysClassName();
+			var previousOperationsJson = this.getParameter("sysparm_previous_actions");
+			var currentOperationJson = this.getParameter("sysparm_current_action");
+			var planningOnClient = this.getParameter('sysparm_planning_on_client');
+			var msgs = PlanningConsoleMessages.seededMessages();
+			var api = this.projectManagementApi();
+			var saveChanges = this.deferSave();
+			api.setTranslatedMessages(msgs);
+			if (saveChanges &amp;&amp; gs.getUser().getPreference('planning_console_project_DEFERREDSAVE') == 'true') {
+				//going to save in defered mode log usage
+				var ua = new PPMUsageAnalytics();
+				ua.deferedModeSave();
+			}
+
+			var isProject = this._isProject();
+			var oldOpenProjectIds;
+			if (isProject) {
+				oldOpenProjectIds = this.getOpenProjectsWithDemandForTopTask(entityId);
+			}
+
+			var preEngineHandler = new PreEngineHandlers();
+			var enginePreferences = '{}';
+			enginePreferences = preEngineHandler.getEnginePreferences(sysClass, entityId);
+			var recalculationConstraintsStrategy = new RecalculationConstraintsStrategy();
+			api.setConstraints(recalculationConstraintsStrategy.recalculationConstraint(this.getTaskRecord(entityId)));
+			var data = api.applyChanges(entityId, sysClass, previousOperationsJson, currentOperationJson, saveChanges, enginePreferences);
+			var jsonData = this.json().decode(data);
+			PPMDebug.log("PlanningConsoleAjax: applyChanges -&gt; " + data);
+			if (saveChanges) {
+				PPMDebug.log("PlanningConsoleAjax: applyChanges- status-&gt; " + jsonData.status);
+				if (jsonData.status &amp;&amp; jsonData.status == 'error') {
+					this.addMessages(jsonData);
+					this.response({
+						status: false,
+						message: jsonData.message,
+						data: this.json().encode(jsonData)
+					});
+				} else {
+					PostEngineHandlers.fire(entityId, data);
+					if(planningOnClient)
+						this._updateProgramPercentComplete(entityId);
+					this.addMessages(jsonData);
+					this.response({
+						status: true,
+						message: jsonData.message || 'success',
+						data: this.json().encode(jsonData)
+					});
+				}
+			}
+
+			//Demand Closure Changes
+			if (new GlidePluginManager().isActive('com.snc.demand_management') &amp;&amp; isProject) {
+				var newOpenProjectIds = this.getOpenProjectsWithDemandForTopTask(entityId);
+				var projectIdsClosed = this.findClosedIds(oldOpenProjectIds, newOpenProjectIds);
+				if (projectIdsClosed.length &gt; 0) {
+					DemandUtil.checkAndCloseDemandForProjectIds(projectIdsClosed);
+				}
+
+			}
+
+		}
+    },
+
+    findClosedIds: function(oldIds, newIds) {
+        var unmatchedIds = [],
+            a;
+        for (a in oldIds) {
+            if ((newIds.indexOf(oldIds[a])) == -1) {
+                unmatchedIds.push(oldIds[a]);
+            }
+        }
+
+        return unmatchedIds;
+    },
+
+    addMessages: function(data) {
+        data.infoMssgs = j2js(gs.getInfoMessages());
+        data.errorMssgs = j2js(gs.getErrorMessages());
+        gs.flushMessages();
+    },
+
+    getTaskRecord: function(taskId) {
+        var gr = new GlideRecord('planned_task');
+        gr.get(taskId);
+        return gr;
+    },
+
+    createBaseline: function() {
+        var projectId = this.projectSysId();
+        var baselineName = this.getParameter('sysparm_baselineName');
+        var description = this.getParameter('sysparm_description');
+        var enableTaskBaseline = this.getParameter('sysparm_enableTaskBaseline');
+        var enableFinancialBaseline = this.getParameter('sysparm_enableFinancialBaseline');
+        var project = new PmProject();
+        var baseline = project.createBaseline(baselineName, description, projectId, enableTaskBaseline, enableFinancialBaseline);
+        var data = {};
+        data.name = '' + baseline.name;
+        data.sys_id = '' + baseline.sys_id;
+        data.enable_task_baseline = '' + baseline.enable_task_baseline;
+        data.enable_financial_baseline = '' + baseline.enable_financial_baseline;
+        var encodedData = this.json().encode(data);
+        this.response({
+            status: true,
+            message: 'success',
+            data: encodedData
+        });
+    },
+
+    getLevels: function() {
+        var sysId = this.projectSysId();
+        var project = new GlideRecord('planned_task');
+        project.get(sysId);
+        var level = this.maxLevel(project);
+        PPMDebug.log("Max Level: " + level);
+        var levelObj = {
+            level: level,
+            status: "success",
+            message: "Success"
+        };
+        return this.response({
+            status: true,
+            message: 'success',
+            data: this.json().encode(levelObj)
+        });
+    },
+
+    maxLevel: function(projectRecord) {
+        var level = 1;
+        var ga = new GlideAggregate('planned_task');
+        ga.addAggregate('MAX', 'level');
+        ga.addQuery('top_task', projectRecord.getValue('sys_id'));
+        ga.groupBy('level');
+        ga.query();
+        while (ga.next()) {
+            var max = ga.getAggregate('MAX', 'level');
+            if (level != null &amp;&amp; parseInt(max) &gt; level) {
+                level = parseInt(max);
+            }
+        }
+        PPMDebug.log("Level: " + level);
+        return level - 1;
+    },
+
+    savePreference: function() {
+        var name = this.getParameter("sysparm_pref_name");
+        var value = this.getParameter("sysparm_pref_value");
+        gs.getUser().setPreference(name, value);
+        var data = {};
+        data.value = gs.getUser().getPreference(name);
+        return this.response({
+            status: true,
+            message: 'success',
+            data: this.json().encode(data)
+        });
+    },
+
+    planningOnClient: function() {
+        var name = this.getParameter("sysparm_pref_name");
+        var value = this.getParameter("sysparm_pref_value");
+        if (name == "PLANNINGONCLIENT") {
+            var ua = new PPMUsageAnalytics();
+            ua.planningOnClient(name, value);
+        }
+        return this.response({
+            status: true,
+            message: 'success',
+            data: this.json().encode({})
+        });
+    },
+
+    getPreference: function() {
+        var name = this.getParameter("sysparm_pref_name");
+        var data = {};
+        data.value = gs.getUser().getPreference(name);
+        return this.response({
+            status: true,
+            message: 'success',
+            data: this.json().encode(data)
+        });
+    },
+
+    getProperty: function() {
+        var propertyName = this.getParameter("sysparm_property");
+        var tableName = this.getParameter("sysparm_sys_class_name");
+        var propertyValue = PMPropertiesUtil.getProperty(propertyName, tableName, "false");
+        var result = this.newItem("result");
+        result.setAttribute("value", propertyValue);
+    },
+
+    getOpenProjectsWithDemandForTopTask: function(topTaskSysId) {
+        var openProjectIds = [];
+        var projectGr = new GlideRecord("pm_project");
+        projectGr.addEncodedQuery("demandISNOTEMPTY^active=true^top_task=" + topTaskSysId);
+        projectGr.query();
+        while (projectGr.next()) {
+            openProjectIds.push(projectGr.getValue("sys_id"));
+        }
+        return openProjectIds;
+    },
+
+    // Planning Console Ajax  - SI
+    disablePlannedDates: function() {
+        var tableName = this.getParameter("sysparm_sys_class_name");
+        var sysId = this.getParameter("sysparm_sys_id");
+        var isEnableAlterOfPlannedDates = PMPropertiesUtil.getProperty("com.snc.project.enable_alter_of_planned_dates",
+            tableName, "false");
+        PPMDebug.log("Into disablePlannedDates: " + tableName + " - " + sysId + " - " + isEnableAlterOfPlannedDates);
+        var result = this.newItem("result");
+        var task = new GlideRecord("planned_task");
+        var columnArray = [];
+        if (task.get(sysId)) {
+            var isTaskPendingOrOpen = this._isStatePendingOrOpen(task);
+            if (isEnableAlterOfPlannedDates == "false") {
+                // Check If Task in WIP
+                if (JSUtil.notNil(task.getValue("work_start"))) {
+                    columnArray.push('start_date');
+                    // If the Task is Closed
+                    if (JSUtil.notNil(task.getValue("work_end")))
+                        columnArray.push('end_date');
+                } else {
+                    if (JSUtil.notNil(task.getValue('time_constraint')) &amp;&amp;
+                        "asap" == task.getValue("time_constraint"))
+                        columnArray.push('start_date');
+                }
+                if (this._isProjectTask(task.getValue("sys_class_name")) &amp;&amp; (!isTaskPendingOrOpen || this._hasChildren(task)))
+                    columnArray.push('allow_dates_outside_schedule');
+
+            }
+        }
+        if (!columnArray.length) {
+            PPMDebug.log("No columns to disable");
+        }
+        PPMDebug.log('Columns to be disabled: ' + columnArray.join());
+        result.setAttribute("columns", columnArray.join());
+    },
+
+    _isProject: function() {
+        var entityId = this.entitySysId();
+        var plannedTaskRec = this.getTaskRecord(entityId);
+        if (JSUtil.notNil(plannedTaskRec) &amp;&amp; plannedTaskRec.instanceOf('pm_project')) {
+            return plannedTaskRec;
+        }
+    },
+
+    _isProjectTask: function(sys_class_name) {
+        var projectTaskTables = PPMRoleClassMapper.projectTaskEntities;
+        var arrayUtil = new ArrayUtil();
+        var isProjectTaskTable = arrayUtil.contains(projectTaskTables, sys_class_name);
+        return isProjectTaskTable;
+    },
+
+    _hasChildren: function(task) {
+        var children = new GlideRecord("pm_project_task");
+        children.addQuery("parent", task.getValue("sys_id"));
+        children.query();
+
+        var hasChildren = children.getRowCount() &gt; 0;
+        return hasChildren;
+    },
+
+    _isStatePendingOrOpen: function(task) {
+        var stateUtil = new PlannedTaskStateUtil(task);
+        var isTaskPendingOrOpen = stateUtil.isStatePending(task.state) || stateUtil.isStateOpen(task.state);
+        return isTaskPendingOrOpen;
+    },
+
+    showCriticalPath: function() {
+        var entityId = this.getParameter('sysparm_entity_id');
+        var msgs = PlanningConsoleMessages.seededMessages();
+        var api = this.projectManagementApi();
+        api.setTranslatedMessages(msgs);
+        var data = api.showCriticalPath(entityId);
+        this.response({
+            status: true,
+            message: 'success',
+            data: data
+        });
+    },
+
+    fundAllocator: function() {
+        return new PPMFundAllocator();
+    },
+
+    fundProject: function() {
+        var projectId = this.getParameter("sysparm_entity_id");
+        var fiscalYearId = this.getParameter("sysparm_fiscal_year_id");
+        this.fundAllocator().fundProject(projectId, fiscalYearId);
+        // Currently send empty data
+        this.response({
+            status: true,
+            message: 'success',
+            data: ""
+        });
+    },
+
+    fundDemand: function() {
+        var demandId = this.getParameter("sysparm_entity_id");
+        var fiscalYearId = this.getParameter("sysparm_fiscal_year_id");
+        this.fundAllocator().fundDemand(demandId, fiscalYearId);
+        this.response({
+            status: true,
+            message: 'success',
+            data: ""
+        });
+    },
+
+    unFundProject: function() {
+        var projectId = this.getParameter("sysparm_entity_id");
+        var fiscalYearId = this.getParameter("sysparm_fiscal_year_id");
+        this.fundAllocator().unFundProject(projectId, fiscalYearId);
+        this.response({
+            status: true,
+            message: 'success',
+            data: ""
+        });
+    },
+
+    unFundDemand: function() {
+        var demandId = this.getParameter("sysparm_entity_id");
+        var fiscalYearId = this.getParameter("sysparm_fiscal_year_id");
+        this.fundAllocator().unFundDemand(demandId, fiscalYearId);
+        this.response({
+            status: true,
+            message: 'success',
+            data: ""
+        });
+    },
+
+    getCurrentFiscalPeriod: function(argument) {
+        var currentFiscalPeriod = PPMFiscalPeriod.getFiscalYearForDate(new GlideDateTime());
+        this.response({
+            status: true,
+            message: 'success',
+            data: currentFiscalPeriod.getValue("sys_id")
+        });
+    },
+
+    acceptNotification: function() {
+        var entityId = this.entitySysId();
+        var sysClassName = this.sysClassName();
+        var notificationHandler = new PlannedTaskNotificationHandler();
+        var notificationSysId = this.getParameter("sysparm_sys_id");
+        PPMDebug.log("Into PlanningConsoleAjax.acceptNotification -&gt; " + notificationSysId);
+        var data = notificationHandler.acceptNotificationAndRecalRelationIfRequired(entityId, sysClassName, notificationSysId);
+        return this.response({
+            status: true,
+            message: 'success',
+            data: data
+        });
+    },
+
+    rejectNotification: function() {
+        var notificationSysId = this.getParameter("sysparm_sys_id");
+        var api = new SNC.PlannedTaskAPI();
+        var data = api.rejectNotification(notificationSysId);
+        return this.response({
+            status: true,
+            message: 'success',
+            data: data
+        });
+    },
+    hasBenefitPlan: function() {
+        var response = this.newItem('result');
+        var task = this.getParameter("sysparm_sys_id");
+        var entity = this.getParameter("sysparm_entity");
+		var hasBPlanBool = false;
+		if (entity == "task") {
+			var bPlan = new GlideAggregate("benefit_plan");
+			bPlan.addQuery("task", task);
+			bPlan.addAggregate("COUNT");
+			bPlan.query();
+			if(bPlan.next() &amp;&amp; bPlan.getAggregate('COUNT') &gt;0) {
+				hasBPlanBool = true;	
+			}
+			if(!hasBPlanBool) {
+				bPlan = new GlideAggregate("benefit_plan");
+				bPlan.addQuery("task.parent", task);
+				bPlan.addAggregate("COUNT");
+				bPlan.query();
+				if(bPlan.next() &amp;&amp; bPlan.getAggregate('COUNT') &gt;0) {
+					hasBPlanBool = true;
+				}
+			}
+		}
+		if (!hasBPlanBool &amp;&amp; entity == "program") {
+			var bPlan1 = new GlideAggregate("benefit_plan");
+			bPlan1.addQuery("program", task);
+			bPlan1.addAggregate("COUNT");
+			bPlan1.query();
+			if(bPlan1.next() &amp;&amp; bPlan1.getAggregate('COUNT') &gt;0) {
+				hasBPlanBool = true;
+			}
+			
+			if(!hasBPlanBool) {
+				bPlan1 = new GlideAggregate("benefit_plan");
+				bPlan1.addQuery("program.parent", task);
+				bPlan1.addAggregate("COUNT");
+				bPlan1.query();
+				if(bPlan1.next() &amp;&amp; bPlan1.getAggregate('COUNT') &gt;0) {
+					hasBPlanBool = true;
+				}
+			}
+		}
+		response.setAttribute("data", hasBPlanBool);
+    },
+    hasCostPlan: function() {
+        /*
+        Invoked form UI policy to make the cost field readonly in case of any 
+        cost plan exists for given project/program/sub-project/sub program
+        */
+        var response = this.newItem('result');
+        var task = this.getParameter("sysparm_sys_id");
+        var entity = this.getParameter("sysparm_entity");
+        var expenseType = this.getParameter("sysparm_expense_type");
+		
+		var data = {};
+
+		if (entity == "task") {
+			var cPlan = new GlideAggregate("cost_plan");
+			cPlan.addQuery("task", task);
+			if(expenseType)
+				cPlan.addAggregate("COUNT","expense_type");
+			cPlan.query();
+			while (cPlan.next()) {
+				data[cPlan.getValue('expense_type')] = true;
+			}
+			
+			cPlan = new GlideAggregate("cost_plan");
+			cPlan.addQuery("task.parent", task);
+			if(expenseType)
+				cPlan.addAggregate("COUNT","expense_type");
+			cPlan.query();
+			while (cPlan.next()) {
+				data[cPlan.getValue('expense_type')] = true;
+			}
+		}
+		if (entity == "program") {
+			var cPlan1 = new GlideAggregate("cost_plan");
+			cPlan1.addQuery("program", task);
+			if(expenseType)
+				cPlan1.addAggregate("COUNT","expense_type");
+			cPlan1.query();
+			while (cPlan1.next()) {
+				data[cPlan1.getValue('expense_type')] = true;
+			}
+			
+			cPlan1 = new GlideAggregate("cost_plan");
+			cPlan1.addQuery("program.parent", task);
+			if(expenseType)
+				cPlan1.addAggregate("COUNT","expense_type");
+			cPlan1.query();
+			while (cPlan1.next()) {
+				data[cPlan1.getValue('expense_type')] = true;
+			}	
+		}		
+
+        response.setAttribute("data", JSON.stringify(data));
+    },
+
+    isMultiCurrencyEnabled: function() {
+        var response = this.newItem('result');
+        var isMultiCurrencyEnabled = new ProjectCurrencyUtil().isMultiCurrencyEnabled();
+        response.setAttribute("isMultiCurrencyEnabled", isMultiCurrencyEnabled);
+    },
+
+    _updateProgramPercentComplete: function(topTaskId) {
+		var topTaskGr = new GlideRecord("planned_task");
+		topTaskGr.get(topTaskId);
+		if(topTaskGr.top_program){
+			var programRec = topTaskGr.top_program.getRefRecord();
+			var program = new Program(programRec);
+			program.updatePercentComplete();
+		}
+	},
+
+    type: 'PlanningConsoleAjax'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-03-18 01:33:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;821e17e69f323100598a5bb0657fcfea&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;289&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PlanningConsoleAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_821e17e69f323100598a5bb0657fcfea&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-21 01:18:42&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;18779&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:58</sys_created_on>
+        <sys_id>fdeccd3e2f331110d8a4d5f62799b63e</sys_id>
+        <sys_name>PlanningConsoleAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fdeccd3e2f331110d8a4d5f62799b63e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

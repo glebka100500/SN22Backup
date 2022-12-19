@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>819d732cc71a0300038b4865cb9763e1</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ActivityStreamCacheManager&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ActivityStreamCacheManager&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ActivityStreamCacheManager = Class.create();
+ActivityStreamCacheManager.prototype = {
+	initialize: function() {
+		this.CATALOG_STREAM = "Activity_stream";
+		this.gcm = new GlideCacheManager();
+		this.catalogKey = {
+            "INVALIDATED_STREAMS": "invalidated_streams"
+        };
+	},
+
+	/*
+     * To add a catalog key,Value to application cache
+     * @param catalogKey - name of the key from catalog to be stored in cache
+     * @param catalogVal - value corresponding to the catalogKey which will be updated in application cache
+     */
+	_put: function (catalog, catalogKey, catalogVal) {
+		this.gcm.put(catalog, catalogKey, JSON.stringify(catalogVal));
+	},
+
+	/*
+     * To get the Value for catalog key from application cache
+     * @param catalogKey - name of the key from catalog to be stored in cache
+     * @return catalogVal - parsed value corresponding to the catalogKey which is present application cache
+     */
+	_get: function (catalog, catalogKey) {
+		return JSON.parse(this.gcm.get(catalog, catalogKey));
+	},
+
+	_flush : function(){
+		this.gcm.flush(this.CATALOG_STREAM); // To avoid multinode instance issue
+	},
+
+	_update: function(streams) {
+		this._put(this.CATALOG_STREAM, this.catalogKey.INVALIDATED_STREAMS,streams);
+	},
+
+	streamLoaded : function(userId, lastSynch) {
+		if(!userId)
+			return;
+		var streams = this._get(this.CATALOG_STREAM, this.catalogKey.INVALIDATED_STREAMS);
+		this._flush();
+		if(!streams)
+			streams = {};
+		streams[userId] = {'hasUpdates' : false, 'lastSynch': lastSynch}; // lastSynch : long milliseconds
+		this._update(streams);
+	},
+
+	hasNewUpdates: function(userId, lastSynch) {
+		if (!userId)
+			return true;
+		var streams = this._get(this.CATALOG_STREAM, this.catalogKey.INVALIDATED_STREAMS);
+		if(!streams) 
+			return true;
+		var stream = streams[userId];
+		if (stream != null) {
+			if (stream.hasUpdates != true){
+				if (lastSynch != null) { //Handling multi sessions data with lastsynch time check.
+					try {
+						lastSynch = parseInt(lastSynch);
+						var cacheLastSynch = stream.lastSynch;
+						if (cacheLastSynch != null) {
+							cacheLastSynch = parseInt(cacheLastSynch);
+							if (lastSynch &lt; cacheLastSynch)
+								return true;
+						}
+					} catch (e){
+						return stream.hasUpdates == true;
+					}
+				}
+				return false;
+			}
+		}
+		return true;
+	},
+
+	/*
+     * Flushes the streams from Cache
+     * @param userIds - an array of userIds.
+     */
+	flushStreams : function(userIds) {
+		if(!userIds)
+			return;
+		var streams = this._get(this.CATALOG_STREAM, this.catalogKey.INVALIDATED_STREAMS);
+		this._flush();
+		if(!streams)
+			return;
+		for( var idx = 0; idx &lt; userIds.length; idx++) {
+			delete streams[userIds[idx]];
+		}
+		this._update(streams);
+	},
+
+	/*
+     * Flushes the streams from Cache
+     * @param userIds - an array of userIds.
+     */
+	invalidateStreams : function() {
+		this._flush();
+		this._update(null);
+	},
+
+	type: 'ActivityStreamCacheManager'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-11-05 06:29:55&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;819d732cc71a0300038b4865cb9763e1&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;45&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ActivityStreamCacheManager&lt;/sys_name&gt;
+        &lt;sys_package display_value="Subscriptions and Activity Feed Framework" source="com.snc.activity_subscriptions"&gt;7427f20f2f400110d8a4d5f62799b6eb&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_819d732cc71a0300038b4865cb9763e1&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-12-07 07:21:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2935&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:57</sys_created_on>
+        <sys_id>b1eccd3e2f331110d8a4d5f62799b636</sys_id>
+        <sys_name>ActivityStreamCacheManager</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b1eccd3e2f331110d8a4d5f62799b636</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

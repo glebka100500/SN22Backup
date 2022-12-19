@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8c559f329f3310008f88ed93ee4bcc01</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SLAvalidation&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;SLA Definition Validation utilities (for contract_sla)&amp;#13;
+&amp;#13;
+Called by:&amp;#13;
+  "SLA Workflow Condition Check" (business rules on contract_sla, wf_workflow_version)&amp;#13;
+  "SLA Definition Empty Schedule Warning" (business rule on contract_sla)&amp;#13;
+  "Task SLA Empty Schedule Warning" (business rule on task_sla)&amp;#13;
+  contract_sla.workflow advanced reference qualifier&lt;/description&gt;
+        &lt;name&gt;SLAvalidation&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SLAvalidation = Class.create();
+
+// set a session error message if the workflow has a condition type or a condition set
+SLAvalidation.warnWorkflowCondition = function(/* GlideElement */ workflow, /* contract_sla */ sla) {
+	if (!SLAvalidation.workflowConditionEmpty(workflow)) {
+		var msg = gs.getMessage("Warning: SLA Definition \"{0}\" Workflow \"{1}\" has a condition set", [sla.name, workflow.name]);
+		if (!new ArrayUtil().contains(j2js(gs.getErrorMessages()), msg))
+			gs.addErrorMessage(gs.getMessage("Warning: SLA Definition \"{0}\" Workflow \"{1}\" has a condition set", [sla.name, workflow.name]));
+	}
+};
+
+// return true if the associated workflow condition type and condition are empty
+// return false, and set error messages, if they aren't.
+SLAvalidation.workflowConditionEmpty = function(/* GlideElement */ workflow, /* optional: GlideElement */ condition_type, /* optional: GlideElement */ condition) {
+	var workflowId = workflow + '';
+	
+	var wfv_gr = new GlideRecord("wf_workflow_version");
+	wfv_gr.setWorkflow(false);
+	wfv_gr.addQuery('workflow', workflowId);
+	wfv_gr.addActiveQuery();
+	wfv_gr.addQuery('published', true).addOrCondition('checked_out_by', gs.getUserID());
+	wfv_gr.orderByDesc('checked_out_by');
+	wfv_gr.query();
+	while (wfv_gr.next()) {
+		if (!wfv_gr.condition_type.nil() || (condition_type &amp;&amp; !condition_type.nil())) {
+			if (condition_type !== undefined)
+				condition_type.setError(gs.getMessage("Workflow 'If condition matches:' value should be None"));
+			return false;
+		}
+		gs.log('wfv_gr.condition:' + wfv_gr.condition + ';' + condition);
+		if (!wfv_gr.condition.nil() || (condition &amp;&amp; !condition.nil())) {
+			if (condition !== undefined)
+				condition.setError(gs.getMessage("Workflow condition should be empty"));
+			return false;
+		}
+	}
+	return true;
+};
+
+// true if this workflow Id is referenced in an SLA definition
+SLAvalidation.isInSLAworkflow = function(workflowId) {
+	var sla = new GlideRecord('contract_sla');
+	sla.addQuery('workflow', workflowId);
+	sla.setLimit(1);
+	sla.query();
+	return (sla.hasNext());
+};
+
+// true if this workflow Id has an active version relating to the 'task_sla' table, or its extensions
+SLAvalidation.isSLAWorkflow = function(workflowId) {
+	var wfv_gr = new GlideRecord('wf_workflow_version');
+	wfv_gr.addQuery('workflow', workflowId);
+	wfv_gr.addActiveQuery();
+	wfv_gr.addQuery('table', j2js(new TableUtils('task_sla').getAllExtensions()));
+	wfv_gr.addQuery('published', true).addOrCondition('checked_out_by', gs.getUserID());
+	wfv_gr.orderByDesc('checked_out_by');
+	wfv_gr.setLimit(1);
+	wfv_gr.query();
+	return (wfv_gr.hasNext());
+};
+
+// true if the specified tablename is the 'task_sla' table or one of its extensions
+SLAvalidation.isSLATable = function(tableName) {
+	if (JSUtil.nil(tableName))
+		return false;
+	
+	if (new ArrayUtil().contains(j2js(new TableUtils('task_sla').getAllExtensions()), tableName))
+		return true;
+	
+	return false;
+};
+
+// return list of workflow IDs related to the 'task_sla' table, or its extensions
+SLAvalidation.getSLAWorkflows = function() {
+	var wfv_gr = new GlideRecord('wf_workflow_version');
+	wfv_gr.addActiveQuery();
+	wfv_gr.addQuery('table', j2js(new TableUtils('task_sla').getAllExtensions()));
+	wfv_gr.addQuery('published', true).addOrCondition('checked_out_by', gs.getUserID());
+	wfv_gr.orderByDesc('checked_out_by');
+	wfv_gr.query();
+	answer = [];
+	while (wfv_gr.next())
+		answer.push(wfv_gr.workflow + '');
+	return answer;
+};
+
+// return list of Workflow IDs related to the 'task_sla' table, or its extensions, as an encoded query
+// (used by contract_sla.workflow reference qualifier)
+SLAvalidation.getSLAWorkflowsRQ = function() {
+	return 'sys_idIN' + SLAvalidation.getSLAWorkflows();
+};
+
+// true iff this SLA definition's schedule is 'empty'
+SLAvalidation.warnEmptySchedules = function(contract_sla) {
+	var sv = new ScheduleValidation(contract_sla.schedule);
+	if (!sv.isEmptySchedule())
+		return;
+	
+	var msg = gs.getMessage('Warning: There are no active entries in the Schedule');
+	if (sv.hasChildSchedule())
+		msg = gs.getMessage('Warning: There are no active entries in the Schedule, or its Child Schedules');
+	
+	// add msg if it hasn't already been added
+	if (!new ArrayUtil().contains(j2js(gs.getErrorMessages()), msg))
+		gs.addErrorMessage(msg);
+};
+
+SLAvalidation.prototype = {
+	initialize : function() {
+	},
+	type: 'SLAvalidation'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-01-30 10:43:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8c559f329f3310008f88ed93ee4bcc01&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;32&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SLAvalidation&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service level management" source="com.snc.sla"&gt;367209c76d6620100acb70b35343304f&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8c559f329f3310008f88ed93ee4bcc01&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-11-17 09:03:04&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4363&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:24</sys_created_on>
+        <sys_id>dc0d857e2f331110d8a4d5f62799b6de</sys_id>
+        <sys_name>SLAvalidation</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dc0d857e2f331110d8a4d5f62799b6de</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

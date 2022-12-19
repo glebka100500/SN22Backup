@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>544104a20b132200a6acc93563673a12</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AgileStoryRankingAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Story Ranking API&lt;/description&gt;
+        &lt;name&gt;AgileStoryRankingAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AgileStoryRankingAPI = Class.create();
+AgileStoryRankingAPI.prototype = {
+    initialize: function() {
+    },
+	
+	getOverallRankObject: function() {
+		var overallRank = [];
+		var overallRankRecord = new GlideRecord('rm_story');
+		overallRankRecord.addActiveQuery();
+		overallRankRecord.addQuery('rank','!=','NULL');
+		overallRankRecord.query();
+		while(overallRankRecord.next()){
+			overallRank.push({"key":overallRankRecord.getValue("sys_id"), "rank":parseInt(overallRankRecord.getValue("rank")), "isDirty":false});
+		}
+		return overallRank;
+	},
+	
+	getProductRankObject: function(product) {
+		var productRank = [];
+		var productRankRecord = new GlideRecord('rm_story');
+		productRankRecord.addActiveQuery();
+		productRankRecord.addQuery('product',product);
+		productRankRecord.addQuery('product_rank','!=','NULL');
+		productRankRecord.query();
+		while(productRankRecord.next()){
+			productRank.push({"key":productRankRecord.getValue("sys_id"), "rank":parseInt(productRankRecord.getValue("product_rank")), "isDirty":false});
+		}
+		return productRank;
+	},
+	
+	getGroupRankObject: function(group) {
+		var groupRank = [];
+		var groupRankRecord = new GlideRecord('rm_story');
+		groupRankRecord.addActiveQuery();
+		groupRankRecord.addQuery('assignment_group',group);
+		groupRankRecord.addQuery('group_rank','!=','NULL');
+		groupRankRecord.query();
+		while(groupRankRecord.next()){
+			groupRank.push({"key":groupRankRecord.getValue("sys_id"), "rank":parseInt(groupRankRecord.getValue("group_rank")), "isDirty":false});
+		}
+		return groupRank;
+	},
+	
+	updateRanks: function(allStories,currentStoryId,newRank,fieldName) {
+		var rankingApi = new RankingAPI(allStories);
+		rankingApi.updateRank(currentStoryId,newRank);
+		var updatedStories = rankingApi.getDirtyTasks();
+		var storyRecord;
+        for(var i = 0;i&lt;updatedStories.length;i++){
+            if(updatedStories[i].key != currentStoryId){
+                storyRecord = new GlideRecord('rm_story');
+                if(storyRecord.get(updatedStories[i].key)){
+                    storyRecord.setValue(fieldName,updatedStories[i].rank);
+                    storyRecord.update();
+                }
+            }
+        }
+	},
+
+	compactStoryRanks: function(allStories,fieldName){
+		var rankingApi = new RankingAPI(allStories);
+		rankingApi.compact();
+		var updatedStories = rankingApi.tasks;
+		var storyRecord;
+        for(var i = 0;i&lt;updatedStories.length;i++){
+			storyRecord = new GlideRecord('rm_story');
+			if(storyRecord.get(updatedStories[i].key)){
+				storyRecord.setValue(fieldName,updatedStories[i].rank);
+				storyRecord.update();
+			} 
+        }
+		return 'true';
+	},
+	
+    type: 'AgileStoryRankingAPI'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-11-27 19:27:20&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;544104a20b132200a6acc93563673a12&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AgileStoryRankingAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development 2.0" source="com.snc.sdlc.agile.2.0"&gt;c2159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_544104a20b132200a6acc93563673a12&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-11-29 11:53:26&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2662&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:34</sys_created_on>
+        <sys_id>199ccdba2f331110d8a4d5f62799b6c0</sys_id>
+        <sys_name>AgileStoryRankingAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_199ccdba2f331110d8a4d5f62799b6c0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

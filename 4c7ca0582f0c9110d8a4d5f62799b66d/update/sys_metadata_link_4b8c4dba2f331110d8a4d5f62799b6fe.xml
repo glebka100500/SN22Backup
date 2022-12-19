@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4ee2bfa187b333000e3dd61e36cb0b48</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NotifySMS&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;NotifySMS&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NotifySMS = Class.create();
+NotifySMS.prototype = {
+	initialize: function() {
+		this.notifyUtils = new global.NotifyUtil();
+		this.setRecordToNumberResolver(this.notifyUtils, "getSMSNumberForUser");
+	},
+
+	setRecordToNumberResolver: function(scriptIncludeInstance, methodName) {
+		this._setRecordToNumberResolver_throws(scriptIncludeInstance, methodName);
+	},
+
+	_setRecordToNumberResolver_throws: function(scriptIncludeInstance, methodName) {
+		if (!(typeof scriptIncludeInstance === "object") || !methodName)
+			throw new Error("Invalid parameters passed to NotifySMS.setRecordToNumberResolver(scriptIncludeInstance, methodName)");
+		if (!scriptIncludeInstance[methodName])
+			throw new Error("Method " + methodName + " doesn't exist in the given Script Include Instance");
+		this.recordToNumberResolverSI = scriptIncludeInstance;
+		this.recordToNumberResolverMethod = methodName;
+	},
+
+	sendToNumber: function(fromNum, toNum, message, sourceRecord) {
+		SNC.Notify.sendSMS(fromNum, toNum, message, sourceRecord);
+	},
+
+	sendToNumbers: function(fromNum, toNumbersArray, message, sourceRecord) {
+		var driver = this.notifyUtils.getTelephonyDriverFromNotifyNumber(fromNum);
+		if (!driver) {
+			gs.error("Notify JS Driver not implemented for the given number " + fromNum);
+			return;
+		}
+
+		var maxSizeForBulkSMS = this.notifyUtils.getMaxSizeForBulkSMS(driver, fromNum);
+		/*
+		0 means autonomous mode is not available.
+		In this case sendBulkSMS will simply iterate over the numbers. 
+		Since we have got the full "to" numbers anyway hence it is more optimal to invoke sendBulkSMS once as then it will have to create NotifyPhoneNumber instance only once
+		 */
+		maxSizeForBulkSMS = maxSizeForBulkSMS === 0 ? toNumbersArray.length : maxSizeForBulkSMS;
+
+		var index = 0;
+		while (index &lt; toNumbersArray.length) {
+			SNC.Notify.sendBulkSMS(fromNum, toNumbersArray.slice(index, index + maxSizeForBulkSMS), message, sourceRecord);
+			index += maxSizeForBulkSMS;
+		}
+	},
+
+	sendToUser: function(fromNum, toGr, message, sourceRecord) {
+		var toNumber = this.recordToNumberResolverSI[this.recordToNumberResolverMethod](toGr);
+		if (toNumber)
+			this.sendToNumber(fromNum, toNumber, message, sourceRecord);
+		else
+			gs.error("No valid To-Number found for given user : " + toGr.getDisplayValue());
+	},
+
+	sendToUsers: function(fromNum, toGr, message, sourceRecord) {
+		var driver = this.notifyUtils.getTelephonyDriverFromNotifyNumber(fromNum);
+		if (!driver) {
+			gs.error("Notify JS Driver not implemented for the given number " + fromNum);
+			return;
+		}
+
+		var maxSizeForBulkSMS = this.notifyUtils.getMaxSizeForBulkSMS(driver, fromNum);
+		/*
+		0 means autonomous mode is not available.
+		In this case the bulkSMS chunk size is derived from the glide.notify.bulksms.chunksize property
+		The default value for this property is 1000.
+		 */
+		maxSizeForBulkSMS = maxSizeForBulkSMS === 0 ? parseInt(gs.getProperty("glide.notify.bulksms.chunksize", '1000')) : maxSizeForBulkSMS;
+
+		this._iterateUsersAndSendSMS(fromNum, toGr, message, sourceRecord, maxSizeForBulkSMS);
+	},
+
+	_iterateUsersAndSendSMS: function(fromNum, toGr, message, sourceRecord, maxSizeForBulkSMS) {
+		var index = 0;
+		var toNumbersArray = [];
+		toGr.query();
+		while (toGr.next()) {
+			var toNumber = this.recordToNumberResolverSI[this.recordToNumberResolverMethod](toGr);
+			if (toNumber) {
+				toNumbersArray.push(toNumber);
+				index++;
+			} else {
+				gs.error("No valid To-Number found for given user : " + toGr.getDisplayValue());
+			}
+
+			if ((index === maxSizeForBulkSMS || !toGr.hasNext()) &amp;&amp; toNumbersArray.length &gt; 0) {
+				SNC.Notify.sendBulkSMS(fromNum, toNumbersArray, message, sourceRecord);
+				index = 0;
+				toNumbersArray = [];
+			}
+		}
+	},
+
+	type: 'NotifySMS'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-10 10:37:27&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4ee2bfa187b333000e3dd61e36cb0b48&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;48&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NotifySMS&lt;/sys_name&gt;
+        &lt;sys_package display_value="Notify" source="com.snc.notify"&gt;b567f9452f140110d8a4d5f62799b6e4&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4ee2bfa187b333000e3dd61e36cb0b48&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-20 17:52:46&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3736&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:25</sys_created_on>
+        <sys_id>4b8c4dba2f331110d8a4d5f62799b6fe</sys_id>
+        <sys_name>NotifySMS</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_4b8c4dba2f331110d8a4d5f62799b6fe</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

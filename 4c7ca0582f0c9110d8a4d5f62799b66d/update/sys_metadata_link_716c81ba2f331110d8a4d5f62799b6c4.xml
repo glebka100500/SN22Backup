@@ -1,0 +1,1351 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>326b53699f3010008f88ed93ee4bcc2b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumSecurityManagerDefault&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This is the default implementation for the ScrumSecurityManager class. &amp;#13;
+&amp;#13;
+If you wish to customize this for your own needs, extend this script class and implement your own versions of the entry methods as required.&amp;#13;
+&amp;#13;
+You may need to re-implement as little as :&amp;#13;
+&amp;#13;
+- hasPermission(themeID, types) &amp;#13;
+- isActionable(table, types, action)&amp;#13;
+&amp;#13;
+Then update the sys_property 'com.snc.sdlc.scrum.pp.smclass' to point to your own extended class&amp;#13;
+&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;ScrumSecurityManagerDefault&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ScrumSecurityManagerDefault = Class.create();
+
+ScrumSecurityManagerDefault.prototype = {
+
+   initialize : function() {
+      // Nothing to do for now
+   },
+
+   //--------------------------------------------------------------------------------------------------
+   
+   getReleaseDotDefaultTeam : function (recRmReleaseScrum) {
+      var arrTeamSysIds = [];
+      var recScrumPPTeam = new GlideRecord ("scrum_pp_team");
+      recScrumPPTeam.addQuery ("release", recRmReleaseScrum.sys_id);
+      recScrumPPTeam.query ();
+      while (recScrumPPTeam.next ()) {
+         arrTeamSysIds.push (recScrumPPTeam.sys_id + "");
+      }
+      return arrTeamSysIds;
+   },
+
+   getEpicDotProduct: function () {
+      var recModelSysIds = [];
+      var recCmdbModel = new GlideRecord ("cmdb_application_product_model");
+      recCmdbModel.query ();
+      while (recCmdbModel.next ()) {
+         recModelSysIds.push (recCmdbModel.sys_id + "");
+      }
+      return recModelSysIds;
+   },
+
+   getThemeDotProduct: function () {
+      var recModelSysIds = [];
+      var recCmdbModel = new GlideRecord ("cmdb_application_product_model");
+      recCmdbModel.query ();
+      while (recCmdbModel.next ()) {
+         recModelSysIds.push (recCmdbModel.sys_id + "");
+      }
+      return recModelSysIds;
+   },
+       
+   getStoryDotAssignedTo: function (recRmStory) {
+      var arrMemberSysIds = [];
+  
+      // Case 1: Return all users associated with the story's sprint's team members
+      if (!recRmStory.sprint.isNil()) {
+         var recScrumPPSprintTeamMember = new GlideRecord ("scrum_pp_sprint_team_member");
+         recScrumPPSprintTeamMember.addQuery ("sprint", recRmStory.sprint);
+         recScrumPPSprintTeamMember.query ();
+         while (recScrumPPSprintTeamMember.next ())
+            arrMemberSysIds.push (recScrumPPSprintTeamMember.name + "");
+         if (arrMemberSysIds.length &gt; 0)
+            return arrMemberSysIds;
+      }
+ 
+      if (!recRmStory.release.isNil()) {
+  
+         var recScrumPPReleaseTeamMember = null;
+  
+         // Case 2.1: Return all users in the story's release's default team
+         if (!recRmStory.release.default_team.isNil()) {
+            recScrumPPReleaseTeamMember = new GlideRecord ("scrum_pp_release_team_member");
+            recScrumPPReleaseTeamMember.addQuery ("team", recRmStory.release.default_team);
+            recScrumPPReleaseTeamMember.query ();
+            while (recScrumPPReleaseTeamMember.next ()) 
+               arrMemberSysIds.push (recScrumPPReleaseTeamMember.name + "");
+            if (arrMemberSysIds.length &gt; 0)
+               return arrMemberSysIds;     
+         }
+     
+         // Case 2.2: Return all users from all the members of all the teams in the story's release
+         var recScrumPPTeam = new GlideRecord ("scrum_pp_team");
+         recScrumPPTeam.addQuery ("release", recRmStory.release);
+         recScrumPPTeam.query ();
+         while (recScrumPPTeam.next ()) {
+            recScrumPPReleaseTeamMember = new GlideRecord ("scrum_pp_release_team_member");
+            recScrumPPReleaseTeamMember.addQuery ("team", recScrumPPTeam.sys_id);
+			recScrumPPReleaseTeamMember.query ();
+            while (recScrumPPReleaseTeamMember.next ())
+               arrMemberSysIds.push (recScrumPPReleaseTeamMember.name + "");
+         }
+         if (arrMemberSysIds.length &gt; 0)
+             return arrMemberSysIds;
+      }
+  
+      // Case 3: Return all the users with the scrum_user role
+      var recSysUserRole = new GlideRecord ("sys_user_role");
+      recSysUserRole.addQuery ("name", "scrum_user");
+      recSysUserRole.query ();
+      if (recSysUserRole.next()) {
+         var recSysUserHasRole = new GlideRecord ("sys_user_has_role");
+         recSysUserHasRole.addQuery ("role", recSysUserRole.sys_id);
+         recSysUserHasRole.query ();
+         while (recSysUserHasRole.next ())
+             arrMemberSysIds.push (recSysUserHasRole.user + "");
+      }
+      return arrMemberSysIds; 
+   },
+
+   getScrumTaskDotAssignedTo: function (recRmScrumTask) {
+      return this.getStoryDotAssignedTo (recRmScrumTask.story.getRefRecord());
+   },
+   
+   getScrumReleaseTeamMemberDotName: function (recTeamMember) {
+      function getScrumUsers () {
+		 var arrSysIds = [];
+		 var recSysUserRole = new GlideRecord ("sys_user_role");
+		 recSysUserRole.addQuery("name", "scrum_user");
+		 recSysUserRole.query ();
+		 if (recSysUserRole.next()) {
+			var recSysUserHasRole = new GlideRecord ("sys_user_has_role");
+			recSysUserHasRole.addQuery ("role", recSysUserRole.sys_id);
+			recSysUserHasRole.query ();
+			while (recSysUserHasRole.next ()) {
+				arrSysIds.push (recSysUserHasRole.user + "");
+			}
+		 }
+		 return arrSysIds;   
+      }
+   
+      function getTeamMember (recTeamMember) {
+         var arrSysIds = [];
+         var recScrumReleaseTeamMember = new GlideRecord ("scrum_pp_release_team_member");
+         recScrumReleaseTeamMember.addQuery("team", recTeamMember.team);
+         recScrumReleaseTeamMember.query();
+         while (recScrumReleaseTeamMember.next ()) {
+            arrSysIds.push(recScrumReleaseTeamMember.name + "");
+         }
+         return arrSysIds;
+      }
+   
+      var arrScrumUsers = getScrumUsers ();
+      var arrTeamMember = getTeamMember (recTeamMember);
+      var arrSelectUser = new ArrayUtil().diff (arrScrumUsers, arrTeamMember);
+
+      return arrSelectUser;
+   },
+
+   getScrumSprintTeamMemberDotName: function (recTeamMember) {
+  
+      function getScrumUsers () {
+		var arrSysIds = [];
+		var recSysUserRole = new GlideRecord ("sys_user_role");
+		recSysUserRole.addQuery("name", "scrum_user");
+		recSysUserRole.query ();
+		if (recSysUserRole.next()) {
+			var recSysUserHasRole = new GlideRecord ("sys_user_has_role");
+			recSysUserHasRole.addQuery ("role", recSysUserRole.sys_id);
+			recSysUserHasRole.query ();
+			while (recSysUserHasRole.next ()) {
+				arrSysIds.push (recSysUserHasRole.user + "");
+			}
+		}
+		return arrSysIds;   
+      }   
+
+      function getTeamMember (recTeamMember) {
+         var arrSysIds = [];
+         var recScrumSprintTeamMember = new GlideRecord ("scrum_pp_sprint_team_member");
+         recScrumSprintTeamMember.addQuery("sprint", recTeamMember.sprint);
+         recScrumSprintTeamMember.query();
+         while (recScrumSprintTeamMember.next ()) {
+            arrSysIds.push(recScrumSprintTeamMember.name + "");
+         }
+         return arrSysIds;
+      }
+   
+      var arrScrumUsers = getScrumUsers ();
+      var arrTeamMember = getTeamMember (recTeamMember);
+      var arrSelectUser = new ArrayUtil().diff (arrScrumUsers, arrTeamMember);
+
+      return arrSelectUser;
+   },
+
+   getScrumSprintTeamDotSprint: function (recScrumSprintTeam) {
+      var arrRmSprintSysIds = [];
+      var recRmSprint = new GlideRecord ("rm_sprint");
+      recRmSprint.addQuery("release", recScrumSprintTeam.release_team.release);
+      //if (recScrumSprintTeam.sprint) {
+      //   recRmSprint.addQuery("sys_id", "!=", recScrumSprintTeam.sprint);
+      //}
+      recRmSprint.query();
+      while (recRmSprint.next()) {
+         arrRmSprintSysIds.push(recRmSprint.sys_id + "");
+      }
+      return arrRmSprintSysIds;
+   },
+
+   getScrumReleaseTeamDotPoints: function (recScrumReleaseTeam) {
+      var nTotalPoints = 0;
+      var recScrumReleaseTeamMember = new GlideAggregate('scrum_pp_release_team_member');
+      recScrumReleaseTeamMember.addQuery('team', recScrumReleaseTeam);
+	  recScrumReleaseTeamMember.addAggregate('SUM', 'default_sprint_points');
+	  recScrumReleaseTeamMember.setGroup(false);
+      recScrumReleaseTeamMember.query();
+      if (recScrumReleaseTeamMember.next())
+         nTotalPoints = recScrumReleaseTeamMember.getAggregate('SUM', 'default_sprint_points');
+
+      return nTotalPoints;
+   },
+
+   getScrumSprintTeamDotPoints: function (recScrumSprintTeam) {
+      var nTotalPoints = 0;
+      var recScrumSprintTeamMember = new GlideAggregate('scrum_pp_sprint_team_member');
+      recScrumSprintTeamMember.addQuery('team', recScrumSprintTeam.sys_id);
+	  recScrumSprintTeamMember.addAggregate('SUM', 'planned_points');
+	  recScrumSprintTeamMember.setGroup(false);
+      recScrumSprintTeamMember.query();
+      if (recScrumSprintTeamMember.next())
+         nTotalPoints = recScrumSprintTeamMember.getAggregate('SUM', 'planned_points');
+
+      return nTotalPoints;
+   },
+
+   getSprintDotReleaseTeam: function (recRmSprint) {
+      // gs.log ("[DEBUG] ---&gt; INSIDE SSMD......");
+      var arrScrumPPTeamSysIds = [];
+      var recScrumPPTeam = new GlideRecord ("scrum_pp_team");
+      if (recRmSprint.release) {
+         recScrumPPTeam.addQuery ("release", recRmSprint.release);
+         // gs.log ("[DEBUG] release = " + recRmSprint.release);
+         //if (recRmSprint.release_team) {
+         //   recScrumPPTeam.addQuery ("sys_id", "!=", recRmSprint.release_team);
+            // gs.log ("[DEBUG] release_team = " + recRmSprint.release_team);
+         //}
+         recScrumPPTeam.query();
+         while (recScrumPPTeam.next()) {
+            // gs.log ("[DEBUG] Matched = " + recScrumPPTeam.sys_id);
+            arrScrumPPTeamSysIds.push(recScrumPPTeam.sys_id + "");
+         }
+      }
+      return arrScrumPPTeamSysIds;
+   },
+
+   getSprintDotTeam: function (recRmSprint) {
+      var arrScrumReleaseTeamSysIds = [];
+      var recScrumReleaseTeam = new GlideRecord ("scrum_pp_team");
+      if (recRmSprint.release) {
+         recScrumReleaseTeam.addQuery ("release", recRmSprint.release);
+         //if (recRmSprint.release_team) {
+         //   recScrumReleaseTeam.addQuery ("sys_id", "!=", recRmSprint.release_team);
+         //}
+         recScrumReleaseTeam.query();
+         while (recScrumReleaseTeam.next()) {
+            arrScrumReleaseTeamSysIds.push(recScrumReleaseTeam.sys_id + "");
+         }
+      }
+      return arrScrumReleaseTeamSysIds;
+   },
+
+   getSprintDotStoryPoints: function (recRmSprint) {
+      var nStoryPoints = 0;
+      if (recRmSprint) {
+         var recRmStory = new GlideAggregate("rm_story");
+         recRmStory.addQuery("sprint", recRmSprint.sys_id);
+         recRmStory.addQuery("state", "!=", 4);   // 4 means "Cancelled"
+         recRmStory.addAggregate("SUM", "story_points");
+         recRmStory.groupBy("sprint");
+         recRmStory.query();
+         if (recRmStory.next()) {
+            nStoryPoints = recRmStory.getAggregate("SUM", "story_points");
+         }
+      }
+      return nStoryPoints;
+   },
+
+   getSprintDotTeamPoints: function (recRmSprint) {
+      var nTeamPoints = 0;
+      if (recRmSprint) {
+         var recScrumSprintTeamMember = new GlideAggregate('scrum_pp_sprint_team_member');
+         recScrumSprintTeamMember.addQuery('sprint', recRmSprint.sys_id);
+		 recScrumSprintTeamMember.addAggregate('SUM', 'planned_points');
+		 recScrumSprintTeamMember.setGroup(false);
+         recScrumSprintTeamMember.query();
+         if (recScrumSprintTeamMember.next())
+            nTeamPoints = recScrumSprintTeamMember.getAggregate('SUM', 'planned_points');
+      }    
+      return nTeamPoints;
+   },
+
+   getStoryDotEpic: function () {
+	   var encodedQuery = 'sys_class_name=rm_epic^state!=4';
+
+	   if (!recStory.product.nil())
+		   encodedQuery += '^product=' + recStory.getValue('product');
+
+	   return encodedQuery;
+   },
+
+   getStoryDotTheme: function (recStory) {
+      var arrSysIdsOfThemes = [];
+      var recScrumThemes = new GlideRecord("scrum_theme"); 
+      recScrumThemes.addQuery("product", recStory.product);
+      recScrumThemes.query();
+      while(recScrumThemes.next()) {
+         arrSysIdsOfThemes.push(recScrumThemes.sys_id + "");
+      }
+      return arrSysIdsOfThemes;
+   },
+
+   getEpicDotTheme: function (recEpic) {
+      var arrSysIdsOfThemes = [];
+      var recScrumThemes = new GlideRecord("scrum_theme"); 
+      recScrumThemes.addQuery("product", recEpic.product);
+      recScrumThemes.query();
+      while(recScrumThemes.next()) {
+         arrSysIdsOfThemes.push(recScrumThemes.sys_id + "");
+      }
+      return arrSysIdsOfThemes;   
+   },
+
+   getEpicDotParentEpic: function (recRmEpic) {
+      return 'sys_class_name=' + recRmEpic.getValue("sys_class_name") + '^sys_id!=' + recRmEpic.getValue("sys_id") + '^active=true'; 
+   },
+
+   //--------------------------------------------------------------------------------------------------
+
+   getSprintDotRelease: function (recSprint) { 
+      var arrReleaseSysIds = [];
+      var recProductRelease = new GlideRecord("m2m_product_release");
+      if (recSprint.release) {
+         recProductRelease.addQuery("release", "!=", recSprint.release);
+         var recProduct = new GlideRecord("m2m_product_release");
+         recProduct.addQuery("release", recSprint.release);
+         recProduct.query();
+         if (recProduct.next()) {
+            recProductRelease.addQuery("model", recProduct.model);
+         }
+      }
+      recProductRelease.query();
+      while(recProductRelease.next()) {
+         arrReleaseSysIds.push(recProductRelease.release + "");
+      }
+      return arrReleaseSysIds;
+   },
+
+//--------------------------------------------------------------------------------------------------
+
+   getStoryDotRelease: function (recStory) {
+      var arrReleaseSysIds = [];
+      var recProductRelease = new GlideRecord("m2m_product_release"); 
+      //if (recStory.release) {
+      //   recProductRelease.addQuery("release", "!=", recStory.release);
+      //}
+      recProductRelease.query();
+      while (recProductRelease.next ()) {
+         if (recProductRelease.model == recStory.product) {
+            arrReleaseSysIds.push(recProductRelease.release + "");
+         }
+      }
+      return arrReleaseSysIds;
+   }, 
+
+//--------------------------------------------------------------------------------------------------
+
+   getStoryDotSprint: function (recStory) {
+
+      // Case1: Return all sprints associated with story's release
+      if (!recStory.release.isNil()) {
+         var recSprint1 = new GlideRecord("rm_sprint");
+         recSprint1.addQuery ("release", recStory.release);
+         recSprint1.query ();
+         var arrSprintSysIds1 = [];
+         while (recSprint1.next ())
+            arrSprintSysIds1.push (recSprint1.sys_id + "");
+         return arrSprintSysIds1; 
+      }
+      
+      // Case2: Return all sprints associated with story's product
+      if (!recStory.product.isNil()) {
+         var arrSprintSysIds2 = [];
+         var recM2MProductRelease = new GlideRecord ("m2m_product_release");
+         recM2MProductRelease.addQuery ("model", recStory.product);
+         recM2MProductRelease.query ();
+         while (recM2MProductRelease.next ()) {
+            var recRmReleaseScrum = new GlideRecord ("rm_release_scrum");
+            recRmReleaseScrum.addQuery ("sys_id", recM2MProductRelease.release);
+            recRmReleaseScrum.query ();
+            while (recRmReleaseScrum.next ()) {
+               var recSprint2 = new GlideRecord ("rm_sprint");
+               recSprint2.addQuery ("release", recRmReleaseScrum.sys_id);
+               recSprint2.query ();
+               while (recSprint2.next ()) {
+                  arrSprintSysIds2.push (recSprint2.sys_id + "");
+               }
+            }
+         }
+	       return arrSprintSysIds2;
+      }
+      
+      // Case3: Return all sprints in system
+      var recSprint3 = new GlideRecord("rm_sprint");
+      recSprint3.query ();
+      var arrSprintSysIds3 = [];
+      while (recSprint3.next ())
+         arrSprintSysIds3.push (recSprint3.sys_id + "");
+      return arrSprintSysIds3;
+   },
+
+//--------------------------------------------------------------------------------------------------
+
+   getStoryDotProduct: function () {
+      var recModelSysIds = [];
+      var recCmdbModel = new GlideRecord ("cmdb_application_product_model");
+      recCmdbModel.query ();
+      while (recCmdbModel.next ()) {
+         recModelSysIds.push (recCmdbModel.sys_id + "");
+      }
+      return recModelSysIds;
+   },
+	
+	getStoryDotGroup: function () {
+		var groupSysIds = [];
+		var agileTeam = new GlideRecord('sys_user_group');
+		agileTeam.addActiveQuery();
+		agileTeam.addQuery('type','CONTAINS','1bff3b1493030200ea933007f67ffb6d');
+		agileTeam.query();
+		while (agileTeam.next()) {
+			groupSysIds.push(agileTeam.sys_id + "");
+		}
+		return groupSysIds;
+	},
+
+	
+//--------------------------------------------------------------------------------------------------
+	
+	validateSprintFields: function(sprintRecord){
+		var sprintStart;
+		var sprintEnd;
+		var abortSave = false;
+		/* Validate alterntive mandatory fields */
+		if(JSUtil.nil(sprintRecord.release) &amp;&amp; JSUtil.nil(sprintRecord.assignment_group) &amp;&amp; JSUtil.nil(sprintRecord.release_team)) {
+			gs.addErrorMessage(gs.getMessage("Please provide Group with which this sprint should associate"));
+			abortSave = true;
+		}
+
+		if (JSUtil.notNil(sprintRecord.release) &amp;&amp; JSUtil.notNil(sprintRecord.release.start_date) &amp;&amp; JSUtil.notNil(sprintRecord.release.end_date)) {
+			var releaseStart = sprintRecord.release.start_date.getGlideObject().getNumericValue();
+			var releaseEnd = sprintRecord.release.end_date.getGlideObject().getNumericValue();
+			sprintStart = JSUtil.notNil(sprintRecord.start_date) ? sprintRecord.start_date.getGlideObject().getNumericValue() : -1;
+			sprintEnd = JSUtil.notNil(sprintRecord.end_date) ? sprintRecord.end_date.getGlideObject().getNumericValue() : -1;
+
+			if (sprintStart == -1) {
+				sprintRecord.start_date.setError("Please provide a date from which this sprint should start");
+				abortSave = true;
+			} else if (sprintStart &lt; releaseStart) {
+				sprintRecord.start_date.setError("Please ensure sprint does not start before release starts");
+				abortSave = true;
+			} else if (sprintStart &gt; releaseEnd) {
+				sprintRecord.start_date.setError("Please ensure sprint does not start after release ends");
+				abortSave = true;
+			} else if ((sprintStart &gt; 0 &amp;&amp; sprintEnd &gt; 0) &amp;&amp; (sprintStart &gt; sprintEnd)) {
+				sprintRecord.start_date.setError("Please ensure sprint start is not after sprint end");
+				abortSave = true;
+			}
+
+			if (sprintEnd == -1) {
+				sprintRecord.end_date.setError("Please provide a date for when this sprint should end");
+				abortSave = true;
+			} else if (sprintEnd &lt; releaseStart) {
+				sprintRecord.end_date.setError("Please ensure sprint does not end before release starts");
+				abortSave = true;
+			} else if (sprintEnd &gt; releaseEnd) {
+				sprintRecord.end_date.setError("Please ensure sprint does not end after release ends");
+				abortSave = true;
+			}
+
+
+		} else if (JSUtil.notNil(sprintRecord.release_team) || JSUtil.notNil(sprintRecord.assignment_group)) {// Validate Sprints for Team 
+			sprintStart = JSUtil.notNil(sprintRecord.start_date) ? sprintRecord.start_date.getGlideObject().getNumericValue() : -1;
+			sprintEnd = JSUtil.notNil(sprintRecord.end_date) ? sprintRecord.end_date.getGlideObject().getNumericValue() : -1;
+
+			if(sprintStart == -1 || sprintEnd ==-1) {
+				if (sprintStart == -1)
+					sprintRecord.start_date.setError(gs.getMessage("Please provide a date from which this sprint should start"));
+				if (sprintEnd == -1)
+					sprintRecord.end_date.setError(gs.getMessage("Please provide a date for when this sprint should end"));
+				abortSave = true;
+			} else if(sprintStart &gt; sprintEnd) {
+				sprintRecord.start_date.setError("Please ensure sprint start is not after sprint end");
+				abortSave = true;
+			}
+
+		}
+		return abortSave;
+	},
+//--------------------------------------------------------------------------------------------------
+// can user create &lt;x&gt;?
+//--------------------------------------------------------------------------------------------------
+
+   canCreateStory: function(record) {
+      var canCreate = this.canCreateInContext("rm_story");
+      var canAction = this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.CREATE);
+      return canAction &amp;&amp; canCreate;
+   },
+
+   canCreateInContext: function(recordType) {
+      if (this._hasRole("scrum_admin")) {
+         return true;
+      }
+      var contextType = this.getContextType();
+      var permissionTypes = this.getPermissionTypes();   
+      var canCreate = this.canCreateIn(contextType, recordType, permissionTypes);
+      return canCreate;
+   },
+
+   canCreateIn: function(contextType, recordType, permissionTypes) {
+      contextType = contextType ? contextType : "NO_CONTEXT";
+      return ScrumSecurityManagerDefault.contextMatrix[contextType][recordType](permissionTypes);
+   },
+
+   getContextType: function(){
+      if (JSUtil.getGlobal().parent) {
+         var parentType = parent.sys_class_name + "";
+         switch(parentType) {
+            case ScrumSecurityManager.PRODUCT: 
+            case ScrumSecurityManager.RELEASE:
+            case ScrumSecurityManager.SPRINT:
+            case ScrumSecurityManager.EPIC:
+            case ScrumSecurityManager.STORY:
+               return parentType;
+         }
+      }
+      return "";
+   },
+
+   getPermissionTypes: function() {
+      var permissionTypes = [];
+      
+      var users = new GlideRecord(ScrumSecurityManager.USER_PERMISSIONS);
+      users.addQuery("user", this._getUserID());
+      users.query();
+      while (users.next()) {
+        if (!permissionTypes.contains(users.type)) {
+           permissionTypes.push(users.type + "");
+        }
+      }      
+      
+      var groups = new GlideRecord(ScrumSecurityManager.GROUP_PERMISSIONS);
+      groups.addQuery("group", this._getMyGroups());
+      groups.query();
+      while (groups.next()) {
+         if (!permissionTypes.contains(groups.type)) {
+            permissionTypes.push(groups.type + "");
+         }
+      }
+      return permissionTypes;
+   },   
+   
+   canCreateProductRelease: function(record) {
+      return this.hasPermission(null, ScrumSecurityManager.PRODUCT_OWNER);
+   },
+
+   canCreateEpicRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.CREATE);
+   },
+
+   canCreateGroupPermissions: function() {
+      return this.hasPermission(null, ScrumSecurityManager.PRODUCT_OWNER);
+   },
+
+   canCreateUserPermissions: function() {
+      return this.hasPermission(null, ScrumSecurityManager.PRODUCT_OWNER);
+   },
+
+   canCreateProduct: function() {
+      return this.hasPermission(null, ScrumSecurityManager.PRODUCT_OWNER);
+   },
+
+   canCreateRelease: function() {
+      return this.hasPermission(null, ScrumSecurityManager.PRODUCT_OWNER);
+   },
+   
+   canCreateReleaseForProduct: function(product) {
+      return this.canActionForProduct(product, ScrumSecurityManager.RELEASE, 
+             ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.CREATE);
+   },
+
+   canCreateStoryForProduct: function(product) {
+      return this.canActionForProduct(product, ScrumSecurityManager.STORY, 
+             ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.CREATE);
+   },
+
+   canCreateSprint: function() {
+      return this.hasPermission(null, ScrumSecurityManager.SCRUM_MASTER);
+   },
+
+   canCreateEpic: function() {
+      return this.hasPermission(null, ScrumSecurityManager.ANY_TEAM_MEMBER);
+   },
+
+   canCreateTask: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.CREATE);
+   },
+
+//--------------------------------------------------------------------------------------------------   
+// can user delete &lt;x&gt;?
+//--------------------------------------------------------------------------------------------------
+
+   canDeleteProductRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.DELETE);
+   },
+
+   canDeleteUserPermissions: function(record) {
+     var isScrumAdmin = (this._hasRole("scrum_admin"));
+     var isProductOwner = (this.hasPermission(record.product.sys_id, ScrumSecurityManager.PRODUCT_OWNER));
+     return (isScrumAdmin || isProductOwner);
+   },
+
+   canDeleteGroupPermissions: function(record) {
+     var isScrumAdmin = (this._hasRole("scrum_admin"));
+     var isProductOwner = (this.hasPermission(record.product.sys_id, ScrumSecurityManager.PRODUCT_OWNER));
+     return (isScrumAdmin || isProductOwner);
+   },
+
+   canDeleteProduct: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+
+   canDeleteRelease: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+
+   canDeleteSprint: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+
+   canDeleteEpic: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+
+   canDeleteStory: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+
+   canDeleteTask: function() {
+      return (this._hasRole("scrum_admin"));
+   },
+   
+//--------------------------------------------------------------------------------------------------   
+// can user read &lt;x&gt;?
+//--------------------------------------------------------------------------------------------------
+
+   canReadProductContents: function() {
+      return this.hasPermission(null, ScrumSecurityManager.ANY_TEAM_MEMBER);
+   },
+
+   canReadProductRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadEpicRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadGroupPermissions: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadUserPermissions: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+   
+   canReadProduct: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadRelease: function(record) {
+      var isPermitted = this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, 
+                        ScrumSecurityManager.READ);
+      return isPermitted || this._isCreatedByCurrentUser(record);
+   },
+
+   canReadSprint: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadEpic: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadStory: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+
+   canReadTask: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.READ);
+   },
+   
+//--------------------------------------------------------------------------------------------------   
+// can user write &lt;x&gt;?
+//--------------------------------------------------------------------------------------------------
+
+   canWriteStoryDotProduct: function(record) {
+      var isProductOwner = this.hasPermission(record.product, 
+                           ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+      var canWrite = (isProductOwner || (!isProductOwner &amp;&amp; !record.release));
+      return canWrite;
+   },
+
+   canWriteAnyStoryOrTaskDotState: function(record) {
+      return this.hasPermission(record.product, ScrumSecurityManager.PRODUCT_OWNER_SCRUM_MASTER);
+   },
+
+   canWriteStoryDotRelease: function(record) {
+      return this.hasPermission(record.product, 
+             ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteStoryDotSprint: function(record) {
+      var isScrumMaster = this.hasPermission(record.product, 
+                          ScrumSecurityManager.SCRUM_MASTER, ScrumSecurityManager.WRITE);
+      var canWrite = (isScrumMaster &amp;&amp; (record.release !== null));
+      return canWrite;
+   },
+
+   canWriteProductRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+   },
+   
+   canWriteEpicRelease: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteGroupPermissions: function(record) {
+      var canCreate = this.canCreateInContext("scrum_group_permissions");
+      var canAction = this.canAction(record, 
+                      ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+      return canAction &amp;&amp; canCreate;
+   },
+
+   canWriteUserPermissions: function(record) {
+      var canCreate = this.canCreateInContext("scrum_user_permissions");
+      var canAction = this.canAction(record, 
+                      ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+      return canAction &amp;&amp; canCreate;
+   },
+
+   canWriteProduct: function(record) {
+      return this.canAction(record, 
+             ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteRelease: function(record) {
+      return this.canAction(record, 
+             ScrumSecurityManager.PRODUCT_OWNER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteSprint: function(record) {
+      return this.canAction(record, 
+             ScrumSecurityManager.SCRUM_MASTER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteEpic: function(record) {
+      return this.canAction(record, 
+             ScrumSecurityManager.ANY_TEAM_MEMBER, ScrumSecurityManager.WRITE);
+   },
+
+   canWriteStory: function(record) {
+      var canCreate = this.canCreateInContext("rm_story");
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, 
+             ScrumSecurityManager.WRITE) &amp;&amp; canCreate;
+   },
+
+   canWriteTask: function(record) {
+      return this.canAction(record, ScrumSecurityManager.ANY_TEAM_MEMBER, 
+             ScrumSecurityManager.WRITE);
+   },
+
+//--------------------------------------------------------------------------------------------------
+// methods that return a list of &lt;x&gt; that the user can access
+//--------------------------------------------------------------------------------------------------
+
+   getProductReleases: function() {
+      return this._resultSet(ScrumSecurityManager.PRODUCT_RELEASE, 
+      this.canReadProductRelease);
+   },
+
+   getEpicRelease: function() {
+      return this._resultSet(ScrumSecurityManager.EPIC_RELEASE, 
+      this.canReadEpicRelease);
+   },
+
+   getGroupPermissions: function() {
+      return this._resultSet(ScrumSecurityManager.GROUP_PERMISSIONS , 
+      this.canReadGroupPermissions);
+   },
+
+   getUserPermissions: function() {
+      return this._resultSet(ScrumSecurityManager.USER_PERMISSIONS, 
+      this.canReadUserPermissions);
+   },
+   
+   getProducts: function() {
+      return this._resultSet(ScrumSecurityManager.PRODUCT, this.canReadProduct, "type", "Scrum product");
+   },   
+
+   getReleases: function(funcFilter) {
+      var arrOldSysIds = this._resultSet(ScrumSecurityManager.RELEASE, this.canReadRelease);
+      var arrNewSysIds = this._getFilteredSysIds(ScrumSecurityManager.RELEASE, arrOldSysIds, funcFilter);
+      return arrNewSysIds;       
+   },
+
+   getReleasesForProduct: function(productId) {
+      var sysIds = this._resultSet(ScrumSecurityManager.PRODUCT_RELEASE, 
+                   this.canReadProductRelease, 'product', productId);
+      var releases = [];
+      var gr = new GlideRecord("m2m_product_release");
+      gr.addQuery("sys_id", "IN", sysIds.join(","));
+      gr.query();
+      while (gr.next()) {
+         releases.push(gr.release+"");
+      }
+      return releases;
+   },
+
+   getEpicsForProduct: function(productId, funcFilter) {
+      var arrOldSysIds = this._resultSet(ScrumSecurityManager.EPIC, this.canReadEpic, 'product', productId);
+      var arrNewSysIds = this._getFilteredSysIds(ScrumSecurityManager.EPIC, arrOldSysIds, funcFilter);
+      return arrNewSysIds;
+   },  
+   
+   getProductsForUser : function(current) {
+
+      var products = [];
+
+      // Case1: Return all products for users with scrum_admin or admin role
+      if (this._hasRole("admin") || this._hasRole("scrum_admin")) {
+        var scrumProducts = new GlideRecord("cmdb_model");
+        scrumProducts.query();
+        while (scrumProducts.next()) {
+          products.push(scrumProducts.sys_id + "");
+        }
+        return products;
+      }
+
+      // Case2: Return all products for story with a release
+      if (current &amp;&amp; current.sys_class_name == "rm_story") {
+         if (current.release) {
+            var productReleases = new GlideRecord("m2m_product_release");
+            productReleases.addQuery("release", current.release);
+            productReleases.query();
+            while (productReleases.next()) {
+               products.push(productReleases.model.sys_id + "");
+            }
+            return products;
+         }
+      }
+
+      // Case3: Return all products this user is permissioned to see
+      var userPermissions = new GlideRecord("scrum_user_permissions");
+      userPermissions.query();
+      while (userPermissions.next()) {
+         if (gs.getUserID() == (userPermissions.user.sys_id + "")) {
+            products.push(userPermissions.product.sys_id + "");
+         }
+      }
+
+      var groupPermissions = new GlideRecord("scrum_group_permissions");
+      groupPermissions.addQuery("group", JSUtil.getGlobal().getMyGroups());
+      groupPermissions.query();
+      while (groupPermissions.next()) {
+         products.push(groupPermissions.product.sys_id + "");
+      }
+      return products;
+   },
+
+   getSprintsForUser : function() {
+
+      var sprintIds = [];
+      var sprints = null;
+
+      // (1) Get all sprints for users with scrum_admin or admin role
+      if (this._hasRole("admin") || this._hasRole("scrum_admin")) {
+        sprints = new GlideRecord("rm_sprint");
+        sprints.query();
+        while (sprints.next()) {
+          sprintIds.push(sprints.sys_id + "");
+        }
+        return sprintIds;
+      }
+
+      // (2) Get all products user is permissioned to see
+      var products = [];
+      var userPermissions = new GlideRecord("scrum_user_permissions");
+      userPermissions.query();
+      while (userPermissions.next()) {
+         if (gs.getUserID() == (userPermissions.user.sys_id + "")) {
+            products.push(userPermissions.product.sys_id + "");
+         }
+      }
+
+      // (3) Get all products group is permissioned to see
+      var groupPermissions = new GlideRecord("scrum_group_permissions");
+      groupPermissions.addQuery("group", JSUtil.getGlobal().getMyGroups());
+      groupPermissions.query();
+      while (groupPermissions.next()) {
+         products.push(groupPermissions.product.sys_id + "");
+      }
+      
+      // (4) Get all sprints user and group allowed to see
+      sprints = new GlideRecord("rm_sprint");
+      sprints.addQuery("product", products);
+      sprints.query();
+      while (sprints.next()) {
+        if (this.canReadSprint(sprints)) {
+          sprintIds.push(sprints.sys_id + ""); 
+        }
+      }
+
+      // (5) Return all sprints this user is permissioned to see
+      return sprintIds;
+   },
+
+   getSprints: function() {
+      return this._resultSet(ScrumSecurityManager.SPRINT, this.canReadSprint);
+   },
+   
+   getSprintsForRelease: function(releaseId) {
+      return this._resultSet(ScrumSecurityManager.SPRINT, this.canReadSprint, 'release', releaseId);
+   },
+
+   getEpics: function() {
+      return this._resultSet(ScrumSecurityManager.EPIC, this.canReadEpic);
+   },
+
+   getStories: function() {
+      return this._resultSet(ScrumSecurityManager.STORY, this.canReadStory);
+   },
+
+   getTask: function() {
+      return this._resultSet(ScrumSecurityManager.TASK, this.canReadTask);
+   },
+
+   getScrumUserIds: function() {
+	   function buildQuery (strAttributeName, arrAttributeData, strOperator) {
+         var strBuf = "";
+         for (var nSlot = 0; nSlot &lt; arrAttributeData.length; ++nSlot) {
+            strBuf += (strAttributeName + "=" + arrAttributeData[nSlot]);
+            if (nSlot &lt; arrAttributeData.length - 1) {
+               strBuf += strOperator;
+            }
+         }
+         return strBuf;
+      }
+	   
+      function getRoleIds(arrRoleNames){
+         var a = [];
+         var r = new GlideRecord("sys_user_role");
+         r.addQuery(buildQuery("name", arrRoleNames, "^OR"));
+         r.query();
+         while(r.next()) {
+            a.push(r.sys_id + "");
+         }
+         return a;
+      }
+
+      function getUserIds(arrRoleIds) {
+         var a = [];
+         var r = new GlideRecord("sys_user_has_role");
+         r.addQuery(buildQuery("role", arrRoleIds, "^OR"));
+         r.query();
+         while(r.next()) {
+            a.push(r.user + "");
+         }
+         return a;
+      }
+
+      return getUserIds(getRoleIds(["scrum_user", "scrum_admin"]));
+   },
+
+   // true if these user types perform this action on this record 
+   canAction: function(record, types, action) {
+      var table = record.sys_class_name + "";
+      var products = ScrumSecurityManagerDefault._getProducts(table, record);
+
+      // Case1: User is scrum_admin, admin, or record is incomplete
+      if (this._hasRole("scrum_admin") || (!table) || (!record.sys_id)) {
+         return true;
+      }
+      
+      // Case2: No products associated with record as it is new
+      if ((!products || products.length === 0) &amp;&amp; record.isNewRecord()) {
+         return true;
+      }
+      
+      // Case3: If User is not allowed to perform this action then return false
+      if (!this.isActionable(table, types, action)) {
+         //gs.log("xxxxxxxxxxxxxxxxx isActionable = false");
+         return false;
+      }
+      
+      // Case4: If no products found and this is not a new record
+      if (!products || products.length === 0) {
+         //gs.log("xxxxxxxxxxxxxxxxx noProductsFound = false");
+         return false;
+      }
+      
+      // Case5: User is associated with product and is allowed to perform this operation
+      for (var index = 0; index &lt; products.length; ++index) {
+        if (this.hasPermission(products[index], types)) {
+           return true;
+        }
+      }
+      // Default: User cannot perform this action
+      //gs.log("xxxxxxxxxxxxxxxxx defaultCase = false");
+      //gs.log("&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; table = " + table);
+      //gs.log("&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; products.length = " + products.length);
+      //gs.log("&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; types = " + types);
+      //for (var i = 0; i &lt; products.length; ++i) {
+      //   gs.log("&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; product.sys_id = " + products[i]);
+      //}
+      return false;
+   },
+   
+   canActionForProduct: function(product, table, types, action) {
+      if (this._hasRole("scrum_admin")) {
+         return true;
+      }
+      
+      if (!this.isActionable(table, types, action)) {
+         return false;
+      }
+      
+      if (this.hasPermission(product, types)) {
+         return true;
+      }
+      
+      return false;
+   },
+
+   // true if these user types can perform this action on this table, record
+   isActionable: function(table, types, action) {
+      return ScrumSecurityManagerDefault.permissionMatrix[table][action](types);
+   },
+   
+   // true if current user has permission to access this productID, as one of these types of Scrum user
+   hasPermission: function(productID, types) {  
+      return this._hasRole("scrum_admin") ||           // Case1: User has scrum_admin role, or is admin
+         this._hasUserPermission(productID, types) ||  // Case2: User has user permission
+         this._hasGroupPermission(productID, types);   // Case3: User has group permission
+   },
+   
+   // return the set of records in tableName that user can access, tested by aclFunction()
+   // optionally specify a field and field reference value to limit the results further
+   _resultSet: function(tableName, aclFunction, field, fieldValue) {  
+      var gr = new GlideRecord(tableName);
+      if (field !== null) {
+         gr.addQuery(field + "=" + fieldValue);
+      }
+      var results = [];
+      var seen = {};
+      gr.query();
+      while (gr.next()) {
+         if (!seen[gr.getUniqueValue()] &amp;&amp; aclFunction.call(this, gr)) {
+            seen[gr.getUniqueValue] = 1;
+            results.push(gr.getUniqueValue());
+         }
+      }
+      return results;
+   },
+   
+   // true if current user has user permission level access as one of these types of Scrum user
+   _hasUserPermission: function(productID, types) {
+      var users = new GlideRecord(ScrumSecurityManager.USER_PERMISSIONS);
+      if (productID) {
+         users.addQuery("product", productID);
+      }
+      users.addQuery("user", this._getUserID() + "");
+      users.addQuery("type", types);
+      users.query();
+      return users.hasNext();
+   },
+
+   // true if current user has group permission level access as one of these types of Scrum user
+   _hasGroupPermission: function(productID, types) {
+      var groups = new GlideRecord(ScrumSecurityManager.GROUP_PERMISSIONS);
+      if (productID) {
+         groups.addQuery("product", productID);
+      }
+      groups.addQuery("group", this._getMyGroups());
+      groups.addQuery("type", types);
+      groups.query();
+      return groups.hasNext();
+   },
+
+   // to allow easier override, for testing
+   _hasRole: function(role) {
+      return gs.hasRole(role);
+   },
+
+   _getUserID: function() {
+      return gs.getUserID();
+   },
+
+   _getMyGroups: function() {
+      return JSUtil.getGlobal().getMyGroups();
+   },
+
+   _isCreatedByCurrentUser: function(record) {
+      return (record.sys_created_by == gs.getUser().name);
+   },
+   
+   _getFilteredSysIds: function(tableName, arrOldSysIds, funcFilter) {
+      funcFilter = funcFilter ? funcFilter : function() {
+         return true;
+      };
+      var arrNewSysIds = [];
+      var records = new GlideRecord(tableName);
+      records.addQuery("sys_id", arrOldSysIds);
+      records.query();
+      while (records.next()) {
+        if (funcFilter(records)) {
+          arrNewSysIds.push(records.sys_id + "");
+        }
+      }
+      return arrNewSysIds;    
+
+   },
+   
+   type: 'ScrumSecurityManagerDefault'
+};
+
+// more internal class methods
+
+// return product(s) for a given table, record
+ScrumSecurityManagerDefault._getProducts = function(table, record) {
+   var products = [];
+   var product;
+   var records;
+   switch (table) {
+      case ScrumSecurityManager.PRODUCT:
+         //gs.log("### NAME = " + record.name);
+         //gs.log("### SHORT_DESCRIPTION = " + record.short_description);
+         return [record.sys_id];
+      case ScrumSecurityManager.PRODUCT_RELEASE:
+      case ScrumSecurityManager.EPIC:
+      case ScrumSecurityManager.GROUP_PERMISSIONS: 
+      case ScrumSecurityManager.USER_PERMISSIONS:
+         return [record.product.sys_id];
+      case ScrumSecurityManager.TASK:
+         return [record.parent.product.sys_id];
+      case ScrumSecurityManager.RELEASE:
+         records = new GlideRecord(ScrumSecurityManager.PRODUCT_RELEASE);
+         records.addQuery("release", record.sys_id);
+         records.query();
+         while (records.next()){
+            product = new GlideRecord(ScrumSecurityManager.PRODUCT);
+            product.addQuery("sys_id", records.product);
+            product.query();
+            while (product.next()) {
+               products.push(product.sys_id);
+            }
+         }
+         return products;
+      case ScrumSecurityManager.SPRINT:
+         records = new GlideRecord(ScrumSecurityManager.PRODUCT_RELEASE);
+         records.addQuery("release", record.release.sys_id);
+         records.query();
+         while (records.next()){
+            product = new GlideRecord(ScrumSecurityManager.PRODUCT);
+            product.addQuery("sys_id", records.product);
+            product.query();
+            while (product.next()) {
+               products.push(product.sys_id);
+            }
+         }
+         return products;
+      case ScrumSecurityManager.STORY:
+         // Note: we take this convoluted approach (rather than record.product) because that breaks
+         // if you try and create a story from within a sprint while impersonating a non-administrator user.
+         if (record.product) {
+            return [record.product.sys_id];
+         }
+         if (record.sprint) {
+            return ScrumSecurityManagerDefault._getProducts(record.sprint);
+         }
+         if (record.parent) {
+            return ScrumSecurityManagerDefault._getProducts(record.parent);
+         }
+   }
+   return products;
+};
+
+
+// (for _isActionable/ permissionMatrix)
+ScrumSecurityManagerDefault._isTeamMember = function(types) {
+   return (new ArrayUtil().contains(types, ScrumSecurityManager.TEAM_MEMBER[0]));
+};
+
+ScrumSecurityManagerDefault._isScrumMaster = function(types) {
+   return (new ArrayUtil().contains(types, ScrumSecurityManager.SCRUM_MASTER[0]));
+};
+
+ScrumSecurityManagerDefault._isProductOwner = function(types) {
+   return (new ArrayUtil().contains(types, ScrumSecurityManager.PRODUCT_OWNER[0]));
+};
+
+ScrumSecurityManagerDefault._isAnyScrumUser = function(types) {
+   return (ScrumSecurityManagerDefault._isTeamMember(types)  || 
+           ScrumSecurityManagerDefault._isScrumMaster(types) || 
+           ScrumSecurityManagerDefault._isProductOwner(types));
+};
+
+ScrumSecurityManagerDefault.permissionMatrix = {
+   m2m_product_release: {
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   product_release: { 
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   scrum_user_permissions: { 
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   scrum_group_permissions: { 
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   cmdb_model: { 
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   rm_release_scrum: { 
+      Create:                  ScrumSecurityManagerDefault._isProductOwner,
+      Delete:                  ScrumSecurityManagerDefault._isProductOwner,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isProductOwner
+   },
+   rm_sprint: { 
+      Create:                  ScrumSecurityManagerDefault._isScrumMaster,
+      Delete:                  ScrumSecurityManagerDefault._isScrumMaster,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isScrumMaster
+   },
+   rm_epic: { 
+      Create:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Delete:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isAnyScrumUser
+   },
+   rm_story: { 
+      Create:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Delete:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isAnyScrumUser
+   },
+   rm_scrum_task: { 
+      Create:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Delete:                  ScrumSecurityManagerDefault._isAnyScrumUser,
+      Read:                    ScrumSecurityManagerDefault._isAnyScrumUser,
+      Write:                   ScrumSecurityManagerDefault._isAnyScrumUser
+   }
+};
+
+ScrumSecurityManagerDefault.contextMatrix = {
+   cmdb_model: {
+      rm_release_scrum:        ScrumSecurityManagerDefault._isProductOwner,
+      rm_epic:                 ScrumSecurityManagerDefault._isAnyScrumUser,
+      rm_story:                ScrumSecurityManagerDefault._isAnyScrumUser,
+      scrum_user_permissions:  ScrumSecurityManagerDefault._isProductOwner, 
+      scrum_group_permissions: ScrumSecurityManagerDefault._isProductOwner
+   },
+   rm_release_scrum: {
+      m2m_product_release:     ScrumSecurityManagerDefault._isProductOwner,
+      rm_sprint:               ScrumSecurityManagerDefault._isScrumMaster,
+      rm_story:                ScrumSecurityManagerDefault._isProductOwner
+   },
+   rm_sprint: {
+      rm_story:                ScrumSecurityManagerDefault._isScrumMaster
+   },
+   rm_epic: {
+      rm_epic:                 ScrumSecurityManagerDefault._isAnyScrumUser,
+      rm_story:                ScrumSecurityManagerDefault._isAnyScrumUser
+   },
+   rm_story: {
+      rm_scrum_task:           ScrumSecurityManagerDefault._isAnyScrumUser
+   },	
+   NO_CONTEXT: {
+      scrum_user_permissions:  ScrumSecurityManagerDefault._isProductOwner,
+      scrum_group_permissions: ScrumSecurityManagerDefault._isProductOwner,
+      rm_story:                ScrumSecurityManagerDefault._isAnyScrumUser
+   }
+};
+
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-08-30 09:47:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;326b53699f3010008f88ed93ee4bcc2b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;484&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumSecurityManagerDefault&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_326b53699f3010008f88ed93ee4bcc2b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-09 10:05:46&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;49596&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:46</sys_created_on>
+        <sys_id>716c81ba2f331110d8a4d5f62799b6c4</sys_id>
+        <sys_name>ScrumSecurityManagerDefault</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_716c81ba2f331110d8a4d5f62799b6c4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

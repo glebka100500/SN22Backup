@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>65685b113710100034408c00dfbe5de7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WbemHttpClient&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Peforms a WBEM request via HTTP.&lt;/description&gt;
+        &lt;name&gt;WbemHttpClient&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WbemHttpException = Class.create();
+WbemHttpException.prototype = Object.extendsObject(GenericException);
+
+var WbemHttpClient = Class.create();
+WbemHttpClient.prototype = {
+  initialize : function(schema, hostname, port, username, password) {
+    this._config = new WbemConnectionParameters(schema, hostname, port, username, password);
+  },
+
+  enumerateClassNames: function(namespace, deepInheritance, localOnly, includeQualifiers, includeClassOrigin) {
+    var request = new WbemXmlRequest(this._config, namespace, 'EnumerateClasses', 4711);
+
+    if (deepInheritance == null)
+      deepInheritance = false;
+    if (localOnly == null)
+      localOnly = false;
+    if (includeQualifiers == null)
+      includeQualifiers = false;
+    if (includeClassOrigin == null)
+      includeClassOrigin = false;
+
+    request.addParameter('DeepInheritance', ( deepInheritance ? 'TRUE' : 'FALSE' ));
+    request.addParameter('LocalOnly', ( localOnly ? 'TRUE' : 'FALSE' ));
+    request.addParameter('IncludeQualifiers', ( includeQualifiers ? 'TRUE' : 'FALSE' ));
+    request.addParameter('IncludeClassOrigin', ( includeClassOrigin ? 'TRUE' : 'FALSE' ));
+
+    var response = request.request();
+    var classesDom = new ArrayUtil().ensureArray(response['CLASS']);
+    var classnames = [];
+
+    for (var i = 0; i &lt; classesDom.length; ++i)
+      classnames.push(classesDom[i]['@NAME'] + '');
+
+    return classnames;
+  },
+
+  enumerateInstances: function(namespace, classname, localOnly) {
+    var request = new WbemXmlRequest(this._config, namespace, 'EnumerateInstances', 1000);
+
+    if (classname == null)
+      throw new IllegalArgumentException('ClassName is required.');
+    if (localOnly == null)
+      localOnly = false;
+
+    request.addParameter('ClassName', '&lt;CLASSNAME NAME="' + classname + '" /&gt;');
+    request.addParameter('LocalOnly', ( localOnly ? 'TRUE' : 'FALSE' ));
+
+    var response = request.request();
+    var namedInstancesDom = new ArrayUtil().ensureArray(response['VALUE.NAMEDINSTANCE']);
+    var instances = [];
+
+    for (var ii = 0; ii &lt; namedInstancesDom.length; ++ii) {
+      var instanceClassName = namedInstancesDom[ii].INSTANCENAME['@CLASSNAME'] + '';
+      var instancesDom = new ArrayUtil().ensureArray(namedInstancesDom[ii].INSTANCE);
+
+      for (var ji = 0; ji &lt; instancesDom.length; ++ji) {
+        var instance = { 
+                           classname: instanceClassName 
+                       };
+        var propertiesDom = new ArrayUtil().ensureArray(instancesDom[ji].PROPERTY);
+
+        for (var pi = 0; pi &lt; propertiesDom.length; ++pi)
+          instance[propertiesDom[pi]['@NAME']] = propertiesDom[pi].VALUE;
+
+        instances.push(instance);
+      }
+    }
+
+    return instances;
+  },
+
+  type: "WbemHttpClient"
+}
+
+var WbemConnectionParameters = Class.create();
+
+WbemConnectionParameters.SCHEMA_HTTP = 'http';
+WbemConnectionParameters.SCHEMA_HTTPS = 'https';
+
+WbemConnectionParameters.prototype = {
+  initialize: function(schema, hostname, port, username, password) {
+    this.schema = schema;
+    this.hostname = hostname;
+    this.port = port;
+    this.username = username;
+    this.password = password;
+  }
+};
+
+var WbemXmlRequest = Class.create();
+
+WbemXmlRequest.TRUE = 'TRUE';
+WbemXmlRequest.FALSE = 'FALSE';
+
+WbemXmlRequest.prototype = {
+  initialize: function(wbemConnectionParameters, namespace, method, messageId) {
+    this._method = ( method ? method : null );
+    this._messageId = ( messageId ? messageId : null );
+    this._config = wbemConnectionParameters;
+    this._parameters = {};
+    this._namespace = null;
+    this._namespaceTokens = null;
+
+    if (namespace)
+      this.setNamespace(namespace);
+  },
+
+  setNamespace: function(namespace) {
+    this._namespace = namespace;
+    this._namespaceTokens = namespace.split('/');
+  },
+
+  setMethod: function(method, messageId) {
+    this._method = method;
+    this._messageId = messageId;
+  },
+
+  addParameter: function(name, value) {
+    this._parameters[name] = value;
+  },
+
+  validate: function() {
+    if (!this._namespace)
+      throw new IllegalArgumentException('Wbem namespace is required.');
+    else if (!this._method)
+      throw new IllegalArgumentException('Wbem method is required.');
+    //else if (!this._parameters)
+    //  throw new IllegalArgumentException('Wbem parameters are required.');
+  },
+
+  createXml: function() {
+    this.validate();
+
+    var xml = '&lt;?xml version="1.0" encoding="utf-8" ?&gt;\n&lt;CIM CIMVERSION="2.0" DTDVERSION="2.0"&gt;\n&lt;MESSAGE ID="' + this._messageId + '" PROTOCOLVERSION="1.0"&gt;\n&lt;SIMPLEREQ&gt;\n'
+    + '&lt;IMETHODCALL NAME="' + this._method + '"&gt;\n&lt;LOCALNAMESPACEPATH&gt;\n';
+
+    for (var i = 0; i &lt; this._namespaceTokens.length; ++i)
+      xml += '&lt;NAMESPACE NAME="' + this._namespaceTokens[i] + '" /&gt;\n';
+
+    xml += '&lt;/LOCALNAMESPACEPATH&gt;\n';
+
+    for (var key in this._parameters) {
+      if (this._parameters[key].charAt(0) == '&lt;')
+        xml += '&lt;IPARAMVALUE NAME="' + key + '"&gt;\n' + this._parameters[key] + '\n&lt;/IPARAMVALUE&gt;\n';
+      else
+        xml += '&lt;IPARAMVALUE NAME="' + key + '"&gt;\n&lt;VALUE&gt;' + this._parameters[key] + '&lt;/VALUE&gt;\n&lt;/IPARAMVALUE&gt;\n';
+    }
+
+    xml += '&lt;/IMETHODCALL&gt;\n&lt;/SIMPLEREQ&gt;\n&lt;/MESSAGE&gt;\n&lt;/CIM&gt;\n';
+    return xml;
+  },
+
+  createHttpRequest: function() {
+    var request = new GlideHTTPRequest(
+      this._config.schema + '://' + this._config.hostname + ':' + this._config.port + '/cimom'
+    );
+
+    request.setBasicAuth(this._config.username, this._config.password);
+    request.setContentType("application/xml");
+    request.addHeader('CIMOperation', 'MethodCall');
+    request.addHeader('CIMMethod', this._method);
+    request.addHeader('CIMObject', this._namespace);
+    request.setHttpTimeout(5000);
+    return request;
+  },
+
+  request: function() {
+    var request = this.createHttpRequest();
+    var xml = this.createXml();
+    var response = request.post(xml);
+    if (response.haveError()) {
+      var headers = response.getHeaders();
+      var msg = headers.get('CIMError') + '.';
+      if (headers.containsKey('PGErrorDetail')) // include tog-pegasus if available
+        msg += ' ' + Packages.java.net.URLDecoder.decode(headers.get('PGErrorDetail')) + '.';
+      throw new WbemHttpException(msg);
+    }
+
+    var body = response.getBody();
+    var dom = new XMLHelper(body).toObject();
+    if (!dom || !dom.MESSAGE.SIMPLERSP.IMETHODRESPONSE.IRETURNVALUE) {
+      if (dom.MESSAGE.SIMPLERSP.IMETHODRESPONSE.ERROR)
+        throw new WbemHttpException(dom.MESSAGE.SIMPLERSP.IMETHODRESPONSE.ERROR['@DESCRIPTION'])
+
+      throw new WbemHttpException('Invalid response from server.');
+    }
+
+    return dom.MESSAGE.SIMPLERSP.IMETHODRESPONSE.IRETURNVALUE;
+  },
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-08-04 19:33:19&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;65685b113710100034408c00dfbe5de7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;147&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WbemHttpClient&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_65685b113710100034408c00dfbe5de7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;ben.yukich&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-01-05 19:15:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;6820&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:04</sys_created_on>
+        <sys_id>a8bcc9fa2f331110d8a4d5f62799b684</sys_id>
+        <sys_name>WbemHttpClient</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a8bcc9fa2f331110d8a4d5f62799b684</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

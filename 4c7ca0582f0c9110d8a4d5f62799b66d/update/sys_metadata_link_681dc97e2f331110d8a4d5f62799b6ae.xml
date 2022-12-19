@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9344e1219f230200598a5bb0657fcf8b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RollupStructureLoader&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;RollupStructureLoader&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RollupStructureLoader = Class.create();
+RollupStructureLoader.prototype = {
+    initialize: function() {
+    },
+
+    loadStructure: function(childRecord, rollupColumn, parentNavigator, parentSysId) {        
+        var rollupStructure = {};
+        var childTable = childRecord.getTableName();
+        if ( childTable.match(/project_task$/) || childTable.match(/project$/) ) 
+            childTable = 'planned_task';        
+        var childSysId; // used for delete operation
+        if(childRecord.operation() == "delete") {
+            //gs.info("Delete operation on Task: " + childSysId)
+            childSysId = childRecord.getValue("sys_id");
+        }
+
+        var gr = this.getTaskChildren(childTable, parentNavigator, parentSysId, childSysId);
+        while(gr.next()) {
+            rollupStructure[gr.getValue("sys_id")] = {};
+            var valueMap = rollupStructure[gr.getValue("sys_id")];
+            valueMap[rollupColumn] = gr.getValue(rollupColumn);
+            //gs.info("Record Value --&gt;" + gr.getValue("sys_id") + ": {" + rollupColumn + ": " + gr.getValue(rollupColumn) + " }");
+        }
+        return rollupStructure;
+    },
+
+    getTaskChildren: function(tableName, parentNavigator, parentSysId, ignoreSysId) {
+        var gr = new GlideRecord(tableName);
+        gr.addQuery(parentNavigator, parentSysId);
+        gr.addNullQuery("orig_sys_id");
+        if(ignoreSysId)
+            gr.addQuery("sys_id", "!=", ignoreSysId);
+        gr.query();
+        return gr;
+    },
+
+    type: 'RollupStructureLoader'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-11-05 16:24:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9344e1219f230200598a5bb0657fcf8b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RollupStructureLoader&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9344e1219f230200598a5bb0657fcf8b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-10-20 23:26:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1539&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:42</sys_created_on>
+        <sys_id>681dc97e2f331110d8a4d5f62799b6ae</sys_id>
+        <sys_name>RollupStructureLoader</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_681dc97e2f331110d8a4d5f62799b6ae</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

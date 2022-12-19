@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6c19e3ad53e002001f175f43911c0847</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SchedulePriorityECCJob&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Schedule a script to run once, sometime in the future with a set priority for the async job.&amp;#13;
+Includes Schedule&lt;/description&gt;
+        &lt;name&gt;SchedulePriorityECCJob&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("Schedule");
+var SchedulePriorityECCJob = Class.create();
+SchedulePriorityECCJob.prototype = Object.extendsObject(Schedule,{
+	initialize: function(label, document, script) {
+		Schedule.prototype.initialize.call(this);
+		this.time = new GlideDateTime();
+		this.setDocument(document);
+		this.trigger_type = 0;
+		this.script = script;
+		this.label = label;
+		this.priority = document.priority;
+		this.runAsUser = GlideUser.getUserByID(document.sys_created_by).getID();
+	},
+
+	setTime: function(time) {
+		this.time = time;
+	},
+
+	schedule: function() {
+		var t = this._getTrigger();
+		
+		if (!gs.nil(this.document))
+			t.document = this.document;
+		
+		if (!gs.nil(this.script))
+			t.script = this.script;
+		
+		if (!gs.nil(this.label))
+			t.label = this.label;
+		
+		// get the priority from current
+		if (!gs.nil(this.priority)) {
+			if (this.priority == 0) //interactive
+				t.priority = gs.getProperty('glide.ecc.async.priority.interactive', 50);
+			if (this.priority == 1) //expedited
+				t.priority = gs.getProperty('glide.ecc.async.priority.expedited', 105);
+			if (this.priority == 2) //standard
+				t.priority = gs.getProperty('glide.ecc.async.priority.standard', 110);
+		}
+
+		t.job_context = 'fcRunAs=' + this.runAsUser;
+		t.trigger_type = this.trigger_type;
+		t.next_action = this.time;
+		gs.print("Scheduling: " + this.label + " for: " + t.next_action.getDisplayValue());
+		return t.insert();
+	},
+
+	type: 'SchedulePriorityECCJob'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;sky.lin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-09 22:56:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6c19e3ad53e002001f175f43911c0847&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SchedulePriorityECCJob&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6c19e3ad53e002001f175f43911c0847&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;oron.subayi&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-11-12 10:30:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1447&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:18</sys_created_on>
+        <sys_id>40cc013e2f331110d8a4d5f62799b6d7</sys_id>
+        <sys_name>SchedulePriorityECCJob</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_40cc013e2f331110d8a4d5f62799b6d7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

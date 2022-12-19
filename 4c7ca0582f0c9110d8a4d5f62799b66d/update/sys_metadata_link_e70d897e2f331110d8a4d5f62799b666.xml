@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>91274001eb110100bf22a5fc5206fe72</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PhoneNumberFormatter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;AJAX call to get the international or national format for phone numbers stored in E164 format. Used by Phone Number (E164) element. Accessible by snc_external users&lt;/description&gt;
+        &lt;name&gt;PhoneNumberFormatter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PhoneNumberFormatter = Class.create();
+PhoneNumberFormatter.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	process: function() {
+		var local = (this.getParameter('sysparm_local') == 'true');
+		var strict = (this.getParameter('sysparm_strict') == 'true');		
+		var showText = (this.getParameter('sysparm_showText') == 'true');		
+		var phoneNumber = this.getParameter('sysparm_phoneNumber'); 
+		var gePN = new GlideElementPhoneNumber();
+		var valid = gePN.setPhoneNumber(phoneNumber, strict);
+		var matchType = gePN.getPartialMatchType()+"";
+		var returnValue = null;
+		if (valid) {
+
+			if (local)
+				returnValue = gePN.getLocalDisplayValue();
+			else
+				returnValue = gePN.getGlobalDisplayValue();
+			
+			var country = gePN.getTerritory();
+			var optionValue = gePN.getGlobalDialingCode() + ","
+				+ gePN.getLocalDialingCode() + ","
+				+ gePN.isLocalFollowsGlobal();
+		
+			return escape(returnValue) + "," + escape(country) + "," + escape(optionValue);
+		}	
+		var country = gePN.getTerritory();
+		if (matchType == 'GLOBAL') // Failed to match global part of phone number
+			country = gs.getMessage("Other / Unknown");
+			
+		return "NO_MATCH" + "," + escape(country) + "," + escape(optionValue);
+	},
+
+	type: 'PhoneNumberFormatter'
+});
+
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-05-10 15:15:37&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;91274001eb110100bf22a5fc5206fe72&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;38&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PhoneNumberFormatter&lt;/sys_name&gt;
+        &lt;sys_package display_value="E164 Compliant Phone Number" source="com.glide.phone_number"&gt;e021890f6d2620100acb70b3534330bd&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_91274001eb110100bf22a5fc5206fe72&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-07-10 16:02:40&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1253&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:38</sys_created_on>
+        <sys_id>e70d897e2f331110d8a4d5f62799b666</sys_id>
+        <sys_name>PhoneNumberFormatter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e70d897e2f331110d8a4d5f62799b666</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

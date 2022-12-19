@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>907b019d9f502200d3921a1cf67fcf58</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.OpsStatusFilter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;List Operational Statuses associated with a specific CI type and action.&lt;/description&gt;
+        &lt;name&gt;OpsStatusFilter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var OpsStatusFilter = Class.create();
+OpsStatusFilter.prototype = {
+	initialize: function(ciType) {
+		this.ciType = ciType;
+	},
+	
+	by: function (actionName) {
+		var gr = new GlideRecord('statemgmt_not_allow_actions');
+		gr.addQuery('ci_type', this.ciType);
+		gr.addQuery('not_allowed_action.name', actionName);
+		gr.query();
+		var ops = [];
+		while (gr.next()) {
+			ops.push(gr.operational_state + '');
+		}
+		
+		return ops;
+	},
+	
+	type: 'OpsStatusFilter'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-06-27 22:50:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;907b019d9f502200d3921a1cf67fcf58&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;OpsStatusFilter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_907b019d9f502200d3921a1cf67fcf58&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-06-27 23:27:34&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;457&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:37</sys_created_on>
+        <sys_id>130d497e2f331110d8a4d5f62799b6c4</sys_id>
+        <sys_name>OpsStatusFilter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_130d497e2f331110d8a4d5f62799b6c4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>595cfcd50ab301570068b5007a26bd1c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.j2js&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;If the given value is a Java object that can be converted to an equivalent JavaScript object, that conversion is performed and the result is returned.  Otherwise the original Java object is returned.&lt;/description&gt;
+        &lt;name&gt;j2js&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/*
+ * If the given value is a Java object that can be converted to an equivalent JavaScript object, that conversion is performed and
+ * the result is returned.  Otherwise the original Java object is returned.
+ * 
+ * The specific conversions performed (in the order they are checked):
+ *   -- Java Strings     -&gt; JavaScript strings
+ *   -- Java Booleans    -&gt; JavaScript booleans
+ *   -- Java Integers    -&gt; JavaScript numbers
+ *   -- Java Longs       -&gt; JavaScript numbers
+ *   -- Java Doubles     -&gt; JavaScript numbers
+ *   -- Java Bytes       -&gt; JavaScript numbers
+ *   -- Java Floats      -&gt; JavaScript numbers
+ *   -- Java Shorts      -&gt; JavaScript numbers
+ *   -- Java Characters  -&gt; JavaScript numbers
+ *   -- Java arrays      -&gt; JavaScript Arrays with order preserved
+ *   -- Java Lists       -&gt; JavaScript Arrays with order preserved
+ *   -- Java Maps        -&gt; JavaScript Objects with the key/value pairs translated into property/value pairs
+ *   -- Java Sets        -&gt; JavaScript Arrays in arbitrary order
+ *   
+ * Note that the conversions are performed recursively on the elements of arrays, lists, or collections. For example, given a Java ArrayList of
+ * ArrayLists of Strings, this will return a JavaScript Array of Arrays of strings.
+ */
+j2js = function(val) {
+    if (!isJavaObject(val))
+        return val;
+		
+	val = GlideRhinoHelper.getNativeFromRhino(val);
+	
+	var klassName = '' + GlideJSUtil.getJavaClassName(val);
+    
+    // if it's one of our simple classes, take the funky and run...
+    var func = $__j2js_conversion_map[klassName];
+    if (func)
+        return func(val);
+       
+    // if it's an array, handle it...
+	if (GlideJSUtil.isJavaArray(val))
+		return handleArray(val);
+ 
+    // not a simple class or an array, so now let's see if it's a collection type we can deal with...
+	if (val instanceof Packages.java.util.List)
+		return handleList(val);
+
+	if (val instanceof Packages.java.util.Map)
+		return handleMap(val);
+
+	if (val instanceof Packages.java.util.Set)
+		return handleSet(val);
+
+    // it's not something we can morph, so return the original Java object...
+    return val;
+        
+	function handleArray(val) {
+        var result = [];
+        var len = Packages.java.lang.reflect.Array.getLength(val);
+        for (var i = 0; i &lt; len; i++)
+            result.push(j2js(Packages.java.lang.reflect.Array.get(val, i)));
+        return result;
+    }
+    
+	function handleList(val) {
+        var result = [];
+        for (var i = 0; i &lt; val.size(); i++)
+            result.push(j2js(val.get(i)));
+        return result;
+    }
+    
+	function handleMap(val) {
+        var result = {};
+        var it = val.keySet().iterator();
+        while (it.hasNext()) {
+            var key = it.next();
+            var jsKey = j2js(key);
+            var jsVal = j2js(val.get(key));
+            result[jsKey] = jsVal;
+        }
+        return result;
+    }
+    
+	function handleSet(val) {
+        var result = [];
+        var it = val.iterator();
+        while (it.hasNext())
+            result.push(j2js(it.next()));
+        return result;
+    }
+}
+
+$__j2js_conversion_map = {
+    'java.lang.Boolean': function(val) {
+        return val.booleanValue();
+    },
+    
+    'java.lang.String': function(val) {
+        return '' + val;
+    },
+    
+    'java.lang.Integer': function(val) {
+        return val.intValue();
+    },
+    
+    'java.lang.Long': function(val) {
+        return val.longValue();
+    },
+    
+    'java.lang.Double': function(val) {
+        return val.doubleValue();
+    },
+    
+    'java.lang.Byte': function(val) {
+        return val.byteValue();
+    },
+    
+    'java.lang.Float': function(val) {
+        return val.floatValue();
+    },
+    
+    'java.lang.Character': function(val) {
+        return val.charValue();
+    },
+    
+    'java.lang.Short': function(val) {
+        return val.shortValue();
+    }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-03-13 21:11:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;595cfcd50ab301570068b5007a26bd1c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;17&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;j2js&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_595cfcd50ab301570068b5007a26bd1c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;aleck.lin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-01-06 03:09:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3851&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:41</sys_created_on>
+        <sys_id>1f9c81fa2f331110d8a4d5f62799b6c4</sys_id>
+        <sys_name>j2js</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1f9c81fa2f331110d8a4d5f62799b6c4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

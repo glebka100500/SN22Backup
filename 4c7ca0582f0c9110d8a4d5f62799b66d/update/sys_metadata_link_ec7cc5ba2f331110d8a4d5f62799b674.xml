@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3b98a654eb2033000c2c0c505206fedc</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.QuickActionGroupSlushBucketUtility&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Fetch sys_user_group info for Quick Action Group slush bucket&lt;/description&gt;
+        &lt;name&gt;QuickActionGroupSlushBucketUtility&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var QuickActionGroupSlushBucketUtility = Class.create();
+QuickActionGroupSlushBucketUtility.prototype = {
+    initialize: function() {},
+
+    fetchGroups: function() {
+        var result = [];
+        var gr = new GlideRecord('sys_user_group');
+        gr.addActiveQuery();
+        gr.query();
+        while (gr.next()) {
+            result.push({
+                'id': gr.getValue('sys_id'),
+                'label': gr.getValue('name')
+            });
+        }
+        return result;
+    },
+    getUserGroup: function() {
+        var groups = this.fetchGroups();
+        groups.forEach(function(group) {
+            answer.add(group.id, group.label);
+        });
+    },
+
+    type: 'QuickActionGroupSlushBucketUtility'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-03-28 18:16:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3b98a654eb2033000c2c0c505206fedc&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;QuickActionGroupSlushBucketUtility&lt;/sys_name&gt;
+        &lt;sys_package display_value="Quick Actions" source="com.glide.quickactions"&gt;e3e6aa472f000110d8a4d5f62799b6d8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3b98a654eb2033000c2c0c505206fedc&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-08-09 10:43:23&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;723&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:58</sys_created_on>
+        <sys_id>ec7cc5ba2f331110d8a4d5f62799b674</sys_id>
+        <sys_name>QuickActionGroupSlushBucketUtility</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ec7cc5ba2f331110d8a4d5f62799b674</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

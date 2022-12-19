@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>93cab3d10b101300c438ee6537673a93</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NoSystemTableChoiceList&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Return a list of tables that are not deriving from sys_metadata&lt;/description&gt;
+        &lt;name&gt;NoSystemTableChoiceList&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NoSystemTableChoiceList = Class.create();
+NoSystemTableChoiceList.prototype = {
+    initialize: function() {
+    },
+	
+	process: function() {
+      var tl = new GlideTableChoiceList();
+	  tl.setSelectedOnly(false);
+	  tl.setSelectedField(null);
+	  tl.setSelected(null);
+	  tl.setForceSelected(false);
+	  tl.setNoViews(true);
+	  tl.setNoSystemTables(true);
+	  tl.setCurrentTableName(null);
+	  tl.setNoIndexTables(true);
+
+	  return tl;
+    },
+
+
+    type: 'NoSystemTableChoiceList'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-02-15 00:15:30&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;93cab3d10b101300c438ee6537673a93&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;18&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NoSystemTableChoiceList&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agent Workspace - Main Configuration" source="com.snc.agent_workspace.config"&gt;6b5305c36da620100acb70b3534330d3&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_93cab3d10b101300c438ee6537673a93&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-06-20 20:47:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;484&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:43</sys_created_on>
+        <sys_id>cd1d0d7e2f331110d8a4d5f62799b648</sys_id>
+        <sys_name>NoSystemTableChoiceList</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_cd1d0d7e2f331110d8a4d5f62799b648</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

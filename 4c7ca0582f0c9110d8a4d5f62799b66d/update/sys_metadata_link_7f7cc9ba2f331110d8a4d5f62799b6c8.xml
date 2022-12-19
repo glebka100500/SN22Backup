@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>456257a59fa22200598a5bb0657fcf15</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InterProjectEventProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Event processor - raises notification and accepts notification if needed&lt;/description&gt;
+        &lt;name&gt;InterProjectEventProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InterProjectEventProcessor = Class.create();
+InterProjectEventProcessor.prototype = {
+    initialize: function() {
+    },
+
+    process: function(topTaskId, dirtyTasks) {
+        PPMDebug.log("Into InterProjectEventProcessor.process -&gt; " + topTaskId);
+        if( JSUtil.notNil(topTaskId) &amp;&amp; JSUtil.notNil(dirtyTasks) ) {
+            var notificationHandler = new PlannedTaskNotificationHandler();
+            var processor = new ShadowTaskProcessor();
+            var tasks = (new JSON()).decode(dirtyTasks);
+            for (var i = 0; i &lt; tasks.length; i++) {
+                var task = tasks[i];
+                var relationApplied = task.relation_applied;
+                if(JSUtil.notNil(relationApplied)) {
+                    var relationRecord = ShadowTaskQueryHelper.relationRecord(relationApplied);
+                    // Check if this relation record is affecting the task start date
+                    if(processor.shouldProcess(task)) {
+                        var event = notificationHandler.raiseNotification(task.sys_id, task.orig_sys_id, task.relation_applied, task.previous_start_date);
+                        PPMDebug.log("Into InterProjectEventProcessor.process: relationApplied -&gt; " + relationApplied);
+                        var relation = ShadowTaskQueryHelper.relationRecord(relationApplied);
+                        if ( relation.isValidRecord() &amp;&amp; ShadowTaskQueryHelper.shouldProcessRelationImmediately(relation.sys_id) ) {
+                            PPMDebug.log("Into InterProjectEventProcessor.process -&gt; acceptNotification" );
+                            var notifRecord = event.record;
+                            // re-query the notification - as dot walk records are missing
+                            var notifRecordSysId = notifRecord.getValue("sys_id");
+                            var notificationGr = new GlideRecord("planned_task_notification");
+                            if(notificationGr.get(notifRecordSysId)) {
+                                notificationHandler.acceptNotification(notificationGr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    processForFullRecalculate: function (topTaskId) {
+        PPMDebug.log("Into InterProjectEventProcessor.processForFullRecalculate -&gt; " + topTaskId);
+        if(JSUtil.notNil(topTaskId)) {
+            var api = new SNC.PlannedTaskAPI();
+            api.fullRecalculate(topTaskId);
+        }
+    },
+
+    type: 'InterProjectEventProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-18 23:39:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;456257a59fa22200598a5bb0657fcf15&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;28&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InterProjectEventProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_456257a59fa22200598a5bb0657fcf15&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2524&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:11</sys_created_on>
+        <sys_id>7f7cc9ba2f331110d8a4d5f62799b6c8</sys_id>
+        <sys_name>InterProjectEventProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7f7cc9ba2f331110d8a4d5f62799b6c8</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

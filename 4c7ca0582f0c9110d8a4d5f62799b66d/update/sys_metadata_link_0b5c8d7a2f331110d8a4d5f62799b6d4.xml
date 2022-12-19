@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2bc4fcbc53d601105400ddeeff7b125d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionAISearchConstants&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Constants for AI Search for Auto-Resolution&lt;/description&gt;
+        &lt;name&gt;AutoResolutionAISearchConstants&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionAISearchConstants = Class.create();
+
+AutoResolutionAISearchConstants.AR_AI_SEARCH_FEEDBACK_ENABLED_PROP_NAME = 'com.glide.cs.ar.ai_search.feedback.enabled';
+AutoResolutionAISearchConstants.SYS_LOCALE_PROP_NAME = 'glide.system.locale';
+AutoResolutionAISearchConstants.DEFAULT_LOCALE_COUNTRY = "US";
+AutoResolutionAISearchConstants.DEFAULT_LOCALE_LANGUAGE = "en";]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-15 04:33:26&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2bc4fcbc53d601105400ddeeff7b125d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionAISearchConstants&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_2bc4fcbc53d601105400ddeeff7b125d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-24 01:31:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;379&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:35</sys_created_on>
+        <sys_id>0b5c8d7a2f331110d8a4d5f62799b6d4</sys_id>
+        <sys_name>AutoResolutionAISearchConstants</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0b5c8d7a2f331110d8a4d5f62799b6d4</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

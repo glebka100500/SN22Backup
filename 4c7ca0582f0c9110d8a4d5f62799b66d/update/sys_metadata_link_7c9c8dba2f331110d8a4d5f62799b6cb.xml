@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>52a2e9510f230010f4166fe7c4767e1f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.FlowDesignerContentFiltering&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Evaluate Flow Designer resource filter rules against a record in a Flow Designer content table&lt;/description&gt;
+        &lt;name&gt;FlowDesignerContentFiltering&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var FlowDesignerContentFiltering = Class.create();
+FlowDesignerContentFiltering.prototype = {
+    initialize: function() {},
+	
+	canCreate: function(contentGr) {
+		return this._isAllowedByContentFiltering(contentGr);
+	},
+	
+	canRead: function(contentGr) {
+		return this._isAllowedByContentFiltering(contentGr);
+	},
+	
+	_isAllowedByContentFiltering: function(contentGr){
+		if (gs.getProperty('com.glide.hub.flow.disable_content_filtering', 'false') == 'true')
+			return true;
+
+
+		if (contentGr.sys_created_by == gs.getUserName())
+			return true;
+		
+		var tableHierarchy = this._getTableHierarchyFor(contentGr);
+		if (this._isBlacklisted(contentGr, tableHierarchy, true))
+			return false;
+		
+		if (this._isWhiteListed(contentGr, tableHierarchy))
+			return true;
+		
+		return false;
+	},
+	
+	_isBlacklisted: function(contentGr, tableHierarchy) {
+		if (this._evaluateFilterRules(contentGr, tableHierarchy, true))
+			return true;
+		
+		return false;
+	},
+	
+	_isWhiteListed: function(contentGr, tableHierarchy) {
+		if (this._evaluateFilterRules(contentGr, tableHierarchy, false))
+			return true;
+		
+		return false;
+	},
+	
+	_evaluateFilterRules: function(contentGr, tableHierarchy, isBlackList) {		
+		var gr = new GlideRecord('sys_hub_resource_filter_rule');
+		gr.addQuery('resource.table', 'IN', tableHierarchy);
+		var qc = gr.addQuery('sys_scope', 'global');
+		qc.addOrCondition('sys_scope', contentGr.sys_scope);
+		
+		if (isBlackList)
+			gr.addQuery('filter_type','blacklist');
+		else
+			gr.addQuery('filter_type', '!=', 'blacklist').addOrCondition('filter_type', '');
+		
+		gr.addActiveQuery();
+		gr.query();
+		while(gr.next()) {
+			if (!gr.resource)
+				continue;
+
+			if (!this._evaluateUserRoles(gr))
+				continue;
+			
+			var conditionEmpty = GlideStringUtil.nil(gr.resource.conditions);
+			var conditionTrue = GlideFilter.checkRecord(contentGr, gr.resource.conditions);
+			var tagsSatisfied = this._hasRequiredLabelEntries(gr, contentGr, tableHierarchy);
+			if ((conditionEmpty || conditionTrue) &amp;&amp; tagsSatisfied) {
+				return true;
+			}
+		}
+		
+		return false;
+	},
+	
+	_evaluateUserRoles: function(ruleGr) {
+		if (GlideStringUtil.nil(ruleGr.role))
+			return false;
+		
+		return gs.getSession().hasRole(ruleGr.role);
+	},
+	
+	_getTableHierarchyFor: function(contentGr) {
+		// We could expand to sibling extended tables by using
+		// tableUtils.getAbsoluteBase() before calling getHierarchy()
+		
+		var tableUtils = new TableUtils(contentGr.getTableName());
+		var tableHierarchy = tableUtils.getHierarchy();
+		return GlideStringUtil.join(tableHierarchy);
+	},
+	
+	_getTagsFor: function(contentGr, tableHierarchy) {
+		var tagMap = {};
+		var labelEntries = new GlideRecord('label_entry');
+		labelEntries.addQuery('table', 'IN', tableHierarchy);
+		labelEntries.addQuery('table_key', contentGr.getUniqueValue());
+		labelEntries.query();
+		while(labelEntries.next())
+			tagMap[labelEntries.label] = true;
+		
+		return tagMap;
+	},
+	
+	_hasRequiredLabelEntries: function(ruleGr, contentGr, tableHierarchy) {
+		if (!ruleGr.resource || !ruleGr.resource.resource_tags)
+			return true;
+		
+		this.tagMap = this.tagMap || this._getTagsFor(contentGr, tableHierarchy); //Memoize tag map
+		var resourceTags = ruleGr.resource.resource_tags.split(',');
+		for (var i = 0; i &lt; resourceTags.length; i++) {
+			if (!this.tagMap[resourceTags[i]])
+				return false;
+		}
+		
+		return true;
+	},
+	
+    type: 'FlowDesignerContentFiltering'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-03-13 15:13:25&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;52a2e9510f230010f4166fe7c4767e1f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;58&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;FlowDesignerContentFiltering&lt;/sys_name&gt;
+        &lt;sys_package display_value="Flow Designer Content Filtering" source="com.glide.hub.content_filtering"&gt;3a14cd4b6da620100acb70b35343308d&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_52a2e9510f230010f4166fe7c4767e1f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-11-04 19:03:43&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3391&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:31</sys_created_on>
+        <sys_id>7c9c8dba2f331110d8a4d5f62799b6cb</sys_id>
+        <sys_name>FlowDesignerContentFiltering</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7c9c8dba2f331110d8a4d5f62799b6cb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>871fb6060a0a0bb000fc0c937940583d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Differ&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Generates a diff in the form of HTML from two strings&lt;/description&gt;
+        &lt;name&gt;Differ&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var Differ = Class.create();
+
+Differ.prototype = {
+
+    /*****************************************
+     * Given two text strings return a table representing the diff of those two strings
+     * name is the field name that represents those strings.
+     * (optional) change is whether or not to return a result if text strings are equal
+     *****************************************/
+    diff: function(text1, text2, name, change){
+        if (change == null) 
+            change = false;
+        text1 = this._replaceSpaces(text1);
+        text2 = this._replaceSpaces(text2);
+        var difflib = new DiffLib();
+        var base = difflib.stringAsLines(text1);
+        var newText = difflib.stringAsLines(text2);
+        var sm = new difflib.SequenceMatcher(base, newText);
+        var opcodes = sm.get_opcodes();
+        if (!change &amp;&amp; (opcodes.length == 0 || (opcodes.length &lt;= 1 &amp;&amp; opcodes[0][0] == "equal"))) 
+            return "";
+        
+        var diffview = new DiffView();
+        var view = diffview.buildView({
+            baseTextLines: base,
+            newTextLines: newText,
+            opcodes: opcodes,
+            baseTextName: "Base System",
+            newTextName: "Customized",
+            contextSize: null,
+            viewType: 0,
+            element: name
+        });
+        return GlideXMLUtil.toString(view);
+    },
+    
+    getOpcodes: function(text1, text2){
+        var text1 = this._replaceSpaces(text1);
+        var text2 = this._replaceSpaces(text2);
+        var difflib = new DiffLib();
+        var base = difflib.stringAsLines(text2);
+        var newText = difflib.stringAsLines(text1);
+        var sm = new difflib.SequenceMatcher(base, newText);
+        return sm.get_opcodes() + "";
+        
+    },
+    
+    _getRoot: function(xmlstring){
+        var xml = GlideXMLUtil.parse(xmlstring);
+        var root = xml.getFirstChild();
+        if (root.getTagName() == "record_update") 
+            root = root.getFirstChild();
+        
+        return root;
+    },
+    
+    /*
+     *  When Diffing an XML String add a line that describes the action.
+     */
+    _getActionCompare: function(element1, element2) {
+         if (JSUtil.nil(element1.getAttribute("action") + "")){
+            element1 = element1.getFirstChild();
+            element2 = element2.getFirstChild();
+         }   
+         var action1 = element1.getAttribute("action");
+         var action2 = element2.getAttribute("action");
+         if (!JSUtil.nil(action1) &amp;&amp; !JSUtil.nil(action2)) 
+           return this.diff(action1 + "",action2 + "", "action", false) + "";
+        
+         return "";
+    },
+    _noInfo: function(){
+        return null;
+    },
+    
+    /******************************************
+     *  html removes spaces so this function replaces the spaces at the begining
+     *  of each line with special space.  Can't replace all spaces because this will mess up wrapping.
+     ******************************************/
+    _replaceSpaces: function(text){
+        var lines = text.split("\n");
+        text = "";
+        for (var i = 0; i &lt; lines.length; i++) {
+            var spaces = "";
+            var characters = "";
+            for (var j = 0; j &lt; lines[i].length; j++) {
+                if (lines[i][j] == " ") {
+				   //uses special space character no visible in browser
+                    spaces += " ";
+                }
+                else {
+                    characters = lines[i].substring(j, lines[i].length);
+                    break;
+                }
+            }
+            text += spaces + characters + "\n";
+        }
+        
+        return text.substring(0, text.length - 1);
+    }
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;juell.solaegui&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2010-03-22 21:26:10&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;871fb6060a0a0bb000fc0c937940583d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;75&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Differ&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Diagnostics" source="com.glide.ui.diagnostics"&gt;13f0c1cb6d2620100acb70b353433029&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_871fb6060a0a0bb000fc0c937940583d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-06-27 21:47:21&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3647&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:11</sys_created_on>
+        <sys_id>49fcc17e2f331110d8a4d5f62799b6bb</sys_id>
+        <sys_name>Differ</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_49fcc17e2f331110d8a4d5f62799b6bb</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

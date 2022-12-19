@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8ba5f9d753032200b10bda86a11c08c7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.GeneralFormAPI&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;GeneralFormAPI : API to generate a PDF document from an HTML template&lt;/description&gt;
+        &lt;name&gt;GeneralFormAPI&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/* 
+ *	GeneralFormAPI : API to generate a PDF document from an HTML template
+ */
+
+var GeneralFormAPI = Class.create();
+
+GeneralFormAPI.prototype = {
+	/**
+	 * After initialization, call setDocument and createPDF methods
+	 * the generated PDF will be attached to the target record
+	 */
+	initialize : function(fileName, targetTable, targetId) {
+		this.fileName = fileName;
+		this.document = null;
+		
+		this.targetTable = targetTable;
+		this.targetId = targetId;
+	},
+	
+	setDocument : function(headerImage, footerImage, footnote, headerPosition, footerPosition, pageSize) {
+			// This allows us to control the properties for the Document,
+			// size, margins, portrait-landscape, etc.
+			var pdfDoc = new GeneralPDF.Document(null, null, null, null, pageSize, headerImage);
+			
+			// This contains many options for creating PDFs in different ways.
+			// Here we pass in just a Document object with the properties we
+			// want
+			this.document = new GeneralPDF(pdfDoc);
+			this.document.setDocTempleInfo(headerImage, footerImage, footnote, headerPosition, footerPosition, pageSize);
+		
+			// Creates a new document open for writing then we will parse HTML
+			// and add it to the document. This allows us to control things such
+			// as
+			// page break based on a certain GeneralFormAPIElement type as one
+			// example.
+			// It also helps improve PDF creation performance because small
+			// blocks
+			// of HTML tables are added for each element in the form versus
+			// creating
+			// a single huge table and adding that to the document one time.
+			this.document.startHTMLParser();
+	},
+
+		
+	createPDF : function(body, pages) {
+
+		body = this._parseBodyForAttachmentSysId(body);
+		body = this._parseBodyForImagesFromLib(body);
+
+		if(!gs.nil(body))
+			this.document.addHTML(body);
+		if(!gs.nil(pages)){
+			for(var i in pages){
+				if(i != 0)
+					this.document.addNewPage();
+				if(!gs.nil(pages[i].heading))
+					this.document.addHTML(pages[i].heading);
+				if(!gs.nil(pages[i].svg) &amp;&amp; !gs.nil(pages[i].svg.content))
+					this.document.addSVG(pages[i].svg.content, pages[i].svg.position);
+				if(!gs.nil(pages[i].table))
+					this.document.addCells(pages[i].table.cells, pages[i].table.row_length);
+			}
+		}
+
+		// At this point iteration through GeneralFormAPITable(s) has finished
+		// and all HTML has been parsed now we just close the document and
+		// stop the writer
+		this.document.stopHTMLParser();
+
+		// Now the finished PDF file is ready to be used
+		var pdfFile = this.document.get();
+
+		// Create attachment with commands that can run inside logic
+		var a = new GeneralPDF.Attachment();
+		a.setTableName(this.targetTable);
+		a.setTableId(this.targetId);
+		a.setType('application/pdf');
+		
+		// HTML templates don't append the pdf extension, check and append if necessary
+		if (this.fileName.search('.pdf') == -1)
+			a.setName(this.fileName + '.pdf');
+		else
+			a.setName(this.fileName);
+		
+		a.setBody(pdfFile);
+
+		// This will commit the new file to the database
+		GeneralPDF.attach(a);
+	},
+	
+	_parseBodyForAttachmentSysId : function(body) {
+		
+		//get all matched src that starts with sys_attachment.do
+		var srcList = body.match(/src="[//]*sys_attachment.do((?:\\.|[^"\\])*)"/g);
+		
+		for (var i in srcList) {
+			
+			var attachmentSysId;
+			//get only those src that contains sys_attachment url
+			var matchedAttachment = srcList[i].match(/sys_attachment.do\?sys_id=(\w{32})/);
+			if(!matchedAttachment) {
+				matchedAttachment = srcList[i].match(/sys_attachment.do\?sys_id&amp;#61;(\w{32})/);
+				if(matchedAttachment)
+					attachmentSysId = matchedAttachment.pop();
+			} else 
+				attachmentSysId = matchedAttachment.pop();
+			
+			//if sysattachment id cannot be retrieved then continue
+			if(!attachmentSysId)
+				continue;
+			
+			var imageAttachment = new GlideRecord('sys_attachment');
+			if (!imageAttachment.get(attachmentSysId))
+				continue;
+			
+			var base64ImageStr = this._getBase64ImageFromSysAttachment(imageAttachment);
+			if (base64ImageStr)
+				body = body.replace(srcList[i], "src=\"" + base64ImageStr + "\"");
+		}
+		return body;
+	},
+	
+	_parseBodyForImagesFromLib : function(body) {
+		var imageSrcList = body.match(/src="[^data:image\/png;base64]((?:\\.|[^"\\])*)"/g);
+		var instance = gs.getProperty('glide.servlet.uri');
+		for (var i in imageSrcList) {
+			var imageContainingHttp = imageSrcList[i].match(/"http((?:\\.|[^"\\])*)(\w{32})\.iix"/);
+			if (imageContainingHttp) {
+				var attachmentId = imageContainingHttp.pop();
+				if(!attachmentId)
+					continue;
+				var imageAttachment = new GlideRecord('sys_attachment');
+				if (!imageAttachment.get(attachmentId))
+					continue;
+				var base64ImageStr = this._getBase64ImageFromSysAttachment(imageAttachment);
+				if(base64ImageStr)
+					body = body.replace(imageSrcList[i], "src=\"" + base64ImageStr + "\"");
+			} else {
+				var imageName = imageSrcList[i].match(/"((?:\\.|[^"\\])*)"/);
+				if (imageName) {
+					var escapedImageName = imageName.pop();
+					if (escapedImageName &amp;&amp; instance) {
+						var imageUrl = instance + escapedImageName ; 
+						body = body.replace(imageSrcList[i], "src=\"" + imageUrl + "\"");
+					}
+				}
+			}
+		}
+		return body;
+	},
+	
+	_getBase64ImageFromSysAttachment : function(attachmentGR) {
+		if(!gs.nil(attachmentGR)) {
+			var base64ImageStr = GlideStringUtil.base64Encode(new GlideSysAttachment().getBytes(attachmentGR));
+			return "data:image/png;base64," + base64ImageStr + "";
+		}
+		return "";
+	},
+
+    getBase64SignatureImage : function(signatureImageSysId) {
+            if(!gs.nil(signatureImageSysId)) {
+                    var base64ImageStr = GlideStringUtil.base64Encode(new GeneralFormJava.Image().getBase64SignatureImage(signatureImageSysId,333,133));
+                    return base64ImageStr;
+            }
+            return "";
+    },	
+	
+	type : 'GeneralFormAPI'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-11-17 23:54:16&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8ba5f9d753032200b10bda86a11c08c7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;76&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;GeneralFormAPI&lt;/sys_name&gt;
+        &lt;sys_package display_value="PDF Generator" source="com.snc.pdf_generator"&gt;c364414f6da620100acb70b353433099&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8ba5f9d753032200b10bda86a11c08c7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-02-09 18:11:13&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5798&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:23</sys_created_on>
+        <sys_id>880d857e2f331110d8a4d5f62799b6d1</sys_id>
+        <sys_name>GeneralFormAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_880d857e2f331110d8a4d5f62799b6d1</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

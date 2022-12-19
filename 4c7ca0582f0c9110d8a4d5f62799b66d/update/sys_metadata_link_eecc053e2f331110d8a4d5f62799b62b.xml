@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>727ebd265b80230036c32c1cf0f91aff</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RankConfigurationUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;RankConfigurationUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var RankConfigurationUtil = Class.create();
+RankConfigurationUtil.prototype = {
+    initialize: function(gr) {
+		this.gr = gr;
+    },
+	
+	areTableAndColumnNamesValid: function() {
+		//check duplicate record
+		var rankGr = new GlideRecord('rank_configuration');
+		rankGr.addQuery('table', this.gr.getValue('table'));
+		rankGr.addQuery('column', this.gr.getValue('column'));
+		rankGr.addQuery('sys_id', '!=', this.gr.getValue('sys_id'));
+		rankGr.query();
+		if(rankGr.next()) {
+			gs.addErrorMessage(gs.getMessage("Duplicate entry for the {0} table and {1} column.", [this.gr.getValue('table'), this.gr.getValue('column')]));
+			return false;
+		}
+		
+		//check parent tables
+		var parentList = GlideDBObjectManager.get().getTables(this.gr.table);
+		var tableArr = [];
+		for(var i = 0; i &lt; parentList.size(); i++) {
+			var table = String(parentList.get(i));
+			if(table != this.gr.getValue('table'))
+				tableArr.push(String(parentList.get(i)));
+		}
+		var parentGr = new GlideRecord('rank_configuration');
+		parentGr.addQuery('column', this.gr.getValue('column'));
+		parentGr.addQuery('table', 'IN', tableArr.join(','));
+		parentGr.addQuery('include_tables', 'CONTAINS', this.gr.getValue('table'));
+		parentGr.setLimit(1);
+		parentGr.query();
+		if(parentGr.next()) {
+			gs.addErrorMessage(gs.getMessage("The {0} table and {1} column are already configured by the parent record: {2} table and {3} column.", [this.gr.getValue('table'), this.gr.getValue('column'), parentGr.getValue('table'), parentGr.getValue('column')]));
+			return false;
+		}
+		
+		return true;
+	},
+	
+	isIncludeTablesValid: function(previousTableName) {
+		this._trimIncludeTables();
+		
+		if(!this._validateIncludeTableList()) {
+			gs.addErrorMessage(gs.getMessage('The include tables list must only contains the child table of {0} table', [this.gr.getValue('table')]));
+			return false;
+		}
+	
+		var childRankConfig = this._findChildConfigRecord();
+		if(JSUtil.notNil(childRankConfig)) { 
+			gs.addErrorMessage(gs.getMessage("From the include tables list, remove the {0} table as it is already configured", [childRankConfig.getValue('table')]));
+			return false;
+		}
+		
+		var otherRankConfig = this._findOtherRankConfigs(previousTableName);
+		if(JSUtil.notNil(otherRankConfig)) {
+			gs.addErrorMessage(gs.getMessage("Remove these child tables from the include tables list. They are already included in the configuration of the {0} table.", [otherRankConfig.getValue('table')]));
+			return false;
+		}
+		
+		return true;
+	},
+	
+	_findOtherRankConfigs: function(previousTableName) {
+		var includeTables = this.gr.getValue('include_tables').split(',');
+		var rankGr =  new GlideRecord('rank_configuration');
+		rankGr.addQuery('table', '!=', previousTableName);
+		rankGr.addQuery('column', this.gr.getValue('column'));
+		var qc = rankGr.addQuery('include_tables', 'CONTAINS', includeTables[0]);
+		
+		for(var i = 1; i &lt; includeTables.length; i++) {
+			qc.addOrCondition('include_tables', 'CONTAINS', includeTables[i]);
+		}
+		rankGr.query();
+		if(rankGr.next()) 
+			return rankGr;
+		
+		return null;
+	},
+	
+	_findChildConfigRecord: function() {
+		var childGr = new GlideRecord('rank_configuration');
+		childGr.addQuery('column', this.gr.getValue('column'));
+		childGr.addQuery('table', 'IN', this.gr.getValue('include_tables'));
+		childGr.setLimit(1);
+		childGr.query();
+		if(childGr.next()) 
+			return childGr;
+		
+		return null;
+	},
+		
+	_validateIncludeTableList: function() {
+		var childList = GlideDBObjectManager.get().getTableExtensions(this.gr.getValue('table'));
+		var childTables = [];
+		var includeTables = this.gr.getValue('include_tables').split(',');
+		for(var i = 0; i &lt; childList.size(); i++) {
+			var table = String(childList.get(i));
+			childTables.push(table);
+		}
+		for(i = 0; i &lt; includeTables.length; i++) {
+			if(childTables.indexOf(includeTables[i]) &lt; 0)  
+				return false;
+		}
+		return true;
+	},
+	
+	validateRankConfig: function(sysClassName, rankTable, rankColumn) {
+		var rankGr = new GlideRecord('rank_configuration');
+		rankGr.addQuery('table', rankTable);
+		rankGr.addQuery('column', rankColumn);
+		if(sysClassName != rankTable){
+			rankGr.addQuery('include_tables', 'CONTAINS', sysClassName).addOrCondition('include_all_child_tables', true);
+			
+		}
+		rankGr.query();
+		if(rankGr.next())
+			return true;
+		
+		return false;
+	},
+	
+	_trimIncludeTables: function() {
+		var includeTables = this.gr.getValue('include_tables').split(',');
+		var arr = [];
+		for(var i = 0; i &lt; includeTables.length; i++) {
+			var table = includeTables[i].trim();
+			if(JSUtil.notNil(table))
+				arr.push(table);
+		}
+		this.gr.setValue('include_tables', arr.join(','));
+	},
+
+    type: 'RankConfigurationUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-23 23:14:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;727ebd265b80230036c32c1cf0f91aff&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;134&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RankConfigurationUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global Ranking Application" source="com.snc.sdlc.ranking"&gt;a4451b642fc10110d8a4d5f62799b679&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_727ebd265b80230036c32c1cf0f91aff&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-04-21 10:24:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4663&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:28</sys_created_on>
+        <sys_id>eecc053e2f331110d8a4d5f62799b62b</sys_id>
+        <sys_name>RankConfigurationUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_eecc053e2f331110d8a4d5f62799b62b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

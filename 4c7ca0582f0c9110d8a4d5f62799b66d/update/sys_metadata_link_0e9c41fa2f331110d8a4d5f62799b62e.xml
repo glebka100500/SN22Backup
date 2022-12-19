@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>56b81355c31211003d2ae219cdba8fcf</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.sc_ic_ApprovalDefnStaging&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper for that approval definition staging table&lt;/description&gt;
+        &lt;name&gt;sc_ic_ApprovalDefnStaging&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var sc_ic_ApprovalDefnStaging = Class.create();
+sc_ic_ApprovalDefnStaging.prototype = Object.extendsObject(sc_ic_Base,{
+    initialize: function(_gr,_gs) {
+		sc_ic_Base.prototype.initialize.call(this,_gr,_gs);
+    },
+
+	/**
+	 * Sets the detail field to the display value of the type config field
+	 */
+	setDetail: function() {
+		
+		var type = this._gr[sc_ic.TYPE]+"";
+		
+		if (type == sc_ic.USER || type == sc_ic.GROUP) {
+			this._gr[sc_ic.DETAIL] = this._gr[type].getDisplayValue();
+			return this;
+		}
+		
+		// If we've got here it must be a predefined approval
+		this._gr[sc_ic.DETAIL] = this._gr[sc_ic.APRVL_TYPE_DEFN_STAGING].getDisplayValue();
+		
+		return this;
+	},
+	
+	activate: function() {
+		this._gr.active = true;
+		this._gr.update();
+	},
+	
+	deactivate: function() {
+		this._gr.active = false;
+		this._gr.update();
+	},
+		
+	setAprvlDefnChangedOnItem: function() {
+		var itemStagingGr = new GlideRecord(sc_ic.ITEM_STAGING);
+		if (itemStagingGr.get(this._gr[sc_ic.ITEM_STAGING])) {
+			this._log.debug("[setAprvlDefnChangedOnItem] Changed Item " + this._gr[sc_ic.ITEM_STAGING]);
+			sc_ic_Factory.wrap(itemStagingGr).approvalDefinitionChanged();
+		}
+	},
+	
+    type: 'sc_ic_ApprovalDefnStaging'
+});
+
+sc_ic_ApprovalDefnStaging.getNextOrderNumber = function(itemSysId) {
+	if (JSUtil.nil(itemSysId))
+		return 100;
+	
+	var approvalDefnGr = new GlideAggregate(sc_ic.APRVL_DEFN_STAGING);
+	approvalDefnGr.addAggregate("MAX", "order");
+	approvalDefnGr.addQuery(sc_ic.ITEM_STAGING, itemSysId);
+	approvalDefnGr.groupBy(sc_ic.ITEM_STAGING);
+	approvalDefnGr.query();
+	
+	if (approvalDefnGr.next()) {
+		return "" + (100 + parseInt(approvalDefnGr.getAggregate("MAX", "order"), 10));
+	}
+	
+	return 100;
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2014-01-15 14:16:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;56b81355c31211003d2ae219cdba8fcf&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;33&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;sc_ic_ApprovalDefnStaging&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_56b81355c31211003d2ae219cdba8fcf&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;chris.henson&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2014-02-09 13:16:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1688&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:37</sys_created_on>
+        <sys_id>0e9c41fa2f331110d8a4d5f62799b62e</sys_id>
+        <sys_name>sc_ic_ApprovalDefnStaging</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0e9c41fa2f331110d8a4d5f62799b62e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

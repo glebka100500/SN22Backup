@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8b94df3dc370120095ccd02422d3ae62</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SHNProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;A collection of APIs for special handling notes.
+		&lt;/description&gt;
+        &lt;name&gt;SHNProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var SHNProcessor = Class.create();
+
+SHNProcessor.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	
+	hasNotes : function (table, id){
+        if(!gs.nil(table) &amp;&amp; !gs.nil(id)) {
+            if(this.checkConfigExists(table)){
+                var currentRecord = new GlideRecord(table);
+                currentRecord.get(id);
+                var related_ids = this.getRelatedRecords(table, id, currentRecord, false);
+
+                if(this.hasStandardRelatedNotes(related_ids)){
+                    return true;
+                }
+
+                if(this.hasConditionalNotes(id, table)){
+                    return true;
+                }
+
+                if(this.hasRelatedConditionalNotes(id, table, currentRecord)){
+                    return true;
+                }
+
+            }
+        }
+    return false;
+    },
+
+    // check standard notes, if found one, return a boolean directly
+    hasStandardRelatedNotes: function(related_ids){
+        if(!gs.nil(related_ids)){
+            var noteRecord = new GlideRecord("sn_shn_notes");
+			noteRecord.addEncodedQuery("status=1^type=1");
+			noteRecord.addQuery('related_record', related_ids);
+			noteRecord.setLimit(1);
+			noteRecord.query();
+            if(noteRecord.hasNext()){
+                return true;
+            }
+        }
+        return false;
+    },
+
+    // check conditional notes, once found one, break the loop, and return a boolean
+    hasConditionalNotes: function(id, table){
+		if(!gs.nil(table) &amp;&amp; !gs.nil(id)){
+			var tableRec = new GlideRecord(table);
+			tableRec.get(id);
+			var noteRecord = new GlideRecord("sn_shn_notes");
+			noteRecord.addEncodedQuery("status=1^type=2^table_name=" + table);
+			noteRecord.query();
+			while(noteRecord.next()){
+				var f = new GlideFilter(noteRecord.getValue("conditions"), "shn_filter_check");
+				f.setCaseSensitive(false);
+				if (f.match(tableRec, true)){
+					return true;
+				}
+			}
+		}
+        return false;
+    },
+
+	// conditional notes from related fields
+	hasRelatedConditionalNotes: function(id, table, currentRecord){
+		var gr = new GlideRecord("sn_shn_configuration");
+        gr.addQuery("table_name", table);
+        gr.query();
+        if (gr.next()){
+            var field_names = gr.getValue("related_fields");
+			if(!gs.nil(field_names)){
+				field_names = field_names.split(",");
+				// loop through all related fields
+				for (var i = 0; i &lt; field_names.length; i++){
+					var related_field = field_names[i];
+					//   get the list : [related field table, parent, grandparent...]
+					var tableHierarchy = this.getHierarchyTableStruct(currentRecord, related_field);
+					// loop through all related field records and their ancestors
+					for (var j = 0; j &lt; tableHierarchy.length; j++){	
+						if(this.hasConditionalNotes(currentRecord.getValue(related_field), tableHierarchy[j])){
+							return true;
+						}
+					}
+				}
+            }
+		}
+		return false;
+	},
+
+	// get all the notes both standard and conditional notes
+	getNotes : function (table, id) {
+		//check for entry in configuration table
+		if(!gs.nil(table) &amp;&amp; !gs.nil(id)) {
+			if(this.checkConfigExists(table)){
+				var currentRecord = new GlideRecord(table);
+				currentRecord.get(id);
+				var related_ids = this.getRelatedRecords(table,id, currentRecord, false);
+				var stdNotes = [];
+				var conditionalNotes = [];
+				stdNotes = this.getStandardNotes(related_ids);
+				conditionalNotes = this.getConditionalNotes(table,id);
+				var refConditionalNotes = this.getRelatedConditionalNotes(table, id, false, currentRecord, false);
+				conditionalNotes = conditionalNotes.concat(refConditionalNotes);
+				conditionalNotes = conditionalNotes.concat(stdNotes);
+				return (conditionalNotes);
+			}
+		}
+		return [];
+	},
+
+	_getReferenceTable : function (gr, fieldName) {
+		if(gr.getElement(fieldName) &amp;&amp; gr.getElement(fieldName).getED().getInternalType() == "reference")
+			return gr.getElement(fieldName).getReferenceTable();
+		return false;
+	},
+
+	getRelatedConditionalNotes : function (tablename, id, popup, rec, shouldAddDomainQuery){
+		var conditionalNotes = [];
+		if(!gs.nil(tablename) &amp;&amp; !gs.nil(id)) {
+			var related_rec_ids = [];
+			var related_rec = [];
+			var gr = new GlideRecord("sn_shn_configuration");
+			gr.addQuery("table_name",tablename);
+			if(shouldAddDomainQuery &amp;&amp; gs.getProperty("glide.sys.domain.use_record_domain_for_processes") == 'true')
+				gr.addDomainQuery(rec);
+			gr.query();
+			if (gr.next()) {
+				var field_names = gr.getValue("related_fields");
+				if ( !gs.nil(field_names) &amp;&amp; rec.isValid()) {
+					related_rec = field_names.split(",");
+					for (var i=0; i&lt;related_rec.length; i++) {
+						var relatedField = related_rec[i];
+						var tableHierarchy = this.getHierarchyTableStruct(rec,relatedField);
+						var refConditionalNotes = [];
+						var popupNoteId = [];
+						for(var j = 0; j &lt; tableHierarchy.length ; j++){
+							if (popup) {
+								popupNoteId = this.getConditionalPopUpNotes(tableHierarchy[j], rec.getValue(relatedField), rec);
+							} else {
+								popupNoteId = this.getConditionalNotes(tableHierarchy[j], rec.getValue(relatedField));
+							}
+							if (popupNoteId &amp;&amp; (popupNoteId.length &gt; 0)) {
+								refConditionalNotes = refConditionalNotes.concat(popupNoteId);
+							}
+						}
+						if (refConditionalNotes.length &gt; 0)
+							conditionalNotes = conditionalNotes.concat(refConditionalNotes);
+					}
+				}
+			}
+		}
+		return conditionalNotes;
+	},
+
+	getHierarchyTableStruct:function(gr,fieldName){
+		if(gr.getElement(fieldName) &amp;&amp; gr.getElement(fieldName).getED().getInternalType() == "reference"){
+			var recType = gr.getElement(fieldName).getED().getReference();
+			var grChild =  new GlideRecord(recType);
+			grChild.get(gr.getValue(fieldName));
+			var childrecType = grChild.getRecordClassName();
+			var hierarchyTables = GlideDBObjectManager.getTables(childrecType);
+			var tableHierarchy = [];
+			var addHierarchy = false;
+			for(var i=0; i&lt;hierarchyTables.size();i++){
+				var HierarchyTable = hierarchyTables.get(i);
+				if(!addHierarchy &amp;&amp; HierarchyTable == childrecType ){
+					addHierarchy = true;
+					tableHierarchy.push(HierarchyTable);
+				}else if(HierarchyTable == recType){
+					tableHierarchy.push(HierarchyTable);
+					break;
+				}else{
+					tableHierarchy.push(HierarchyTable);
+				}
+			}
+			return tableHierarchy;
+		}
+
+	},
+	//active standard notes
+	getStandardNotes : function(related_ids){
+		var stdNotes = [];
+		if(!gs.nil(related_ids)) {
+			var current = new GlideRecord("sn_shn_notes");
+			current.addEncodedQuery("status=1^type=1");
+			current.addQuery('related_record',related_ids);
+			current.orderBy('priority');
+			current.query();
+			while(current.next()){
+				stdNotes.push((current.sys_id).toString());
+			}
+		}
+		return stdNotes;
+	},
+
+	//conditional notes
+	getConditionalNotes : function(tablename,id){
+		var conditionalNotes = [];
+		if(!gs.nil(tablename) &amp;&amp; !gs.nil(id)) {
+			var gr = new GlideRecord("sn_shn_notes");
+			gr.addEncodedQuery("status=1^type=2^table_name="+tablename);
+			gr.orderBy('priority');
+			gr.query();
+			var table = new GlideRecord(tablename);
+			table.get(id);
+			while(gr.next()){
+				var f = new GlideFilter(gr.getValue('conditions'), "shn_filter_check");
+				f.setCaseSensitive(false);
+				if (f.match(table,true))
+					conditionalNotes.push(gr.getUniqueValue());
+			}
+		}
+		return conditionalNotes;
+	},
+
+	checkConfigExists : function(tablename){
+		if(!gs.nil(tablename)) {
+			var key = "sn_shn_configuration_" + tablename;
+			var value = GlideCacheManager.get("SHN", key);
+			var test = (value == 'true');
+			if (gs.nil(value)) {
+				var gr = new GlideRecord("sn_shn_configuration");
+				gr.addQuery("table_name",tablename);
+				gr.query();
+				value = gr.hasNext() ? 'true' : 'false';
+				GlideCacheManager.put("SHN", key, value);
+			}
+			return (value == 'true');
+		}
+		return false;
+	},
+
+	//get all the related fields from the configuration table
+	getRelatedRecords : function(tablename,id, rec, shouldAddDomainQuery){
+		var related_rec_ids = [];
+		if(!gs.nil(tablename) &amp;&amp; !gs.nil(id)) {
+			var related_rec = [];
+			var gr = new GlideRecord("sn_shn_configuration");
+			gr.addQuery("table_name",tablename);
+			if(shouldAddDomainQuery &amp;&amp; gs.getProperty("glide.sys.domain.use_record_domain_for_processes") == 'true')
+				gr.addDomainQuery(rec);
+			gr.query();
+			if(gr.next()){
+				var field_names = gr.getValue("related_fields");
+				if(field_names != null) {
+					related_rec = field_names.split(",");
+					for(var i=0;i&lt;related_rec.length;i++){
+						related_rec_ids.push(rec.getValue(related_rec[i]));
+					}
+				}
+				related_rec_ids.push(id);
+			}
+		}
+		return related_rec_ids;
+	},
+
+	//standard notes with display type alert
+	getStandardPopUpNotes : function(relatedRecords, currentRecord){
+		var stdNotes = [];
+		if(!gs.nil(relatedRecords)) {
+			var current = new GlideRecord("sn_shn_notes");
+			current.addEncodedQuery("status=1^type=1^display_type=true");
+			current.addQuery('related_record',relatedRecords);
+			if(gs.getProperty("glide.sys.domain.use_record_domain_for_processes") == 'true')
+				current.addDomainQuery(currentRecord);
+			current.orderBy('priority');
+			current.query();
+			while(current.next()){
+				stdNotes.push((current.sys_id).toString());
+			}
+		}
+		return stdNotes;
+	},
+
+	//conditional notes with display type alert
+	getConditionalPopUpNotes : function(tableName, id, currentRecord){
+		var conditionalPopUpNotes = [];
+		if(!gs.nil(tableName) &amp;&amp; !gs.nil(id)) {
+			var gr = new GlideRecord("sn_shn_notes");
+			gr.addEncodedQuery("status=1^type=2^display_type=true^table_name="+tableName);
+			if(gs.getProperty("glide.sys.domain.use_record_domain_for_processes") == 'true')
+				gr.addDomainQuery(currentRecord);
+			gr.orderBy('priority');
+			gr.query();
+			var relatedRec = new GlideRecord(tableName);
+			relatedRec.get(id);
+			while(gr.next()){
+				var f = new GlideFilter(gr.getValue('conditions'), "shn_filter_check");
+				f.setCaseSensitive(false);
+				if (f.match(relatedRec, true))
+					conditionalPopUpNotes.push(gr.getUniqueValue());		
+			}
+		}
+		return conditionalPopUpNotes;
+	},
+
+
+	// return all pop up alerts considering user preference if it is set
+	getPopupAlerts: function(current_table,id){
+		if(!gs.nil(current_table) &amp;&amp; !gs.nil(id)) {
+			return (this.getPreference() == "true") ? this.getAlertsConsideringSeenNotes(current_table,id)
+			: this.getAlertsIgnoringSeenNotes(current_table,id);
+		}
+		return [];
+	},
+
+	getAlertsIgnoringSeenNotes : function(current_table,id){
+		var allPopupNotes = [];
+		if(!gs.nil(current_table) &amp;&amp; !gs.nil(id)) {
+			var related_records = [];
+			var stdPopupNotes = [];
+			var conditionalPopupNotes = [];
+			var currentRecord = new GlideRecord(current_table);
+			currentRecord.get(id);
+			related_records = this.getRelatedRecords(current_table, id, currentRecord, true);
+			stdPopupNotes = this.getStandardPopUpNotes(related_records, currentRecord);
+			conditionalPopupNotes = this.getConditionalPopUpNotes(current_table,id, currentRecord);
+			var refConditionalNotes = this.getRelatedConditionalNotes(current_table, id, true, currentRecord, true);
+			conditionalPopupNotes = conditionalPopupNotes.concat(refConditionalNotes);
+			allPopupNotes = conditionalPopupNotes.concat(stdPopupNotes);
+		}
+		return allPopupNotes;
+
+	},
+
+	getAlertsConsideringSeenNotes : function(current_table,id){
+		var allPopupNotes = [];
+		if(!gs.nil(current_table) &amp;&amp; !gs.nil(id)) {
+			var seenNotes = [];
+			var finalNotes = [];
+			allPopupNotes = this.getAlertsIgnoringSeenNotes(current_table,id);
+
+			seenNotes = this.getAlertsFromSession();
+			if(!gs.nil(seenNotes)) {
+				for (var i=0; i &lt; allPopupNotes.length; i++){
+					var key = [current_table, id, allPopupNotes[i]];
+					key = key.join(":");
+					if(!(key in seenNotes))
+					finalNotes.push(allPopupNotes[i]);
+				}
+				return finalNotes;
+			}
+		}
+		return allPopupNotes;
+
+	},
+
+	getPreferenceProperty: function(){
+		var value = this.getPreference();
+		var preference_result = this.newItem("preference_result");
+		preference_result.setAttribute("property",value);
+		if(value != null &amp;&amp; value == "true")
+			return true;
+		else
+			return false;
+	},
+
+	getPreference : function(){
+		return gs.getProperty("sn_shn.note_preferences");
+	},
+
+	getPopUpWidth : function(){
+		return gs.getProperty("sn_shn.popup_width");
+	},
+
+	//given a set of related records, check for alert ids in session
+	getAlertsFromSession : function(){
+		var userKey = 'SHN-'+gs.getUserID();
+		var clientData = gs.getSession().getClientData(userKey);
+		var seenNotes = {};
+		if(clientData != "undefined" &amp;&amp; !gs.nil(clientData) &amp;&amp; clientData != "NIL"){
+			seenNotes = (new JSON()).decode(clientData);
+		}
+		return seenNotes;
+	},
+
+	markAlertSeen: function(sysparm_id, sysparm_table, sysparm_sys_id){
+		var userKey = 'SHN-'+gs.getUserID();
+		var id = sysparm_id || this.getParameter('sysparm_id');
+		var table = sysparm_table || this.getParameter('sysparm_table');
+		var sys_id = sysparm_sys_id || this.getParameter('sysparm_sys_id');
+		var seenNotes = [];
+		if(!gs.nil(id) &amp;&amp; !gs.nil(table) &amp;&amp; !gs.nil(sys_id)){
+			var key = [table, sys_id, id];
+			key = key.join(":");
+			seenNotes = this.getAlertsFromSession();
+			if(!(key in seenNotes)){
+				seenNotes[key] = id;
+				gs.getSession().putClientData(userKey, JSON.stringify(seenNotes));
+			}
+		}
+	},
+	
+	getNotificationTitle: function(tablename){
+		var grConfig = new GlideRecord("sn_shn_configuration");
+		grConfig.addQuery("table_name",tablename);
+		grConfig.query();
+		if(grConfig.next() &amp;&amp; grConfig.isValidField("notification_title"))
+			return grConfig.notification_title.getDisplayValue();
+		else
+			return "Special Handling Notes";
+	},
+
+	getMsgs: function(tableName, id) {
+		var messages = this.getPopupAlerts(tableName, id);
+		var max_num_alerts =  gs.getProperty("sn_shn.max_num_alerts");
+		var total_msg = 0;
+		var current_num = 0;
+		var content = [];
+		if(messages){
+			var msg = messages.toString();
+			var msg_arr = msg.split(',');
+			gr = new GlideRecord('sn_shn_notes');
+			gr.addQuery('sys_id','IN',msg_arr);
+			gr.orderBy('priority');
+			gr.setLimit(max_num_alerts);
+			gr.query();
+			total_msg = gr.getRowCount();
+			current_num = total_msg;
+			while(gr.next()) {
+				content.push({short_description: gr.getValue("short_description"), message: gr.getValue("message"), sys_id: gr.getValue("sys_id"), priority: gr.getValue("priority")});
+			}
+		}
+		return {totalMsg: total_msg, currentNum: current_num, notificationTitle: this.getNotificationTitle(tableName), content: content};
+	},
+
+	type: 'SHNProcessor'
+});
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-01-07 22:34:17&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8b94df3dc370120095ccd02422d3ae62&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;311&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SHNProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Special Handling Notes" source="com.sn_shn"&gt;47f6b9812f140110d8a4d5f62799b69d&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8b94df3dc370120095ccd02422d3ae62&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-04-15 22:37:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;14479&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:23</sys_created_on>
+        <sys_id>b7fc857e2f331110d8a4d5f62799b6cf</sys_id>
+        <sys_name>SHNProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b7fc857e2f331110d8a4d5f62799b6cf</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7f476974534313004667ddeeff7b1227</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.NormalChangeProcessSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base ServiceNow API extended by NormalChangeProcess.&lt;/description&gt;
+        &lt;name&gt;NormalChangeProcessSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var NormalChangeProcessSNC = Class.create();
+
+NormalChangeProcessSNC.prototype = Object.extendsObject(ChangeProcess, {
+
+	initialize: function(changeGr) {
+		ChangeProcess.prototype.initialize.call(this, changeGr);
+	},
+
+	type: "NormalChangeProcessSNC"
+});
+
+NormalChangeProcessSNC.findAll = function(orderBy, textSearch, encodedQuery) {
+	orderBy = orderBy || ChangeProcessSNC.NUMBER;
+	var changeRequestGr = new GlideRecordSecure(ChangeRequest.CHANGE_REQUEST);
+	changeRequestGr.addActiveQuery();
+	changeRequestGr.addQuery("type", ChangeRequest.NORMAL);
+
+	if (textSearch &amp;&amp; textSearch.trim() !== "")
+		changeRequestGr.addQuery(ChangeCommon.matchAll(), textSearch);
+
+	if (encodedQuery &amp;&amp; encodedQuery.trim() !== "")
+		changeRequestGr.addEncodedQuery(encodedQuery);
+
+	changeRequestGr.orderBy(orderBy);
+	changeRequestGr.query();
+	return changeRequestGr;
+};
+
+NormalChangeProcessSNC.findById = function(sysId) {
+	if (!sysId)
+		return null;
+
+	var changeRequestGr = new GlideRecordSecure(ChangeRequest.CHANGE_REQUEST);
+	changeRequestGr.addQuery("type", ChangeRequest.NORMAL);
+	changeRequestGr.addQuery("sys_id", sysId);
+	changeRequestGr.query();
+	if (!changeRequestGr.next())
+		return null;
+
+	return new NormalChangeProcess(changeRequestGr);
+};
+
+NormalChangeProcessSNC.newChange = function(nameValuePairs) {
+	var changeProcess = NormalChangeProcess.newChangeProcess(nameValuePairs);
+
+	if (!changeProcess || !changeProcess.insert())
+		return null;
+
+	return changeProcess;
+};
+
+NormalChangeProcessSNC.newChangeProcess = function(nameValuePairs) {
+	var changeProcess = new NormalChangeProcess(ChangeRequest.newNormal().getGlideRecord());
+
+	var chgModel;
+	if (nameValuePairs.chg_model) {
+		chgModel = nameValuePairs.chg_model;
+		delete nameValuePairs.chg_model;
+	}
+
+	var fields = changeProcess.setValues(nameValuePairs);
+	if (fields.ignored &amp;&amp; fields.ignored.length &gt; 0)
+		changeProcess.__ignoredfields = fields.ignored;
+
+	if (chgModel) {
+		if (!changeProcess.__ignoredfields)
+			changeProcess.__ignoredfields = [];
+		changeProcess.__ignoredfields.push("chg_model");
+	}
+
+	return changeProcess;
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-06-29 17:00:11&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7f476974534313004667ddeeff7b1227&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;NormalChangeProcessSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7f476974534313004667ddeeff7b1227&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-23 14:12:22&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2080&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:54</sys_created_on>
+        <sys_id>74ec4d3e2f331110d8a4d5f62799b68a</sys_id>
+        <sys_name>NormalChangeProcessSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_74ec4d3e2f331110d8a4d5f62799b68a</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

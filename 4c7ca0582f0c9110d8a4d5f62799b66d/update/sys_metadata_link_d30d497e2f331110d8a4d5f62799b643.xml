@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>903c7d13c30130003d2ae219cdba8f7f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ScrumPlanningBoardAjaxProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;ScrumPlanningBoardAjaxProcessor:- Provides methods for AJAX functionality of the planning board&lt;/description&gt;
+        &lt;name&gt;ScrumPlanningBoardAjaxProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ * ScrumPlanningBoardAjaxProcessor
+ * Provides methods for AJAX functionality of the planning board
+ *
+ * @Author Chris Henson &lt;chris.henson@service-now.com&gt;
+ */
+var ScrumPlanningBoardAjaxProcessor = Class.create();
+
+ScrumPlanningBoardAjaxProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor,{
+    /* initialize(request, responseXML, gc): Overidden method from the parent class
+     *
+     * Calls the super initialize method and then sets up loging.
+     */
+    initialize : function(request, responseXML, gc, _gs) {
+        AbstractAjaxProcessor.prototype.initialize.call(this,request, responseXML, gc);
+        this._log=(new GSLog("com.snc.sdlc.scrum.pp.log",this.type)).setLog4J();
+        //this._log.setLevel(GSLog.DEBUG);
+
+        // Default this._gs to the global if one isn't passed in.
+        this._gs = (JSUtil.notNil(_gs) ? _gs : gs);
+    },
+
+    /**
+     * saveuserPref(): Saves a planning user view preference
+     *
+     * This methods expects the following parameters to be set in the params object:
+     *   1. _tn     : The name of the table
+     *   2. _sysId  : The relevant sys id
+     *   3. paneName: The name of the pane that's having it's preference saved
+     */
+    saveUserPref: function() {
+        // Set up the AJAX return
+        var r = this.newItem();
+        var params = this._getParams(r);
+
+        if (this._log.atLevel(GSLog.DEBUG)) {
+            this._log.debug("[setUserPref]  pref: com.snc.sdlc.scrum.pp.planning."+params.paneName+"_parent");
+            this._log.debug("[setUserPref] value: " + params._tn+":"+params._sysId+":true");
+        }
+
+        this._gs.getUser().setPreference("com.snc.sdlc.scrum.pp.planning."+params.paneName+"_parent",params._tn+":"+params._sysId+":true");
+        r.setAttribute("result","success");
+    },
+
+    /**
+     * _getParams(r): Internal method used to get the parameters
+     *
+     * r: The retrun values for the AJAX request
+     *
+     * 1. This method will check that the following parameters have been set:
+     *    1.1 _tn         : Table name
+     *    1.2 _sys_id     : The sys_id of the record
+     *    1.3 pane_name   : The name of the pane in the planning board
+     */
+    _getParams: function(r) {
+        var params = {}; //Set up a simple nvp object for parameters
+        // Required fields
+        params._tn = this._getParam("_tn");
+        params._sysId = this._getParam("_sys_id");
+        params.paneName = this._getParam("pane_name");
+
+        if (this._log.atLevel(GSLog.DEBUG)) { 
+            this._log.debug("[_getParams] Data Received:");
+            this._log.debug("[_getParams]      _tn: " + params._tn);
+            this._log.debug("[_getParams]   _sysId: " + params._sysId);
+            this._log.debug("[_getParams] paneName: " + params.paneName);
+        }
+
+        // If we don't have any data for the parent record.
+        if (JSUtil.nil(params._tn) || JSUtil.nil(params._sysId)) {
+            r.setAttribute("result","failure");
+            r.setAttribute("reason","The record's Sys Id and table name are required");
+	    this._log.error("[_getParams] Sys Id and table name are required");
+            return null;
+        }
+
+        return params;
+    },
+
+    /* _getParam(prmNm): Gets the parameter named prmNm, checks for spurious undefined and null values and
+     *                   returns a string representation.  Returns null if undefined.
+     */
+    _getParam: function(prmNm) {
+        var param = this.getParameter(prmNm)+"";
+
+        if (typeof param === "undefined" || param == "undefined" || param == "null" || param == null || JSUtil.isNil(param))
+            return null;
+
+        return param;
+    },
+	
+	/**
+	 * Prevent public access to this processor
+	 */
+	isPublic: function() {
+		return false;
+	},
+
+    type: "ScrumPlanningBoardAjaxProcessor"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;chris.henson&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2012-10-18 17:04:11&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;903c7d13c30130003d2ae219cdba8f7f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ScrumPlanningBoardAjaxProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Agile Development" source="com.snc.sdlc.scrum.pp"&gt;4e159f242fc10110d8a4d5f62799b627&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_903c7d13c30130003d2ae219cdba8f7f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;chris.henson&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-05-16 14:53:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3809&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:36</sys_created_on>
+        <sys_id>d30d497e2f331110d8a4d5f62799b643</sys_id>
+        <sys_name>ScrumPlanningBoardAjaxProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d30d497e2f331110d8a4d5f62799b643</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

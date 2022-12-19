@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7c163572d7b2120058c92cf65e61030a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MatchingDimensionUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Generic utility for Matching Dimensions&lt;/description&gt;
+        &lt;name&gt;MatchingDimensionUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MatchingDimensionUtil = Class.create();
+MatchingDimensionUtil.prototype = {
+    initialize: function() {
+    },
+
+	getUsersInSchedule : function (candidates){
+		var inScheduleCandidates = [];
+		var notInScheduleCandidates = [];
+		var arrayUtil = new global.ArrayUtil();
+
+		var agents = new GlideRecord("sys_user");
+		agents.addEncodedQuery("sys_idIN"+candidates.join());
+		agents.query();
+		var tzScheduleMap = {};
+		while(agents.next()){
+			var schedule = agents.getValue("schedule");
+			var currentTime = new GlideDateTime();
+
+			if(schedule){
+				var sched = new GlideSchedule(schedule, agents.getValue("time_zone"));
+				var time_zone = agents.getValue("time_zone") ? agents.getValue("time_zone") : sched.getTimeZone();
+				var isInSchedule = false;
+				var key = schedule+"--"+time_zone;
+				if(tzScheduleMap.hasOwnProperty(key)){
+					isInSchedule = tzScheduleMap[key];
+				}
+				else{
+					isInSchedule = sched.isInSchedule(currentTime,time_zone);
+					tzScheduleMap[key] = isInSchedule;
+				}
+				if(isInSchedule)
+					inScheduleCandidates.push(agents.getValue("sys_id"));
+				else
+					notInScheduleCandidates.push(agents.getValue("sys_id"));
+			}
+		}
+		
+		var candidatePerSchedule = {};
+		candidatePerSchedule.inScheduleCandidates = inScheduleCandidates;
+		candidatePerSchedule.notInScheduleCandidates = notInScheduleCandidates;
+		//var finalCandidates = arrayUtil.diff(candidates, notInScheduleCandidates);
+		return candidatePerSchedule;
+	},
+	
+	getAgentTimeZone : function(agentID) {
+		var user = new GlideRecord("sys_user");
+		user.get(agentID);
+		var timeZone = user.getValue("time_zone");
+		if(JSUtil.nil(timeZone)) {
+			timeZone = GlideUser.getSysTimeZone();
+		}
+		return timeZone;
+	},
+
+	getAgentSchedule : function(agentID) {
+		var user = new GlideRecord("sys_user");
+		user.get(agentID);
+		var schedule = user.getValue("schedule");
+		if (JSUtil.nil(schedule)) {
+			schedule = "08fcd0830a0a0b2600079f56b1adb9ae"; //8-5 weekdays
+		}
+		return schedule;
+	},
+	
+	logAnalytics: function(data) {
+		if(AnalyticsFramework.isDisabled())
+			return;		
+		var streamId = "com.snc.assignment_workbench";
+		var obfuscationList = [];
+		data["app.name"] = "assignment_workbench";
+		status = AnalyticsFramework.open(streamId);
+		if (status === 0) {
+			status = AnalyticsFramework.sendJSON(streamId, obfuscationList, JSON.stringify(data));
+			status = AnalyticsFramework.close(streamId);
+		}
+		if(new CSMUtil().isDebugOn())
+			gs.log("logAnalytics streamId=" + streamId + " data=" + JSON.stringify(data));
+	},
+	
+    type: 'MatchingDimensionUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-04-19 04:13:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7c163572d7b2120058c92cf65e61030a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MatchingDimensionUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Resource Matching Engine" source="com.snc.matching_rule"&gt;55d6f9412f140110d8a4d5f62799b646&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7c163572d7b2120058c92cf65e61030a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-08-24 21:35:10&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2547&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:47</sys_created_on>
+        <sys_id>9fdc893e2f331110d8a4d5f62799b6d2</sys_id>
+        <sys_name>MatchingDimensionUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_9fdc893e2f331110d8a4d5f62799b6d2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>8e70b716c0a8002700ab3bfd8c8b2fed</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ServiceCatalogProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;ServiceCatalogProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ServiceCatalogProcessor = Class.create();
+
+ServiceCatalogProcessor.prototype =  Object.extendsObject(AbstractScriptProcessor, {
+	process : function() {
+		var t = this._getTransaction();
+		if (t != null) {
+			var url = t.execute();
+			if (url) {
+				var view = this.request.getParameter('sysparm_view');
+				if (view)
+					url = GlideURLUtil.addURLParm(url, 'sysparm_view=' + view);
+				this.response.sendRedirect(url);
+			}
+			
+			return;
+		}
+		
+		gs.addErrorMessage(gs.getMessage('An unexpected error occurred, please try again.'));
+		this.response.sendRedirect('home.do');
+	},
+	
+	_xssFilter : function(taintedStr) {
+		var re = /^[-_0-9A-Za-z]*$/g;
+		var validStr = taintedStr.match(re);
+		if (JSUtil.nil(validStr))
+			taintedStr = "XSS-Attempt-FOILED";
+		return taintedStr;
+	},
+	
+	_getTransaction : function() {
+		if (this.action == 'sysverb_back')
+			return new CatalogTransactionBack(this.request, this.response, this.processor);
+		if (this.action == 'cart_remove')
+			return new CatalogTransactionRemove(this.request, this.response, this.processor);
+		if (this.action == 'update')
+			return new CatalogTransactionUpdateCart(this.request, this.response, this.processor);
+		if (this.action == 'checkout')
+			return new CatalogTransactionCheckout(this.request, this.response, this.processor);
+		if (this.action == 'checkouttwo')
+			return new CatalogTransactionCheckoutTwo(this.request, this.response, this.processor);
+		if (this.action == 'order')
+			return new CatalogTransactionOrder(this.request, this.response, this.processor);
+		if (this.action == 'update_proceed')
+			return new CatalogTransactionUpdateProceed(this.request, this.response, this.processor);
+		if (this.action == 'request_cancel')
+			return new CatalogTransactionCancel(this.request, this.response, this.processor);
+		if (this.action == 'request_clone')
+			return new CatalogTransactionClone(this.request, this.response, this.processor);
+		if (this.action == 'continue_shopping')
+			return new CatalogTransactionContinue(this.request, this.response, this.processor);
+		if (this.action == 'popup')
+			return new CatalogTransactionPopup(this.request, this.response, this.processor);
+		if (this.action == 'popupCat')
+			return new CatalogTransactionPopupCategory(this.request, this.response, this.processor);
+		if (this.action == 'restart_guide')
+			return new CatalogTransactionRestartGuide(this.request, this.response, this.processor);
+		if (this.action == 'next_guide')
+			return new CatalogTransactionNextGuide(this.request, this.response, this.processor);
+		if (this.action == 'previous_guide')
+			return new CatalogTransactionPreviousGuide(this.request, this.response, this.processor);
+		if (this.action == 'nav_guide')
+			return new CatalogTransactionNavigateGuide(this.request, this.response, this.processor);
+		if (this.action == 'init_guide')
+			return new CatalogTransactionInitGuide(this.request, this.response, this.processor);
+		if (this.action == 'add_attachment')
+			return new CatalogTransactionAttachment(this.request, this.response, this.processor);
+		if (this.action == 'veto')
+			return new CatalogTransactionLineItemVeto(this.request, this.response, this.processor);
+		if (this.action == 'show_reference')
+			return new CatalogTransactionReference(this.request, this.response, this.processor);
+		if (this.action == 'user_criteria_diagnostics')
+			return UserCriteriaDiagnosticsUtil(this.request, this.response, this.processor);
+		
+		return null;
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-09-23 09:01:03&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;8e70b716c0a8002700ab3bfd8c8b2fed&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;41&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ServiceCatalogProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_8e70b716c0a8002700ab3bfd8c8b2fed&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-20 09:40:38&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3449&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:29</sys_created_on>
+        <sys_id>a10dc57e2f331110d8a4d5f62799b66c</sys_id>
+        <sys_name>ServiceCatalogProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a10dc57e2f331110d8a4d5f62799b66c</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

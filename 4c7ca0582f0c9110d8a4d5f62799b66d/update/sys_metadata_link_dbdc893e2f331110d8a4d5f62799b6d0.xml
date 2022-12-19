@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7c000f2147200200151119fbac9a716c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MegaphoneBroadcast&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Broadcasting messages for megaphone&lt;/description&gt;
+        &lt;name&gt;MegaphoneBroadcast&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MegaphoneBroadcast = Class.create();
+MegaphoneBroadcast.prototype = {
+	initialize: function(messageSysId) {
+		this.message = null;
+		var msg = new GlideRecord('sys_broadcast_message');
+		msg.get(messageSysId);
+		
+		if(msg.isValidRecord()) {
+			this.message = msg;
+			this.sys_id = messageSysId;
+		}
+	},
+	
+	broadcastMessage: function() {
+		if(this.message === null || !this.message.isValidRecord()) {
+			gs.warn("Did not find the message.");
+			return;
+		}
+		
+		if(this._isActive()) {
+			this._alertLoggedInUsers();
+			this._sendEmail();
+		}
+	},
+	
+	_isActive: function() {
+		var now = new GlideDateTime();
+		return(now &gt;= this.message.notify_users_after_date &amp;&amp; now &lt;= this.message.notify_users_until_date);
+	},
+	
+	//Alert users that are currently logged in
+	_alertLoggedInUsers: function() {
+		if(!this.message.logged_in)
+			return;
+		
+		var roles = this.message.user_filter;
+		if(this.message.any_roled_user)
+			roles = "";
+		try {
+			SNC.MegaphoneBroadcast.addMegaphoneMessageToAllLoggedInSessionsOnAllNodes(this.sys_id);
+		}
+		catch(ex) {
+			gs.warn("Unable to alert logged in users for megaphone message: " + this.message.sys_id);
+		}
+	},
+	
+	_sendEmail: function() {
+		if(!this.message.email)
+			return;
+		
+		if(this.message.email_sent)
+			return;
+		
+		SNC.MegaphoneBroadcast.broadcastEmail(this.sys_id);
+	},
+	
+	type: 'MegaphoneBroadcast'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-09 19:57:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7c000f2147200200151119fbac9a716c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;30&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MegaphoneBroadcast&lt;/sys_name&gt;
+        &lt;sys_package display_value="Broadcast Messages" source="com.snc.mega_cust"&gt;a6b2850f6d6620100acb70b35343301e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7c000f2147200200151119fbac9a716c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-06-16 22:30:53&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1349&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:47</sys_created_on>
+        <sys_id>dbdc893e2f331110d8a4d5f62799b6d0</sys_id>
+        <sys_name>MegaphoneBroadcast</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_dbdc893e2f331110d8a4d5f62799b6d0</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>61963c7c0a0a0bb90057f0b3252a2d49</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AttachmentAjax&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Invoked from htmlarea link and image attachment&lt;/description&gt;
+        &lt;name&gt;AttachmentAjax&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AttachmentAjax = Class.create();
+
+AttachmentAjax.prototype =  Object.extendsObject(AbstractAjaxProcessor, {
+  IMAGE_TYPES: { "jpeg": true, "jpg": true, "gif": true, "bmp": true, "png": true },
+
+  process: function() {
+      if (this.getType() == "list")
+          this.list();
+      else if (this.getType() == "delete")
+          this.deleteAttachment();
+      else if (this.getType() == "rename")
+          return this.renameAttachment(false);
+      else if (this.getType() == "initialRename")
+          return this.renameAttachment(true);
+      else if (this.getType() == "icon" )
+          return this.getIconSrc();
+      else if (this.getType() == "attachmentCount")
+          return this.getAttachmentCount();
+      else if (this.getType() == "attachmentParentSysId")
+          return this.getAttachmentParentSysId();
+  },
+
+  list: function() {
+      var sa = new GlideSysAttachment();
+      var gr = sa.getAttachments(this.getName(), this.getValue());
+      while (gr.next()) {
+          var fileName = gr.getValue("file_name");
+          
+          if (this.getChars() == "image" &amp;&amp; !this.isImage(fileName))
+              continue;
+
+          var item = this.newItem();
+          item.setAttribute("label", gr.file_name);
+          item.setAttribute("value", gr.sys_id);
+      }
+  },
+  renameAttachment: function(initialRename) {
+     var s = new GlideSysAttachment();
+     return s.renameAttachment(this.getValue(), this.getName(), initialRename);
+  },
+
+
+  getIconSrc: function() {
+      var s = new GlideSysAttachment();
+      return s.selectIcon(this.getValue());
+  },
+
+  deleteAttachment: function() {
+      var s = new GlideSysAttachment();
+      s.deleteAttachment(this.getValue());
+  },
+
+  isImage: function(fileName) {
+      if (gs.nil(fileName) || fileName.lastIndexOf(".") &lt; 0)
+          return false;
+
+      for(var key in this.IMAGE_TYPES) {
+          if (fileName.endsWith("." + key))
+              return true;
+      }
+        
+      return false;
+  },
+
+  getAttachmentCount: function() {
+	var gr = new GlideRecord('sys_attachment');
+	gr.addQuery('table_sys_id', this.getValue());
+	gr.query();
+	var count = 0;
+	while (gr.next())
+		count++;
+	return count;
+  },
+
+  getAttachmentParentSysId: function() {
+        var gr = new GlideRecord('sys_attachment');
+	gr.addQuery('sys_id', this.getValue());
+	gr.query();
+        gr.next();
+        return gr.table_sys_id;
+  },
+
+  type: "AttachmentAjax"
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-02-10 19:07:42&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;61963c7c0a0a0bb90057f0b3252a2d49&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AttachmentAjax&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_61963c7c0a0a0bb90057f0b3252a2d49&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;brent.bahry&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-11-14 20:37:04&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2501&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:56</sys_created_on>
+        <sys_id>72ac49fa2f331110d8a4d5f62799b609</sys_id>
+        <sys_name>AttachmentAjax</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_72ac49fa2f331110d8a4d5f62799b609</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

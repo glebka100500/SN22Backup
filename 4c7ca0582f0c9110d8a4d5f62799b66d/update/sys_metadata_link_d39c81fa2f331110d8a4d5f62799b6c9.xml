@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>59744d045302011017c3ddeeff7b12a9</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PwdEnrollSoftPINProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Script that processes an enrollment request for SoftPIN (form).
+Returns boolean telling whether the user was successfully enrolled&lt;/description&gt;
+        &lt;name&gt;PwdEnrollSoftPINProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PwdEnrollSoftPINProcessor = Class.create();
+PwdEnrollSoftPINProcessor.prototype = {
+    category: 'password_reset.extension.enrollment_form_processor', // DO NOT REMOVE THIS LINE!
+
+    /**********
+     * Process the enrollment form, and returns a PwdExtensionScriptResponse object, which contains: result, message and value 
+     * 
+     * @param params.userId                            The sys-id of the user trying to enroll (table: sys_user)
+     * @param params.verificationId                    The sys-id of the verification to be enrolled into (table: pwd_verification)
+     * @param params.enrollmentId                      The sys-id of this enrollment process.
+     * 
+     * @param params.getFormParameter(&lt;form element&gt;)  Any of the form elements
+     * 
+     * @return a map with the attributes: 'result' and 'message' for example: {result: 'success', message : 'bla bla'}
+     **********/
+    process: function(params) {
+        var enrollmentId = params.enrollmentId;
+        var verificationId = params.verificationId;
+        var softpin = params.getFormParameter('softpin_input') + "";
+        var pinChanged = params.getFormParameter('pin_changed');
+        var mandatoryVerification = params.getFormParameter('mandatory');
+        var softPINManager = new SNC.PwdSoftPINManager();
+
+        //Do no validation when there is no change in the softpin
+        //Do not update/save the softpin
+        if ((mandatoryVerification != 'true' &amp;&amp; softpin == '') ||
+            (pinChanged != 'true' &amp;&amp; softpin != '')) {
+            return {
+                result: 'success',
+                message: ''
+            };
+        }
+
+        var validationResult = this._validateSoftPIN(softpin, softPINManager, verificationId);
+        if (validationResult.result == 'failure')
+            return validationResult;
+
+        var softPINsysId = softPINManager.createOrUpdate(enrollmentId, softpin);
+        if (!gs.nil(softPINsysId)) {
+            validationResult.result = 'success';
+            validationResult.message = gs.getMessage('SoftPIN enrolled successfully');
+        }
+        return validationResult;
+    },
+
+    _validateSoftPIN: function(softpin, softPINManager, verificationId) {
+
+        var validationResult = {
+            result: '',
+            message: ''
+        };
+        
+        var charRepetitionThreshold = softPINManager.getPINRepetitionThreshold(verificationId);
+        charRepetitionThreshold = parseInt(charRepetitionThreshold);
+        var charSequenceThreshold = softPINManager.getPINSequenceThreshold(verificationId);
+        charSequenceThreshold = parseInt(charSequenceThreshold);
+        var softpinLength = softPINManager.getPINLength(verificationId);
+        var DEFAULT_REPETITION_THRESHOLD = 2;
+        var DEFAULT_SEQUENCE_THRESHOLD = 2;
+
+        if (isNaN(charRepetitionThreshold))
+            charRepetitionThreshold = gs.getProperty('password_reset.softpin.repetition_threshold', DEFAULT_REPETITION_THRESHOLD);
+        if (isNaN(charSequenceThreshold))
+            charSequenceThreshold = gs.getProperty('password_reset.softpin.sequence_threshold', DEFAULT_SEQUENCE_THRESHOLD);
+
+        //Validating softpin length &amp; semantics
+        var digitPattern = new RegExp("^\\d{" + softpinLength + "}$");
+        if (!digitPattern.test(softpin)) {
+            validationResult.result = 'failure';
+            validationResult.message = gs.getMessage('SoftPIN should be {0} digits', softpinLength);
+            return validationResult;
+        }
+
+        //Validating softpin for repeated continuous digits
+        var repetitionsPattern = "(\\d+)";
+        for (var i = 0; i &lt; charRepetitionThreshold; i++)
+            repetitionsPattern += "\\1";
+        var repetitionsPatternRegX = new RegExp(repetitionsPattern);
+        if (repetitionsPatternRegX.test(softpin)) {
+            validationResult.result = 'failure';
+            validationResult.message = gs.getMessage("SoftPIN cannot have more than {0} repeated digits/pattern", charRepetitionThreshold+ '');
+            return validationResult;
+        }
+
+        //Validating softpin for sequence
+        if (this._checkForSequence(softpin, charSequenceThreshold)) {
+            validationResult.result = 'failure';
+            validationResult.message = gs.getMessage("SoftPIN cannot have more than {0} digits in sequence", charSequenceThreshold + '');
+            return validationResult;
+        }
+
+        return validationResult;
+    },
+
+    _checkForSequence: function(data, threshold) {
+        // Check for sequential numerical characters
+        var increasingSequence = '0123456789';
+        var decreasingSequence = '9876543210';
+        for (var i = 0; i &lt; data.length - threshold; i++) {
+            var subData = data.substring(i, i + threshold + 1);
+            if ((increasingSequence.indexOf(subData) &gt; -1) ||
+                (decreasingSequence.indexOf(subData) &gt; -1)) {
+                return true;
+            }
+        }
+        return false;
+
+    },
+
+    type: 'PwdEnrollSoftPINProcessor'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-05-06 10:49:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;59744d045302011017c3ddeeff7b12a9&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;5&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PwdEnrollSoftPINProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Reset" source="com.glideapp.password_reset"&gt;a54385836da620100acb70b3534330a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_59744d045302011017c3ddeeff7b12a9&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-27 00:08:12&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5020&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:42</sys_created_on>
+        <sys_id>d39c81fa2f331110d8a4d5f62799b6c9</sys_id>
+        <sys_name>PwdEnrollSoftPINProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d39c81fa2f331110d8a4d5f62799b6c9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

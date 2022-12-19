@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>93e4a663c0a80027008e0165b1805ed6</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.CatalogTransactionPreviousGuide&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Invoked when you hit the select options button an order guide from the checkout screen&lt;/description&gt;
+        &lt;name&gt;CatalogTransactionPreviousGuide&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include('PrototypeServer');
+gs.include('AbstractTransaction');
+
+var CatalogTransactionPreviousGuide = Class.create();
+
+CatalogTransactionPreviousGuide.prototype =  Object.extendsObject(AbstractTransaction, {
+	
+	execute : function() {
+		try {
+			var cart;
+			var cartName = this.request.getParameter("sysparm_cart_name");
+			if (!JSUtil.nil(cartName))
+				cart = GlideappCart.get(cartName);
+			else
+				cart = GlideappCart.get();
+			var og = new GlideappOrderGuide(cart.getGuide());
+			og.previous(this.request, this.response, cart);
+		} catch (e) {
+			var catalogExceptionUtils = new CatalogExceptionUtils();
+			if (catalogExceptionUtils.isCartException(e)) {
+				return catalogExceptionUtils.handleCartException(e);
+			}
+			gs.debug(e);
+		}
+	}
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-09-24 10:25:47&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;93e4a663c0a80027008e0165b1805ed6&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;21&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CatalogTransactionPreviousGuide&lt;/sys_name&gt;
+        &lt;sys_package display_value="Service Catalog Platform" source="com.glideapp.servicecatalog.platform"&gt;6d218d0f6d2620100acb70b35343303c&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_93e4a663c0a80027008e0165b1805ed6&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-04-14 20:01:01&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;751&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:44</sys_created_on>
+        <sys_id>c91d0d7e2f331110d8a4d5f62799b651</sys_id>
+        <sys_name>CatalogTransactionPreviousGuide</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c91d0d7e2f331110d8a4d5f62799b651</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

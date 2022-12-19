@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5a6529f80a0a0b3a00cc550d8d059d44</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.RoundingInterval&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Handles all the details of rounding intervals for CPU speed, RAM size and maybe more.&lt;/description&gt;
+        &lt;name&gt;RoundingInterval&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// Discovery class
+
+/**
+ * Handles all the details of rounding CPU speed and RAM size
+ * 
+ * Aleck Lin aleck.lin@service-now.com
+ */
+var RoundingInterval = Class.create();
+
+RoundingInterval.CPU = 'cpu';
+RoundingInterval.RAM = 'ram';
+
+RoundingInterval.prototype = {
+    /*
+     * Initializes this instance.
+     * 
+     * type:   The target to round. This could be cpu or ram
+     */
+    initialize: function(type) {
+        this.type = type;
+    },
+    
+    /*
+     * Get the value after applying the rounding interval.
+     * 
+     * returns: The value after rounding.
+     */
+    getRoundedValue: function(value) {
+        if (JSUtil.nil(value))
+            return;
+
+        var ri = this._getRoundingInterval();
+
+        return Math.round(value/ri)*ri;
+    },
+
+    _getRoundingInterval: function() {
+        if (this.type == RoundingInterval.CPU)
+            return gs.getProperty("glide.discovery.roundingInterval.cpu", 1)
+        else if (this.type == RoundingInterval.RAM)
+            return gs.getProperty("glide.discovery.roundingInterval.ram", 1);
+    },
+    
+    type: "RoundingInterval"
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-05-19 19:42:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5a6529f80a0a0b3a00cc550d8d059d44&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;22&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;RoundingInterval&lt;/sys_name&gt;
+        &lt;sys_package display_value="Core Automation" source="com.snc.core.automation"&gt;ee2289476d6620100acb70b3534330ff&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5a6529f80a0a0b3a00cc550d8d059d44&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;tom.dilatush&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-09-08 19:07:45&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1145&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:43</sys_created_on>
+        <sys_id>6f9cc1fa2f331110d8a4d5f62799b68f</sys_id>
+        <sys_name>RoundingInterval</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6f9cc1fa2f331110d8a4d5f62799b68f</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

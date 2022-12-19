@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>881d7cbbc0a8016800dc79b0cca34e3c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.SysForm&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Locates a form for a table and view.  Currently no cascading is done from the table to its parent tables.  There must be an exact match of the table and view somewhere in the domain hierarchy for a form to be used.&lt;/description&gt;
+        &lt;name&gt;SysForm&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("AbstractList");
+
+var SysForm = Class.create();
+
+SysForm.prototype = Object.extendsObject(AbstractList, {
+
+  SYS_UI_FORM : 'sys_ui_form',
+
+  get : function() {
+     var answer = this.getForm();
+     if (answer != this.NOT_FOUND_ID)
+        return answer;
+      
+     if (this.view == this.defaultViewID)
+        return answer;
+
+     // specific form not found, check for a section
+     var section = new SysSection(this.tableName, this.view, this.viewName);
+     answer = section.getSectionForTable(this.tableName);
+     if (answer != null)
+        return this.NOT_FOUND_ID;
+
+     // Section was not found so see if we have a default form
+     this.view = this.defaultViewID;
+     return this.getForm();
+  },
+
+  getResolvedView: function() {
+     return this.resolvedView;
+  },
+
+  getForm : function() {
+     this.resolvedView = null;
+     var gr = new GlideRecord(this.SYS_UI_FORM);
+     gr.addQuery(this.NAME, this.tableName);
+     gr.addQuery(this.VIEW, this.view);
+     this.domainQuery(gr, this.domainID);
+     if (!gr.next())
+        return this.NOT_FOUND_ID;
+     this.resolvedView = new GlideScriptViewManager(this.view, true).getViewName();
+     return gr.sys_id.toString();
+  },
+
+  z : function() {
+  }
+
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2008-12-30 13:38:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;881d7cbbc0a8016800dc79b0cca34e3c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;40&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;SysForm&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_881d7cbbc0a8016800dc79b0cca34e3c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-10-02 09:52:20&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1306&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:14</sys_created_on>
+        <sys_id>75fc057e2f331110d8a4d5f62799b684</sys_id>
+        <sys_name>SysForm</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_75fc057e2f331110d8a4d5f62799b684</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>36f5b095c7220010df1417b703c260ac</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSSO_OIDC_logout_internal&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;This script include is used for generating the relying party initiated logout request.&lt;/description&gt;
+        &lt;name&gt;MultiSSO_OIDC_logout_internal&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[gs.include("PrototypeServer");
+gs.include("OIDC_custom");
+
+var MultiSSO_OIDC_logout_internal = Class.create();
+MultiSSO_OIDC_logout_internal.prototype = Object.extend(new MultiSSO_Abstract_Core(), {
+    initialize: function() {
+        this.OIDC = new OIDC_custom();
+    },
+
+    process: function() {
+        this.OIDC.initializeOauthClient(this.propertiesGR.oidc_entity_profile);
+        //Incase of customurl scenarios, it will return the specific custom url being used and not the instance url.For other cases, it would give the base url of the incoming request.
+        this.baseUrl = this.OIDC.getComputedBaseURL(this.propertiesGR.service_url);
+        this.logoutRedirect = this.getLogoutRedirect();
+        if(this.isEmpty(this.baseUrl)) {
+            this.OIDC.logError("Base URL is null, OIDC Logout request generation failed. Redirecting to a static page.");
+            response.sendRedirect("logout_success.do");
+            return;
+        }
+        if (this.isEmpty(this.logoutRedirect)) {
+            this.OIDC.logError("External Logout Redirect is null, using it's default value : external_logout_complete.do");
+			this.propertiesGR.external_logout_redirect = "external_logout_complete.do";
+        }
+        this.postLogoutRedirectUrl = this.baseUrl + "/" + this.logoutRedirect;
+        this.OIDC.logDebug("PostLogout Redirect Url :: " + this.postLogoutRedirectUrl);
+        var map = this.logoutRequestCustomParams();
+        map.post_logout_redirect_uri = this.postLogoutRedirectUrl;
+        var logoutURL = this.OIDC.getEndSessionLogoutURL(map);
+        if (!GlideStringUtil.nil(logoutURL)) {
+            //PRB1409274 : Incase of Mobile App, we get the value for state parameter which is used for redirection for logout
+            var state = request.getParameter('sysparm_goto_url');
+            this.OIDC.logDebug("MultiSSO_OIDC_logout_internal, sysparm_goto_url paramater value : " + state);
+            if(!GlideStringUtil.nil(state))
+                 logoutURL = logoutURL + "&amp;state=" + GlideStringUtil.base64Encode(state);
+            this.OIDC.logDebug("Sending logout request to OIDC Provider : " + logoutURL);
+            response.sendRedirect("auth_redirect.do?sysparm_url=" + escape(logoutURL));
+        } else {
+            this.OIDC.logError("OIDC Logout request generation failed. Redirecting to a static page.");
+            this.processNormalLogout();
+        }
+    },
+
+    isEmpty: function(val) {
+		return (val == null || val == '' || val == 'undefined') ? true : false;
+	},
+
+	logoutRequestCustomParams: function() {
+		var logoutReqOptions = {};
+		return logoutReqOptions;
+	},
+
+	//Added below method to fix the issue mentioned in PRB1388415 for OIDC.
+	processNormalLogout : function() {
+        var s = request.getParameter('sysparm_goto_url');
+        if (s &amp;&amp; GlideSecurityUtils.isURLWhiteListedStrict(s)) {
+            this.OIDC.logDebug("MultiSSO_OIDC_logout_internal, processNormalLogout redirecting to : " + s);
+            response.sendRedirect(s);
+        } else
+            response.sendRedirect("logout_success.do");
+
+        return true;
+    },
+
+    type: 'MultiSSO_OIDC_logout_internal'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-01-23 18:43:48&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;36f5b095c7220010df1417b703c260ac&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;35&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSSO_OIDC_logout_internal&lt;/sys_name&gt;
+        &lt;sys_package display_value="Integration - Multiple Provider Single Sign-On (do not activate...use 'Integration - Multiple Provid" source="com.snc.integration.sso.multi"&gt;4762a9692fe21110d8a4d5f62799b613&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_36f5b095c7220010df1417b703c260ac&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-21 19:47:58&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3141&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:52</sys_created_on>
+        <sys_id>876c45ba2f331110d8a4d5f62799b60d</sys_id>
+        <sys_name>MultiSSO_OIDC_logout_internal</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_876c45ba2f331110d8a4d5f62799b60d</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

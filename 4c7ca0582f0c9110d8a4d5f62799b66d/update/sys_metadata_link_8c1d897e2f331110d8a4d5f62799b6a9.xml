@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>91d5739b875b13000e3dd61e36cb0b7f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProblemState&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Problem State constants, use these constants when determining which Problem State to use.&amp;#13;
+&amp;#13;
+Example - is the Problem in the "Resolved" state:&amp;#13;
+var problemGr = new GlideRecord("sn_problem_v2_problem");&amp;#13;
+if (problemGr.get("[sys_id]") &amp;amp;&amp;amp; problemGr.state == ProblemState.RESOLVED)&amp;#13;
+    // do something when the incident is resolved&amp;#13;
+&amp;#13;
+&amp;#13;
+Example 3 - how to use this on the client&amp;#13;
+var ga = new GlideAjax("ProblemState");&amp;#13;
+ga.addParam("sysparm_name", "getProblemState");&amp;#13;
+ga.getXMLAnswer(function(answer) {&amp;#13;
+    var problemState = JSON.parse(answer);&amp;#13;
+    g_form.setValue("state", problemState.NEW);&amp;#13;
+});&lt;/description&gt;
+        &lt;name&gt;ProblemState&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProblemState = Class.create();
+
+ProblemState.STATES = {
+	NEW : ProblemStateSNC.NEW,
+	ASSESS : ProblemStateSNC.ASSESS,
+	ROOT_CAUSE_ANALYSIS : ProblemStateSNC.ROOT_CAUSE_ANALYSIS,
+	FIX_IN_PROGRESS : ProblemStateSNC.FIX_IN_PROGRESS,
+	RESOLVED : ProblemStateSNC.RESOLVED,
+	CLOSED : ProblemStateSNC.CLOSED
+};
+
+ProblemState.RESOLUTION_CODES = ProblemStateSNC.RESOLUTION_CODES;
+
+ProblemState.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+
+	getProblemState: function() {
+		return ProblemState.STATES;
+	},
+
+	getResolutionCodes: function() {
+		return ProblemState.RESOLUTION_CODES;
+	},
+
+    type: 'ProblemState'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-07-20 08:11:13&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;91d5739b875b13000e3dd61e36cb0b7f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;11&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProblemState&lt;/sys_name&gt;
+        &lt;sys_package display_value="Problem Management Best Practice - Madrid - State Model" source="com.snc.best_practice.problem.madrid.state_model"&gt;fad449836de620100acb70b353433081&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_91d5739b875b13000e3dd61e36cb0b7f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-13 08:29:38&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;628&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:39</sys_created_on>
+        <sys_id>8c1d897e2f331110d8a4d5f62799b6a9</sys_id>
+        <sys_name>ProblemState</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8c1d897e2f331110d8a4d5f62799b6a9</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>9674aff1c323101035ae3f52c1d3aeea</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeTaskChgManagementAPISNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Base Change Task API when State Model plugin is installed. Use the "ChangeTaskChgManagementAPI" script include to override functionality in this script if required&lt;/description&gt;
+        &lt;name&gt;ChangeTaskChgManagementAPISNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeTaskChgManagementAPISNC = Class.create();
+
+ChangeTaskChgManagementAPISNC.prototype = {
+    initialize: function (changeTaskGr) {
+        this._log = new GSLog(ChangeCommon.LOG_PROPERTY, this.type);
+        this._gr = changeTaskGr;
+    },
+
+    /**
+     * Checks whether a change task state is Pending
+     */
+    isPending: function () {
+        return this._gr.state + "" === ChangeTaskState.PENDING;
+    },
+
+    /**
+     * Checks whether the field in the record has changed to the Pending state
+     */
+    changesToPending: function () {
+        return this._gr.state.changes() &amp;&amp; this.isPending();
+    },
+
+    /**
+     * Set the record's state to Pending but the record is not saved.
+     */
+    setPending: function () {
+        this._gr.state = ChangeTaskState.PENDING;
+    },
+
+    /**
+     * Change the state of the change task to Pending (the record is saved)
+     */
+    pending: function () {
+        this.setPending();
+        return !!this._gr.update();
+    },
+
+    /**
+     * Checks whether a change task state is Open
+     */
+    isOpen: function () {
+        return this._gr.state + "" === ChangeTaskState.OPEN;
+    },
+
+    /**
+     * Checks whether the field in the record has changed to the Open state
+     */
+    changesToOpen: function () {
+        return this._gr.state.changes() &amp;&amp; this.isOpen();
+    },
+
+    /**
+     * Set the record's state to Open but the record is not saved.
+     */
+    setOpen: function () {
+        this._gr.state = ChangeTaskState.OPEN;
+    },
+
+    /**
+     * Change the state of the change task to Open (the record is saved)
+     */
+    open: function () {
+        this.setOpen();
+        return !!this._gr.update();
+    },
+
+    /**
+     * Checks whether a change task is in progress
+     */
+    isInProgress: function () {
+        return this._gr.state + "" === ChangeTaskState.IN_PROGRESS;
+    },
+
+    /**
+     * Checks whether the field in the record has changed to the In Progress state
+     */
+    changesToInProgress: function () {
+        return this._gr.state.changes() &amp;&amp; this.isInProgress();
+    },
+
+    /**
+     * Set the record's state to In Progress but the record is not saved.
+     */
+    setInProgress: function () {
+        this._gr.state = ChangeTaskState.IN_PROGRESS;
+    },
+
+    /**
+     * Change the state of the change task to In Progress (the record is saved)
+     */
+    inProgress: function () {
+        this.setInProgress();
+        return !!this._gr.update();
+    },
+
+    /**
+     * Checks whether a change task has been closed
+     */
+    isClosed: function () {
+        return this._gr.state + "" === ChangeTaskState.CLOSED ||
+            this.isClosedSuccessful() ||
+            this.isClosedSuccessfulWithIssues() ||
+            this.isClosedUnsuccessful();
+    },
+
+    /**
+     * Checks whether the change task has been set to Closed + Successful state
+     */
+    isClosedSuccessful: function () {
+        return this._gr.state + "" === ChangeTaskState.CLOSED_SUCCESSFUL &amp;&amp;
+            (JSUtil.nil(this._gr.close_code) || this._gr.close_code + "" === ChangeTaskState.CLOSED_SUCCESSFUL_CODE);
+    },
+
+    /**
+     * Checks whether the change task has been set to Closed + Successful with issues state
+     */
+    isClosedSuccessfulWithIssues: function () {
+        return this._gr.state + "" === ChangeTaskState.CLOSED_SUCCESSFUL_ISSUES &amp;&amp;
+            (JSUtil.nil(this._gr.close_code) || this._gr.close_code + "" === ChangeTaskState.CLOSED_SUCCESSFUL_ISSUES_CODE);
+    },
+
+    /**
+     * Checks whether the change task has been set to Closed + Unsuccessful state
+     */
+    isClosedUnsuccessful: function () {
+        return this._gr.state + "" === ChangeTaskState.CLOSED_UNSUCCESSFUL &amp;&amp;
+            (JSUtil.nil(this._gr.close_code) || this._gr.close_code + "" === ChangeTaskState.CLOSED_UNSUCCESSFUL_CODE);
+    },
+
+    /**
+     * Checks whether the field in the record has changed to the Closed state
+     */
+    changesToClosed: function () {
+        return this._gr.state.changes() &amp;&amp; this.isClosed();
+    },
+
+    /**
+     * Set the record's state to closed according to the close code, but the record is not saved.
+     */
+    setClose: function (closeCode, closeNotes) {
+        switch (closeCode) {
+            case ChangeTaskState.CLOSED_SUCCESSFUL_ISSUES_CODE:
+                this.setCloseSuccessfulWithIssues(closeNotes);
+                break;
+            case ChangeTaskState.CLOSED_UNSUCCESSFUL_CODE:
+                this.setCloseUnsuccessful(closeNotes);
+                break;
+            default:
+                this.setCloseSuccessful(closeNotes);
+        }
+    },
+
+    /**
+     * Set close notes for the change task, but not save the record
+     */
+    setCloseNotes: function (closeNotes) {
+        this._gr.close_notes = closeNotes;
+    },
+
+    /**
+     * Change the state of the change task to Closed (the record is saved) with the specified close code and close notes
+     */
+    close: function (closeCode, closeNotes) {
+        this.setClose(closeCode, closeNotes);
+        return !!this._gr.update();
+    },
+
+    /**
+     * Change the state of the change task to Closed + Successful with the specified close notes without saving the record
+     */
+    setCloseSuccessful: function (closeNotes) {
+        this.setCloseNotes(closeNotes ? closeNotes : "Change task closed successful");
+        this._gr.state = ChangeTaskState.CLOSED_SUCCESSFUL;
+        this._gr.close_code = ChangeTaskState.CLOSED_SUCCESSFUL_CODE;
+    },
+
+    /**
+     * Change the state of the change task to Closed + Successful (the record is saved) with the specified close notes
+     */
+    closeSuccessful: function (closeNotes) {
+        this.setCloseSuccessful(closeNotes);
+        return !!this._gr.update();
+    },
+
+    /**
+     * Change the state of the change task to Closed + Successful with issues and the specified close notes without saving the record
+     */
+    setCloseSuccessfulWithIssues: function (closeNotes) {
+        this.setCloseNotes(closeNotes ? closeNotes : "Change task closed successful with issues");
+        this._gr.state = ChangeTaskState.CLOSED_SUCCESSFUL_ISSUES;
+        this._gr.close_code = ChangeTaskState.CLOSED_SUCCESSFUL_ISSUES_CODE;
+    },
+
+    /**
+     * Change the state of the change task to Closed + Successful with issues (the record is saved) with the specified close notes
+     */
+    closeSuccessfulWithIssues: function (closeNotes) {
+        this.setCloseSuccessfulWithIssues(closeNotes);
+        return !!this._gr.update();
+    },
+
+    /**
+     * Change the state of the change task to Closed + Unsuccessful with the specified close notes without saving the record
+     */
+    setCloseUnsuccessful: function (closeNotes) {
+        this.setCloseNotes(closeNotes ? closeNotes : "Change task closed unsuccessful");
+        this._gr.state = ChangeTaskState.CLOSED_UNSUCCESSFUL;
+        this._gr.close_code = ChangeTaskState.CLOSED_UNSUCCESSFUL_CODE;
+    },
+
+    /**
+     * Change the state of the change task to Closed + Unsuccessful (the record is saved) with the specified close notes
+     */
+    closeUnsuccessful: function (closeNotes) {
+        this.setCloseUnsuccessful(closeNotes);
+        return !!this._gr.update();
+    },
+
+    /**
+     * Checks whether a change task is canceled
+     */
+    isCanceled: function () {
+        return this._gr.state + "" === ChangeTaskState.CANCELED;
+    },
+
+    /**
+     * Checks whether the field in the record has changed to the Canceled state
+     */
+    changesToCanceled: function () {
+        return this._gr.state.changes() &amp;&amp; this.isCanceled();
+    },
+
+    /**
+     * Set the record's state to cancelled but the record is not saved.
+     */
+    setCancel: function (closeNotes) {
+        this._gr.state = ChangeTaskState.CANCELED;
+
+        if (closeNotes)
+            this._gr.close_notes = closeNotes;
+    },
+
+    /**
+     * Change the state of the change task to Canceled (the record is saved)
+     */
+    cancel: function (closeNotes) {
+        this.setCancel(closeNotes);
+        return !!this._gr.update();
+    },
+
+    getValue: function (name) {
+        return this._gr.getValue(name);
+    },
+
+    isOnHold: function () {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        return this._gr.on_hold;
+    },
+
+    setOnHoldReason: function (holdReason) {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        this._gr.setValue('on_hold_reason', holdReason);
+    },
+
+    setOnHold: function (holdValue) {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        this._gr.setValue('on_hold', holdValue);
+    },
+
+    onHold: function (holdValue, holdReason) {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        this.setOnHold(holdValue);
+        this.setOnHoldReason(holdReason);
+        return !!this._gr.update();
+    },
+
+    onHoldReason: function (newValue) {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        this.setOnHoldReason(newValue);
+        return !!this._gr.update();
+
+    },
+
+    clearOnHold: function () {
+        if (!ChangeTask.hasOnHoldField())
+            return false;
+
+        this.setOnHold(false);
+        this.setOnHoldReason('');
+        return !!this._gr.update();
+    },
+
+    type: 'ChangeTaskChgManagementAPISNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-30 09:56:57&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;9674aff1c323101035ae3f52c1d3aeea&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeTaskChgManagementAPISNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Core" source="com.snc.change_management"&gt;a39309476da620100acb70b35343307a&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_9674aff1c323101035ae3f52c1d3aeea&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-30 09:56:57&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;9244&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:50</sys_created_on>
+        <sys_id>2e1d8d7e2f331110d8a4d5f62799b672</sys_id>
+        <sys_name>ChangeTaskChgManagementAPISNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_2e1d8d7e2f331110d8a4d5f62799b672</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

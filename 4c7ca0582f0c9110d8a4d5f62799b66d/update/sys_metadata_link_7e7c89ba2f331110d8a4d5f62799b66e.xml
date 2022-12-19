@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>42de436c531333009e33ddeeff7b12a7</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PasswordPolicyDefaults&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PasswordPolicyDefaults&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PasswordPolicyDefaults = {
+    default_defaults: {
+        'minimum_uppercase_characters': '1',
+        'minimum_lowercase_characters': '1',
+        'minimum_numeric_characters': '1',
+        'minimum_special_characters': '0'
+    },
+	
+	default_strong_defaults: {
+        'minimum_uppercase_characters': '1',
+        'minimum_lowercase_characters': '1',
+        'minimum_numeric_characters': '1',
+        'minimum_special_characters': '1'
+    },
+    medium_defaults: {
+        'minimum_uppercase_characters': '1',
+        'minimum_lowercase_characters': '1',
+        'minimum_numeric_characters': '1',
+        'minimum_special_characters': '1'
+    },
+    high_defaults: {
+        'minimum_uppercase_characters': '1',
+        'minimum_lowercase_characters': '2',
+        'minimum_numeric_characters': '1',
+        'minimum_special_characters': '3'
+    }
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-08-13 08:32:16&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;42de436c531333009e33ddeeff7b12a7&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PasswordPolicyDefaults&lt;/sys_name&gt;
+        &lt;sys_package display_value="Password Policy" source="com.glide.password_policy"&gt;67fd380f6d2220100acb70b353433030&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_42de436c531333009e33ddeeff7b12a7&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-07-29 10:15:06&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;858&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:07</sys_created_on>
+        <sys_id>7e7c89ba2f331110d8a4d5f62799b66e</sys_id>
+        <sys_name>PasswordPolicyDefaults</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_7e7c89ba2f331110d8a4d5f62799b66e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>5fbc57070b11120008c0e240e0ea60e2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.WFUIPolicyBuilder&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Support UI Policy for Workflow Activity variables by extending UIPolicyBuilder.&lt;/description&gt;
+        &lt;name&gt;WFUIPolicyBuilder&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var WFUIPolicyBuilder = Class.create();
+
+WFUIPolicyBuilder.prototype = Object.extendsObject(UIPolicyBuilder, {
+	
+	initialize: function() {
+		UIPolicyBuilder.prototype.initialize.call(this);
+	},
+	
+	_processPolicy: function(gr) {
+		var scriptTrue = "";
+		var scriptFalse = "";
+		var set = new Packages.java.util.HashSet();
+		var scriptName = this._getScriptName(gr.sys_id, "true");
+		if (this.uiPolicy.scripts[scriptName])
+			scriptTrue = scriptName;
+		
+		scriptName = this._getScriptName(gr.sys_id, "false");
+		if (this.uiPolicy.scripts[scriptName])
+			scriptFalse = scriptName;
+		
+		var fieldPolicy = {};
+		
+		fieldPolicy.table = "wf_activity";
+		fieldPolicy.short_description = gr.short_description.toString();
+		fieldPolicy.reverse = (gr.reverse_if_false.toString() == "true");
+		fieldPolicy.onload = (gr.on_load.toString() == "true");
+		fieldPolicy.script_true = scriptTrue;
+		fieldPolicy.script_false = scriptFalse;
+		fieldPolicy.debug = this.debug;
+		this.uiPolicy.fieldPolicies.push(fieldPolicy);
+		
+		// Handle the conditions
+		var conditions = [];
+		fieldPolicy.conditions = conditions;
+		
+		var tableTD = this._getWFVariableTD(gr.activity_definition.toString());
+		var eq = new GlideQueryString();
+		eq.init(gr.getTableName(), gr.workflow_conditions);
+		eq.deserialize();
+		var terms = eq.getTerms();
+		fieldPolicy.condition_fields = [];
+		for (var i = 0; i != terms.size(); i++) {
+			var term = terms.get(i);
+			if (term.isEndQuery())
+				continue;
+			
+			var ed = tableTD.getElementDescriptor(term.getTermField());
+			
+			if (!ed)
+				continue;
+			
+			// determine field type
+			var fieldName = "vars." + tableTD.getName() + "." + term.getTermField();
+			var fieldType = ed.getInternalType();
+			if (!fieldType)
+				continue;
+			
+			var condition = {};
+			var oper = this._convertOper(term.getOperator() + '');
+			condition.newquery = term.isNewQuery();
+			condition.field = fieldName;
+			condition.oper = oper;
+			condition.value = term.getValue() + '';
+			condition.type = fieldType;
+			condition.or = term.isOR();
+			condition.term = fieldName + oper + term.getValue();
+			conditions.push(condition);
+			
+			set.add(fieldName);
+		}
+		
+		// get the policy actions
+		var actions = [];
+		fieldPolicy.actions = actions;
+		
+		var actionGR = new GlideRecord('wf_ui_policy_action');
+		actionGR.addQuery('ui_policy', gr.sys_id);
+		actionGR.query();
+		while (actionGR.next()) {
+			var action = {};
+			action.name = "vars." + tableTD.getName() + "." + actionGR.variable.toString();
+			action.mandatory = actionGR.mandatory.toString();
+			action.visible = actionGR.visible.toString();
+			action.disabled = actionGR.disabled.toString();
+			actions.push(action);
+		}
+		
+		// set of fields that have conditions attached
+		var fields = [];
+		fieldPolicy.condition_fields = fields;
+		var iter = set.iterator();
+		while (iter.hasNext())
+			fields.push(iter.next());
+		
+		set.clear();
+	},
+	
+	_getWFVariableTD: function(modelId) {
+		var grVariable = new GlideRecord("wf_activity_variable");
+		grVariable.addQuery("model", modelId);
+		grVariable.query();
+		if (grVariable.next())
+			return GlideTableDescriptor.get(grVariable.name);
+		
+	},
+	
+	
+	type: 'WFUIPolicyBuilder'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;christen.mitchell@snc&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-02-05 16:45:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;5fbc57070b11120008c0e240e0ea60e2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;WFUIPolicyBuilder&lt;/sys_name&gt;
+        &lt;sys_package display_value="Workflow Authoring Tools" source="com.glideapp.workflow.authoring"&gt;fa61c1cf6d2620100acb70b3534330b1&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_5fbc57070b11120008c0e240e0ea60e2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;christen.mitchell@snc&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2016-02-05 19:08:22&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3168&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:53</sys_created_on>
+        <sys_id>8eacc5fa2f331110d8a4d5f62799b641</sys_id>
+        <sys_name>WFUIPolicyBuilder</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8eacc5fa2f331110d8a4d5f62799b641</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

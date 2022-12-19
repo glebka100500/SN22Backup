@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>966893bdb7002300ee0d3177ee11a9f2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.QueryExporter&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;QueryExporter&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var QueryExporter = Class.create();
+QueryExporter.prototype = {
+
+    exporterlogger: {
+
+        init: function() {
+            this.exportlog = '';
+        },
+
+        log: function(logMessage) {
+            var formattedMsg = 'LOG: ' + logMessage + '\n';
+            this.exportlog = this.exportlog + formattedMsg;
+            gs.log(formattedMsg);
+        },
+        error: function(errorMessage){
+            var formattedMsg = 'ERROR: ' + errorMessage + '\n';
+            this.exportlog = this.exportlog + formattedMsg;
+            gs.log(formattedMsg);
+        },
+
+        getLog: function(){
+            return this.exportlog;
+        }
+
+    },
+
+    initialize: function() {
+        //get the tracker so we can send progress updates
+
+        this.tracker = SNC.GlideExecutionTracker.getLastRunning();
+		this.exporterlogger.init();
+        //Publish data to the cureent UpdateSet
+        this.newUpdateSetName = 'QueryExport ' + new GlideDateTime().toString();
+        this.publisher = new CMDBUpdateSetPublisher(this.newUpdateSetName, this.exporterlogger);
+        this.isPartial = false;
+        this.intervalPercent = Math.floor((100 / this.queryList.length) / 12);
+        this.removeUpdateSet = false;
+		    this.advancedOnly = false;
+    },
+
+    exportQueryBasic: function(queryListStr, currentMode) {
+		this.isPartial = currentMode;
+		var queryList = queryListStr.split(',');
+	    var basicExporter = new QueryDependencyExporter(queryList, this.publisher, this.tracker, this.intervalPercent, this.exporterlogger);
+        try{
+            basicExporter.exportData();
+        }catch(error){
+            this.exporterlogger.error('Fail to export due to:' + error);
+            this.exportComplete(false);
+            if(this.removeUpdateSet === true)
+                CMDBUpdateSetPublisher.deleteUpdateSet(this.publisher.getUpdateSetId());
+        }
+
+        this.exportComplete(true);
+        if(this.removeUpdateSet === true)
+            CMDBUpdateSetPublisher.deleteUpdateSet(this.publisher.getUpdateSetId());
+    },
+
+    exportComplete: function(isSuccess){
+        this.exporterlogger.log('exportComplete');
+        if (isSuccess){
+            this.publisher.complete();
+            this.exporterlogger.log('UpdateSet id is: ' + this.publisher.getUpdateSetId());
+            var gr = GlideRecord('sys_update_set');
+            gr.addQuery("sys_id", this.publisher.getUpdateSetId());
+            gr.addQuery("state", "complete");
+            gr.query();
+
+            var updateSetExport = new UpdateSetExport();
+            if(gr.hasNext()) {
+                gr.next();
+                var currentGr = gr;
+                this.exporterlogger.log('Exporting UpdateSet: ' + this.newUpdateSetName + ' to file');
+                this.exportSysId = updateSetExport.exportHierarchy(currentGr);
+                this.exporterlogger.log('Export XML sys_id: ' + this.exportSysId);
+                var self = this;
+                this.tracker.success('Export success');
+                this.tracker.updateResult(
+                    {
+                        exportResult: self.exporterlogger.getLog(),
+                        exportSysId: self.exportSysId,
+                        updateSetId: self.publisher.getUpdateSetId()
+                    });
+
+            }else{
+                this.exporterlogger.error('Exporting UpdateSet: ' + this.newUpdateSetName + ' to file failed');
+                this.tracker.fail("Export failed");
+            }
+
+        }
+        else{
+            this.tracker.fail("Export failed");
+            this.tracker.updateResult(
+                {
+                    exportResult: this.exporterlogger.getLog(),
+                });
+        }
+
+        gs.log(this.exporterlogger.getLog());
+        this.publisher.accomplish();
+
+    },
+
+    /*
+	This flag added for testing purpose
+	By setting this flag to false we are not removing the created UpdateSet after export is completed
+	*/
+    setRemoveUpdateSet: function(removeUpdateSet){
+        this.removeUpdateSet = removeUpdateSet;
+    },
+
+	/*
+	This flag added for testing purpose
+	By setting this flag to true we are not exporting the data that included in Basic Export
+	*/
+    setAdvancedOnly: function(advancedOnly){
+        this.advancedOnly = advancedOnly;
+    },
+
+    type: 'QueryExporter'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-21 20:51:19&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;966893bdb7002300ee0d3177ee11a9f2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;QueryExporter&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_966893bdb7002300ee0d3177ee11a9f2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-08-21 20:51:19&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;4283&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:29:49</sys_created_on>
+        <sys_id>561d8d7e2f331110d8a4d5f62799b66e</sys_id>
+        <sys_name>QueryExporter</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_561d8d7e2f331110d8a4d5f62799b66e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

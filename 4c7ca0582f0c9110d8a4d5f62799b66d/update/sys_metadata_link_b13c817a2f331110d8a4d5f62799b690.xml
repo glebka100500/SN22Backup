@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0d98d045ff422010635f056d793bf1e5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AutoResolutionRefQualifier&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;AutoResolutionRefQualifier&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AutoResolutionRefQualifier = Class.create();
+AutoResolutionRefQualifier.prototype = {
+    initialize: function() {
+    },
+	
+	getActiveConfigurations: function(currentAutoResConfigSysID) {
+		var activeConfigSysIDList = [];
+		var autoResConfigGr = new GlideRecord(AutoResolutionConstants.CONFIG_TABLE_NAME);
+		autoResConfigGr.addActiveQuery();
+		if (currentAutoResConfigSysID)
+			autoResConfigGr.addQuery('sys_id', '!=', currentAutoResConfigSysID);
+		
+		autoResConfigGr.query();
+		while (autoResConfigGr.next())
+			activeConfigSysIDList.push(autoResConfigGr.getValue('sys_id'));
+		
+		return 'sys_idIN' + activeConfigSysIDList.join(',');
+	},
+
+	getTemplates: function(tableName) {
+		return 'global=true^table=' + tableName;
+	},
+
+    type: 'AutoResolutionRefQualifier'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-01-29 18:02:00&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;0d98d045ff422010635f056d793bf1e5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AutoResolutionRefQualifier&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_0d98d045ff422010635f056d793bf1e5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-26 17:59:01&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;770&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:25:57</sys_created_on>
+        <sys_id>b13c817a2f331110d8a4d5f62799b690</sys_id>
+        <sys_name>AutoResolutionRefQualifier</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b13c817a2f331110d8a4d5f62799b690</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

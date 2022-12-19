@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4f109787f4c933006118bfbcd03dab62</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MLTriggerAutoTrain&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Utility function to trigger training request schedules for default OOB solution definitions&lt;/description&gt;
+        &lt;name&gt;MLTriggerAutoTrain&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MLTriggerAutoTrain = Class.create();
+MLTriggerAutoTrain.prototype = {
+
+    initialize: function() {
+		this.CLASSIFICATION_CAPABILITY = "95ca97b453873300d1dcddeeff7b120f";
+		this.SIMILARITY_CAPABILITY = "15ab7f3c53873300d1dcddeeff7b12ce";
+	},
+
+    getSolutionRecords: function(solution_id) {
+        var rowCount = {};
+        var minClassificationRows = parseInt(gs.getProperty("glide.platform_ml.api.csv_min_line", 10000));
+        var minSimilarityRows = parseInt(gs.getProperty("glide.platform_ml.api.min_similarity_window_records", 10));
+        rowCount.actualRows = 0;
+		rowCount.requiredRows = 1;
+        try {
+            var mlSolutionDef = new GlideRecord("ml_capability_definition_base");
+            if (mlSolutionDef.get(solution_id)) {
+                var filter = mlSolutionDef.getValue("filter");
+                var gr = new GlideRecord(mlSolutionDef.getValue("table"));
+				if (mlSolutionDef.getValue("capability") == this.CLASSIFICATION_CAPABILITY)
+					rowCount.requiredRows = minClassificationRows;
+				else if (mlSolutionDef.getValue("capability") == this.SIMILARITY_CAPABILITY)
+					rowCount.requiredRows = minSimilarityRows;
+                gr.addEncodedQuery(filter);
+                gr.query();
+                rowCount.actualRows = gr.getRowCount();
+                return rowCount;
+            }
+        } catch (e) {
+            gs.logError("Exception caught: " + e, 'MLTriggerAutoTrain');
+        }
+        return rowCount;
+    },
+
+    hasRequiredClassificationRows: function(solution_id) {
+        var rowCount = this.getSolutionRecords(solution_id);
+        //var maxRec = parseInt(gs.getProperty("glide.platform_ml.api.csv_max_line", 300000));
+        //return (rowCount.actualRows &gt;= rowCount.requiredRows) &amp;&amp; (rowCount.actualRows &lt;= maxRec);
+        //DEF0096884
+        return (rowCount.actualRows &gt;= rowCount.requiredRows);
+    },
+
+    hasRequiredSimilarityRows: function(solution_id) {
+		var rowCount = this.getSolutionRecords(solution_id);
+        //var maxRec = parseInt(gs.getProperty("glide.platform_ml.api.max_similarity_window_records", 100000));
+		//return (rowCount.actualRows &gt;= rowCount.requiredRows) &amp;&amp; (rowCount.actualRows &lt;= maxRec);
+		//DEF0096884
+		return (rowCount.actualRows &gt;= rowCount.requiredRows);
+    },
+
+    triggerTrainingRequests: function(capability) {
+        var solutionDefs = new MLSolutionDefinitionUtils().getDefaultOOBSolutionDefinitions(capability);
+        return this.triggerTrainings(Object.keys(solutionDefs));
+    },
+
+    triggerPluginTrainings: function(pluginId) {
+        var existingSolutions = new GlideRecord('ml_solution');
+        existingSolutions.addActiveQuery();
+        existingSolutions.query();
+        if (existingSolutions.next()) {
+            gs.info("Skipping auto-training because at least one trained solution exists");
+            return;
+        }
+
+        //Get all OOB sys ids based on plugin id
+        var solutionDefs = [];
+        var gr = new GlideRecord("ml_autotrain_solution");
+        if (pluginId)
+            gr.addQuery("plugin_id", pluginId);
+		else
+			return;
+        gr.addQuery("solution_definition.capability", [this.CLASSIFICATION_CAPABILITY, this.SIMILARITY_CAPABILITY]);
+        gr.query();
+        while (gr.next())
+            solutionDefs.push(gr.getValue("solution_definition"));
+		solutionDefs = new ArrayUtil().unique(solutionDefs);
+		
+        var trainingSolutions =  this.triggerTrainings(solutionDefs);
+        trainingSolutions["plugin_id"] = pluginId;
+		new MLAnalytics().trackAutoTraining(trainingSolutions);
+		gs.info("Sending data for analytics");
+    },
+
+    //New function for common logic used by landing page and sys_trigger auto-training
+    triggerTrainings: function(solutionDefs) {
+        var trainingSolutions = {};
+        var defintionRecords = new GlideRecord('ml_capability_definition_base');
+        defintionRecords.addQuery("sys_id", solutionDefs);
+        defintionRecords.addQuery("current_solution_version", "");
+        defintionRecords.query();
+
+        while (defintionRecords.next()) {
+            var key = defintionRecords.getValue("sys_id");
+            var solutionLabel = defintionRecords.getValue("solution_label");
+            //If the solution definition has less number of rows than the required rows for training, don't send a training request
+            if ((defintionRecords.capability == this.CLASSIFICATION_CAPABILITY &amp;&amp; !this.hasRequiredClassificationRows(key)) || (defintionRecords.capability == this.SIMILARITY_CAPABILITY &amp;&amp; !this.hasRequiredSimilarityRows(key))) {
+                gs.info("Solution definition " + key + " has less number of records for training.");
+                continue;
+            }
+
+            //Triggering only once as this is an Auto Train
+            gs.info("Preparing to add a job request for default solution " + solutionLabel);
+            new sn_ml.TrainingRequest().submitForTraining(key);
+            trainingSolutions[key] = solutionLabel;
+        }
+
+		
+        return trainingSolutions;
+    },
+
+    createDelayedTrigger: function(jobRecord, sysSecondTriggerName, delay) {
+        var nextAction = gs.minutesAgo(delay);
+        jobRecord.name = sysSecondTriggerName;
+        jobRecord.state = 0;
+        jobRecord.next_action.setValue(nextAction);
+        jobRecord.setValue('upgrade_safe','false');
+        jobRecord.claimed_by = null;
+        jobRecord.insert();
+    },
+
+    type: 'MLTriggerAutoTrain'
+
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-05-01 06:42:09&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4f109787f4c933006118bfbcd03dab62&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;61&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MLTriggerAutoTrain&lt;/sys_name&gt;
+        &lt;sys_package display_value="Predictive Intelligence" source="com.glide.platform_ml"&gt;fccdbc4b6d2220100acb70b3534330f2&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4f109787f4c933006118bfbcd03dab62&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-30 08:51:37&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5427&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:25</sys_created_on>
+        <sys_id>1b8c8dba2f331110d8a4d5f62799b607</sys_id>
+        <sys_name>MLTriggerAutoTrain</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1b8c8dba2f331110d8a4d5f62799b607</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

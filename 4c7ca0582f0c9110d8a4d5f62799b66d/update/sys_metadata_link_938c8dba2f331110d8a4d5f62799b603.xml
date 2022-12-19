@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4ef4d3e0b37003003e5362ff86a8dc2a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.PAUsageUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description/&gt;
+        &lt;name&gt;PAUsageUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var PAUsageUtil = Class.create();
+PAUsageUtil.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	getSysIDs:function(){
+		var gra = new GlideAggregate('sys_portal_page');
+		gra.groupBy('user');
+		gra.query();
+		var userIDs = [];
+		while (gra.next()) {
+			userIDs.push(gra.user.toString());
+		}
+		return userIDs;
+	},
+	
+	getUserIDs: function(count){
+		var gra = new GlideAggregate('sys_report');
+		gra.groupBy('sys_updated_by');
+		if (count) {
+			gra.addHaving('COUNT','&gt;',count);
+		}
+		gra.query();
+		var userNames = [];
+		while (gra.next()) {
+			userNames.push(gra.sys_updated_by.toString());
+		}
+		return userNames;
+	},
+	
+	getReportTables: function(){
+		var gra = new GlideAggregate('sys_report');
+		gra.groupBy('table');
+		gra.addHaving('COUNT', '&gt;', 5);
+		gra.query();
+		var reportTables = [];
+		while (gra.next()) {
+			reportTables.push(gra.table.toString());
+		}
+		return reportTables;
+	},
+		
+	type: 'PAUsageUtil'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2017-08-22 13:48:31&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4ef4d3e0b37003003e5362ff86a8dc2a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;PAUsageUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="Performance Analytics – Usage Overview" source="com.snc.pa.usage.overview"&gt;e9f3490b6da620100acb70b3534330d8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4ef4d3e0b37003003e5362ff86a8dc2a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2017-09-20 10:00:41&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;929&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:25</sys_created_on>
+        <sys_id>938c8dba2f331110d8a4d5f62799b603</sys_id>
+        <sys_name>PAUsageUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_938c8dba2f331110d8a4d5f62799b603</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

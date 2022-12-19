@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>48adad319fd22200598a5bb0657fcf38</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.InterProjectTaskDeletionHandler&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Called on task deletion - if task and relation is getting deleted, check if relation is shadow relation, then remove the inter project depedency&lt;/description&gt;
+        &lt;name&gt;InterProjectTaskDeletionHandler&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var InterProjectTaskDeletionHandler = Class.create();
+InterProjectTaskDeletionHandler.prototype = {
+    initialize: function() {
+        this.api = new SNC.PlannedTaskAPI();
+    },
+    
+    _getPayload: function(deletedTasksAndRelations) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler._getPayload -&gt; " + deletedTasksAndRelations);
+        var data;
+        if ( JSUtil.nil(deletedTasksAndRelations) ) {
+            data = {};
+            data.tasks = [];
+            data.links = [];
+            return data;
+        }
+        data = (new JSON()).decode(deletedTasksAndRelations);
+        if ( JSUtil.nil(data.tasks) )
+            data.tasks = [];
+        if ( JSUtil.nil(data.relations) )
+            data.relations = [];
+        
+        data.notificationFilter = '';
+        
+        data.relations.forEach(function(relation) {
+            if ( JSUtil.notNil(relation.orig_sys_id) ) {
+                relation.shadow = true;             
+                var result = data.tasks.filter(function(task) { return task.sys_id == relation.child; });
+                PPMDebug.log("InterProjectTaskDeletionHandler._getPayload result - child -&gt; " + (new JSON()).encode(result));
+                if (  result.length &gt; 0 ) {
+                    if ( result[0].shadow == true ) {
+                        relation.nonShadowEndPoint = 'parent'; //shadow task in pred project deleted
+                    }
+                    else {
+                        data.notificationFilter = 'task=' + relation.child; //actual task in succ project deleted
+                        relation.nonShadowEndPoint = 'child';
+                    }
+                }
+                result = data.tasks.filter(function(task) { return task.sys_id == relation.parent; });
+                PPMDebug.log("InterProjectTaskDeletionHandler._getPayload result - parent -&gt; " + (new JSON()).encode(result));
+                if ( result.length &gt; 0 ) {
+                    if ( result[0].shadow == true ) {
+                        data.notificationFilter = 'task=' + relation.child; //shadow task in succ project deleted
+                        relation.nonShadowEndPoint = 'child';
+                    }
+                    else {
+                        data.notificationFilter = 'source=' + relation.parent; // actual task in pred project deleted
+                        relation.nonShadowEndPoint = 'parent';                  
+                    }
+                }
+            }
+        });
+        PPMDebug.log("Return InterProjectTaskDeletionHandler._getPayload -&gt; " + (new JSON()).encode(data));
+        return data;
+    },
+
+    process: function(deletedTasksAndRelations) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.process -&gt; " + deletedTasksAndRelations);
+        var data = this._getPayload(deletedTasksAndRelations);
+        var relationsToDelete = [];
+        var tasksToDelete = [];
+        var projectsToRecalculate = [];
+        var self = this;
+        
+        data.relations.forEach(function(relation) {
+            if ( relation.shadow === true ) {
+                relationsToDelete.push(relation.orig_sys_id);
+                var relations = ShadowTaskQueryHelper.findShadowRelations(relation.orig_sys_id);
+                while ( relations.next() )
+                    relationsToDelete.push(relations.getValue('sys_id'));
+                
+                PPMDebug.log("InterProjectTaskDeletionHandler.process relation -&gt; " + (new JSON()).encode(relation));
+                var gr = new GlideRecord('planned_task');
+                var taskId;
+                if ( relation.nonShadowEndPoint == 'child' )
+                    taskId = relation.child;
+                else
+                    taskId = relation.parent;
+                if ( gr.get('orig_sys_id', taskId) ) {
+                    PPMDebug.log("InterProjectTaskDeletionHandler.process - delete shadow -&gt; " + gr.getValue("number") + 
+                        " - " + gr.getValue("short_description") + " - " + gr.top_task.short_description);
+                    // check if the task has other relations on the task
+                    var relationService = new PlannedTaskRelationDBService();
+                    allRelations = relationService.allRelations(gr.getValue("sys_id"), [relation.id || relation.sys_id]);
+                    if(JSUtil.nil(allRelations) || allRelations.getRowCount() == 0) {
+                        tasksToDelete.push(gr.getValue('sys_id'));
+                        projectsToRecalculate.push(gr.getValue('top_task'));
+                    }
+                }
+                var result = data.tasks.filter(function(task) { return task.sys_id == relation.child; });   
+                if ( result.length &gt; 0 )
+                    taskId = relation.parent;
+                else
+                    taskId = relation.child;
+                if ( self._taskShouldBeDeleted(taskId) )
+                    tasksToDelete.push(taskId);
+            }
+        });
+
+        //check if any task is not deleted yet due to cascade delete
+        var projectsToBeRecalculated = [];
+        data.tasks.forEach(function(task) {
+            if ( task.shadow !== true ) {
+               var gr = new GlideRecord('planned_task');
+               gr.addQuery('orig_sys_id', task.sys_id);
+               gr.query();
+               while(gr.next()){  // check if originated sys_id
+                 tasksToDelete.push(gr.getValue("sys_id"));
+                 var subTreeRoot = gr.getValue("sub_tree_root");
+                 if(projectsToBeRecalculated.indexOf(subTreeRoot) == -1){
+                    projectsToBeRecalculated.push(subTreeRoot);
+                 }
+               }
+            }
+        });
+
+        projectsToBeRecalculated.forEach(function(projectId){
+            InterProjectEventManager.raiseFullRecalculateEvent(projectId);
+        });
+
+
+        this.deleteTasks(tasksToDelete);
+        this.deleteRelations(relationsToDelete);
+        this.recalculateProjects(projectsToRecalculate);
+        this.deleteNotifications(data.notificationFilter);
+    },
+    
+    _taskShouldBeDeleted: function(taskId) {
+        var gr = new GlideRecord('planned_task');
+        if ( gr.get(taskId) ) {
+            if ( JSUtil.notNil(gr.getValue('orig_sys_id')) ) {
+                var rel = new GlideRecord('planned_task_rel_planned_task');
+                var qc = rel.addQuery('parent', taskId);
+                qc.addOrCondition('child', taskId);
+                rel.query();
+                return (rel.getRowCount() == 0);
+            }
+        }
+        return false;
+    },
+    
+    deleteTasks: function(tasksToDelete) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.deleteTasks -&gt; " + tasksToDelete.join(","));
+        var uniqueTopTasks = [], arrayUtil = new ArrayUtil();
+        tasksToDelete.forEach(function(task) {          
+            var gr = new GlideRecord('planned_task');
+            if ( gr.get(task) ) {
+                gr = new GlideRecord(gr.getValue('sys_class_name')); //set right class name, else workflow would fire on delete
+                gr.get(task);
+                if(JSUtil.notNil(gr.getValue("top_task"))) {
+                    if(!arrayUtil.contains(uniqueTopTasks, gr.getValue("top_task")))
+                        uniqueTopTasks.push(gr.getValue("top_task"));
+                }
+                gr.setWorkflow(false);
+                gr.deleteRecord();              
+            }
+        });
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.uniqueTopTasks -&gt; " + uniqueTopTasks.join(","));
+        if(uniqueTopTasks.length &gt; 0) {
+            uniqueTopTasks.forEach(function(topTaskId) {
+                this.api.validateWbs(topTaskId);
+            });
+        }
+    },
+    
+    deleteRelations: function(relationsToDelete) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.deleteRelations -&gt; " + relationsToDelete.join(","));
+        relationsToDelete.forEach(function(relation) {
+            var gr = new GlideRecord('planned_task_rel_planned_task');
+            if(gr.get(relation)) {
+                // gr.setWorkflow(false); // if relation exists delete the relation
+                gr.deleteRecord();
+            }
+        });
+    },
+    
+    deleteNotifications: function(filter) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.deleteNotifications -&gt; " + filter);
+        if ( JSUtil.notNil(filter) ) {
+            var gr = new GlideRecord('planned_task_notification');
+            gr.addEncodedQuery(filter);
+            gr.setWorkflow(false);
+            gr.deleteMultiple();
+        }
+    },
+    
+    recalculateProjects :function(projectsToRecalculate) {
+        PPMDebug.log("Into InterProjectTaskDeletionHandler.recalculateProjects -&gt; " + projectsToRecalculate.join(","));
+        var uniqueProjects = projectsToRecalculate.filter(function(item, pos) {
+            return projectsToRecalculate.indexOf(item) == pos;
+        });
+        uniqueProjects.forEach(function(projectId) {
+            this.api.validateWbs(projectId); // re-vaidate on the safer side
+            InterProjectEventManager.raiseFullRecalculateEvent(projectId);
+        });     
+    },
+    
+    type: 'InterProjectTaskDeletionHandler'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-10-07 00:41:32&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;48adad319fd22200598a5bb0657fcf38&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;69&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;InterProjectTaskDeletionHandler&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_48adad319fd22200598a5bb0657fcf38&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-11-25 04:18:28&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;9180&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:15</sys_created_on>
+        <sys_id>388c0dba2f331110d8a4d5f62799b6e2</sys_id>
+        <sys_name>InterProjectTaskDeletionHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_388c0dba2f331110d8a4d5f62799b6e2</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3aa1185ec0a80a68523ad51b6fe97328</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.DateTimeUtils&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Wrapper to make common date time functions easier.&lt;/description&gt;
+        &lt;name&gt;DateTimeUtils&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var DateTimeUtils = Class.create();
+
+DateTimeUtils.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+    /**
+     * Convert Microsoft AD integer8 DateTime format to GlideDateTime
+     * Integer8 is also known as Microsoft Filetime format
+     * Commonly used when importing AD user's date fields such as expiration date
+     */
+    int8ToGlideDateTime: function(int8Date) {
+		// Orlando, the script threw error for values greater than this
+		if (int8Date &gt; 9223372036854775295)
+			return null;
+        return GlideSystemDateUtil.filetimeToGlideDateTime(int8Date);
+    },
+
+    /**
+     * Convert milliseconds to GlideDateTime...client usage below:
+     *
+     * var ga = new GlideAjax('DateTimeUtils');
+     * ga.addParam('sysparm_name','msToGlideDateTime');
+     * ga.addParam('sysparm_value', MILLISECONDSVALUE);
+     * ga.getXMLWait();
+     * var newGDT = ga.getAnswer();
+     *
+     * newGDT is your newly converted GlideDateTime
+     */
+    msToGlideDateTime: function() {
+        var ms = this.getValue();
+        var gDate = new GlideDateTime();
+        gDate.setValue(parseInt(ms, 10));
+        return gDate;
+    },
+
+    formatCalendarDate: function() {
+        // applies a correction since the time the calendar may be sending us may be off by an hour
+        // it includes the DST correction for NOW, but the date in question may not need a DST correction
+        var d = GlideStringUtil.parseLong(this.getValue());
+        var gDate = new GlideDateTime();
+        var offsetNow = gDate.getTZOffset();
+        gDate.setNumericValue(d);
+        var offsetDate = gDate.getTZOffset();
+        gDate.setNumericValue(d + (offsetNow - offsetDate));
+        return gDate.getDisplayValue();
+    },
+
+    /**
+     * Given a GlideDateTime get the first day of that week, used for time cards to set first day of the time card period
+     * defaults to Sunday, can override by providing second parameter (1=Monday, 7=Sunday)
+     *
+     *@returns GlideDate
+     */
+    getWeekStart: function( /*GlideDateTime*/ dt, /*int*/ firstDay) {
+        if (!firstDay || isNaN(firstDay))
+            firstDay = 7; //Sunday
+
+        if (firstDay &lt; 1 || firstDay &gt; 7)
+            firstDay = 7; //Sunday
+
+        var temp = new GlideDateTime(dt);
+        while (temp.getDayOfWeek() != firstDay) {
+            temp.addDays(-1);
+        }
+
+        return temp.getLocalDate();
+    }
+
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;john.roberts&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-10-09 18:49:15&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3aa1185ec0a80a68523ad51b6fe97328&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;49&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;DateTimeUtils&lt;/sys_name&gt;
+        &lt;sys_package display_value="System (glidesoft)" source="glidesoft"&gt;079c7c036d2220100acb70b3534330b0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_3aa1185ec0a80a68523ad51b6fe97328&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-01-13 17:46:05&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2377&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:56</sys_created_on>
+        <sys_id>587cc5ba2f331110d8a4d5f62799b622</sys_id>
+        <sys_name>DateTimeUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_587cc5ba2f331110d8a4d5f62799b622</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

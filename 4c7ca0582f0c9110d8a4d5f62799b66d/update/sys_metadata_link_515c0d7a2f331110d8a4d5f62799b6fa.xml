@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>24fdd699873313002ba97f9719cb0b3b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.QuarantineActionsProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Helper class to perform Delete, Download and Restore actions on Quarantined files.&lt;/description&gt;
+        &lt;name&gt;QuarantineActionsProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var QuarantineActionsProcessor = Class.create();
+QuarantineActionsProcessor.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	restoreQuarantinedFiles: function () {
+		if (!gs.hasRole('antivirus_admin'))
+			return;
+		var objSysIds = this.getParameter('sysparm_obj_list');
+		var tblName = this.getParameter('sysparm_table_name');
+		var objList = objSysIds.split(',');
+
+		for (var i = 0; i &lt; objList.length; i++) {
+			if (objList[i] == null || objList[i] == '') 
+				continue;
+
+			var gr = new GlideRecord(tblName);
+			if (gr.get(objList[i])) {
+				var attachmentGr = new GlideRecord('sys_attachment');
+				if (attachmentGr.get(gr.sa_sys_id)) {
+					attachmentGr.state = 'available';
+					attachmentGr.update();
+					this.logAction('restored', gr.sa_sys_id);
+				}
+			}
+		}
+	},
+
+	deleteQuarantinedFiles: function () {
+		if (!gs.hasRole('antivirus_admin'))
+			return;
+		var objSysIds = this.getParameter('sysparm_obj_list');
+		var tblName = this.getParameter('sysparm_table_name');
+		var objList = objSysIds.split(',');
+
+		for (var i = 0; i &lt; objList.length; i++) {
+			if (objList[i] == null || objList[i] == '') 
+				continue;
+			var gr = new GlideRecord(tblName);
+			if (gr.get(objList[i])) {
+				var attachmentGr = new GlideRecord('sys_attachment');
+				if (attachmentGr.get(gr.sa_sys_id) &amp;&amp; attachmentGr.canDelete()) {
+					this.logAction('deleted', gr.sa_sys_id);
+					attachmentGr.deleteRecord();
+				}
+			}
+		}
+	},
+	
+	countDeletableFiles: function () {
+		var objSysIds = this.getParameter('sysparm_obj_list');
+		var tblName = this.getParameter('sysparm_table_name');
+		var objList = objSysIds.split(',');
+		var deletableFileCount = 0;
+
+		for (var i = 0; i &lt; objList.length; i++) {
+			if (objList[i] == null || objList[i] == '') 
+				continue;
+			var gr = new GlideRecord(tblName);
+			if (gr.get(objList[i])) {
+				var attachmentGr = new GlideRecord('sys_attachment');
+				if (attachmentGr.get(gr.sa_sys_id) &amp;&amp; attachmentGr.canDelete())
+					deletableFileCount++;
+			}
+		}
+		return deletableFileCount;
+	},
+	
+	getAttachmentIds: function () {
+		var objSysIds = this.getParameter('sysparm_obj_list');
+		var tblName = this.getParameter('sysparm_table_name');
+		var objList = objSysIds.split(',');
+		var attachmentSysIds = '';
+
+		for (var i = 0; i &lt; objList.length; i++) {
+			if (objList[i] == null || objList[i] == '') 
+				continue;
+			var gr = new GlideRecord(tblName);
+			if (gr.get(objList[i])) {			
+				attachmentSysIds += gr.sa_sys_id;
+				attachmentSysIds += ',';
+			}
+		}
+		return attachmentSysIds;
+	},
+
+	logAction: function (event, attachmentId) {
+		var logTblName = 'antivirus_activity';
+		var quarantinedRec = new GlideRecord(logTblName);
+		quarantinedRec.addQuery('attachment_id', attachmentId);
+		quarantinedRec.query();
+
+		if (quarantinedRec.next()) {
+			var gr = new GlideRecord(logTblName);
+			gr.initialize();
+			gr.event = event;
+			gr.event_source = 'from_quarantine';
+			gr.event_time = new GlideDateTime();
+			gr.event_by = gs.getUserID();
+			gr.attachment_id = quarantinedRec.attachment_id;
+			gr.file_name = quarantinedRec.file_name;
+			gr.virus = quarantinedRec.virus;
+			gr.table_name = quarantinedRec.table_name;
+			gr.detected = quarantinedRec.detected;
+			gr.uploader = quarantinedRec.uploader;
+			gr.table_sys_id = quarantinedRec.table_sys_id;
+			gr.virus_detected = quarantinedRec.virus_detected;
+
+			gr.insert();
+		}
+	},
+
+	type: 'QuarantineActionsProcessor'
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2018-08-07 17:07:14&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;24fdd699873313002ba97f9719cb0b3b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;72&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;QuarantineActionsProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="ServiceNow Antivirus Program" source="com.glide.snap"&gt;50f3c50b6da620100acb70b3534330f8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_24fdd699873313002ba97f9719cb0b3b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-09-24 15:06:57&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3400&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:28</sys_created_on>
+        <sys_id>515c0d7a2f331110d8a4d5f62799b6fa</sys_id>
+        <sys_name>QuarantineActionsProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_515c0d7a2f331110d8a4d5f62799b6fa</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4e2ce1c5c1252a7b1faa471f1683fd7b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeCheckConflicts&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Class methods for Change Management Collision Detection,&amp;#13;
+ChangeCheckConflicts.check() is the entry point from 'Change Conflicts' sys_ui_action&lt;/description&gt;
+        &lt;name&gt;ChangeCheckConflicts&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeCheckConflicts = Class.create();
+
+// System properties
+ChangeCheckConflicts.CHANGE_CONFLICT_MODE = "change.conflict.mode";
+ChangeCheckConflicts.CHANGE_CONFLICT_CURRENTCI = "change.conflict.currentci";
+ChangeCheckConflicts.CHANGE_CONFLICT_CURRENTWINDOW = "change.conflict.currentwindow";
+ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDCHILDWINDOW = "change.conflict.relatedchildwindow";
+ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDPARENTWINDOW = "change.conflict.relatedparentwindow";
+ChangeCheckConflicts.CHANGE_CONFLICT_BLACKOUT = "change.conflict.blackout";
+ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDCHILDBLACKOUT = "change.conflict.relatedchildblackout";
+ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDPARENTBLACKOUT = "change.conflict.relatedparentblackout";
+ChangeCheckConflicts.CHANGE_CONFLICT_CI_MAINT_SCHED = "change.conflict.ci_maint_sched";
+ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDSERVICES = "change.conflict.relatedservices";
+ChangeCheckConflicts.CHANGE_CONFLICT_ASSIGNED_TO = "change.conflict.assigned_to";
+ChangeCheckConflicts.CHANGE_CONFLICT_SHOW_TIMING_INFO = "change.conflict.show.timing.info";
+ChangeCheckConflicts.CHANGE_CONFLICT_DUMP_COUNT = "change.conflict.dump.count";
+ChangeCheckConflicts.CHANGE_CONFLICT_FILTER_CASE_SENSITIVE = "change.conflict.filter.case_sensitive";
+ChangeCheckConflicts.CHANGE_CONFLICT_USE_COMPOSED = "change.conflict.usecomposed";
+ChangeCheckConflicts.CHANGE_CONFLICT_IDENTIFY_MOST_CRITICAL = "change.conflict.identifymostcritical";
+ChangeCheckConflicts.CHANGE_CONFLICT_POPULATE_IMPACTED_CIS = "change.conflict.populateimpactedcis";
+ChangeCheckConflicts.CHANGE_CONFLICT_ALLOW_CONTIGUOUS_CHANGES = "change.conflict.allow_contiguous_changes";
+ChangeCheckConflicts.CHANGE_CONFLICT_CONSOLIDATED_CONFLICTS = "change.conflict.consolidated_conflicts";
+ChangeCheckConflicts.CHANGE_CONFLICT_LOG = "change.conflict.log";
+ChangeCheckConflicts.TRACKER_NAME = ChangeCheckConflictsSNC.TRACKER_NAME;
+
+ChangeCheckConflicts.getConfig = function (config) {
+	if (!config)
+			config = {};
+	if (!('mode' in config))
+			config.mode = gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_MODE);
+	if (!('include_current_ci' in config))
+		config.include_current_ci = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_CURRENTCI)) === 'true';
+	if (!('current_window' in config))
+		config.current_window = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_CURRENTWINDOW)) === 'true';
+	if (!('include_related_children_window' in config))
+		config.include_related_children_window = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDCHILDWINDOW)) === 'true';
+	if (!('include_related_parent_window' in config))
+		config.include_related_parent_window = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDPARENTWINDOW)) === 'true';
+	if (!('include_blackout_window' in config))
+		config.include_blackout_window = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_BLACKOUT)) === 'true';
+	if (!('include_related_children_blackout' in config))
+		config.include_related_children_blackout = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDCHILDBLACKOUT)) === 'true';
+	if (!('include_related_parent_blackout' in config))
+		config.include_related_parent_blackout = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDPARENTBLACKOUT)) === 'true';
+	if (!('include_ci_maint_sched' in config))
+		config.include_ci_maint_sched = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_CI_MAINT_SCHED)) === 'true';
+	if (!('include_related_services' in config))
+		config.include_related_services = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_RELATEDSERVICES)) === 'true';
+	if (!('include_assigned_to' in config))
+		config.include_assigned_to = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_ASSIGNED_TO)) === 'true';
+	if (!('show_timing_info' in config))
+		config.show_timing_info = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_SHOW_TIMING_INFO)) === 'true';
+	if (!('dump_count' in config))
+		config.dump_count = parseInt(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_DUMP_COUNT, "500"));
+	if (!('filter_is_case_sensitive' in config))
+		config.filter_is_case_sensitive = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_FILTER_CASE_SENSITIVE)) === 'true';
+	if (!('use_composed' in config))
+		config.use_composed = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_USE_COMPOSED)) === 'true';
+	if (!('identify_most_critical' in config))
+		config.identify_most_critical = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_IDENTIFY_MOST_CRITICAL)) === 'true';
+	if (!('populate_impacted_cis' in config))
+		config.populate_impacted_cis = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_POPULATE_IMPACTED_CIS)) === 'true';
+	if (!('allow_contiguous_changes' in config))
+		config.allow_contiguous_changes = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_ALLOW_CONTIGUOUS_CHANGES)) === "true";
+	if (!('consolidated_conflicts' in config))
+		config.consolidated_conflicts = String(gs.getProperty(ChangeCheckConflicts.CHANGE_CONFLICT_CONSOLIDATED_CONFLICTS)) === "true";
+	return config;
+};
+
+// This is no longer used by this script and exists only for backward compatibility
+ChangeCheckConflicts.allowConflictDetection = function(currentGr, previousGr) {
+	return ChangeCheckConflictsSNC.allowConflictDetection(currentGr, previousGr, ChangeCheckConflicts.getConfig());
+};
+
+ChangeCheckConflicts.buildAncestorClassInfo = ChangeCheckConflictsSNC.buildAncestorClassInfo;
+
+ChangeCheckConflicts.prototype = Object.extendsObject(ChangeCheckConflictsSNC, {
+
+    initialize: function(current, config) {
+		ChangeCheckConflictsSNC.prototype.initialize.call(this, current, ChangeCheckConflicts.getConfig(config));
+    },
+
+	type: 'ChangeCheckConflicts'
+
+});]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;james.grinter&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-04-13 11:31:41&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;4e2ce1c5c1252a7b1faa471f1683fd7b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;488&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeCheckConflicts&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Collision Detector" source="com.snc.change.collision"&gt;479385476da620100acb70b3534330f0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_4e2ce1c5c1252a7b1faa471f1683fd7b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-03-27 15:09:51&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;5826&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:27:24</sys_created_on>
+        <sys_id>768c4dba2f331110d8a4d5f62799b6c7</sys_id>
+        <sys_name>ChangeCheckConflicts</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_768c4dba2f331110d8a4d5f62799b6c7</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>769f81cf9f31220088265bb0657fcf80</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ProjectParentValidator&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Project Parent Validator for Project Diagnosis&lt;/description&gt;
+        &lt;name&gt;ProjectParentValidator&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ProjectParentValidator = Class.create();
+ProjectParentValidator.prototype = {
+    initialize: function(projectData) {
+        this.projectData = projectData;
+		var plannedTaskRecalculationExclusion = new PlannedTaskRecalculationExclusion();
+        this.excludedTables = plannedTaskRecalculationExclusion.getExclusions();
+        this.invalidTasksWithEmptyParents = [];
+        this.tasksWithInvalidParents = [];
+        this.validateEmptyParents();
+        this.validateInvalidParents();
+    },
+    
+    validateEmptyParents: function() {
+        var tasks = this.projectData.getTasks();
+        var taskSysIdes = tasks['sys_ids'];
+        var topTaskId = this.projectData.getTopTaskId();
+        var gr = new GlideRecord("planned_task");
+        gr.addQuery("top_task", topTaskId);
+        gr.addQuery("sys_id", "!=",  topTaskId);
+        if(JSUtil.notNil(this.excludedTables))
+            gr.addQuery("sys_class_name", "NOT IN", this.excludedTables);
+        gr.addEncodedQuery("^parentISEMPTY");
+        gr.query();
+        PPMDebug.log("validateEmptyParents Tasks -&gt; " + gr.getRowCount() + " -&gt; " + gr.getEncodedQuery());
+        while(gr.next()) {
+            this.invalidTasksWithEmptyParents.push({
+                sys_id: gr.getValue("sys_id"),
+                number: gr.getValue("number"),
+                short_description: gr.getValue("short_description"),
+                parent: gr.getValue("parent"),
+                top_task: gr.getValue("top_task")
+            });
+        }
+    },
+    
+    validateInvalidParents: function() {
+        var topTaskId = this.projectData.getTopTaskId();
+        var gr = new GlideRecord("planned_task");
+        gr.addQuery("top_task", topTaskId);
+        gr.addQuery("sys_id", "!=",  topTaskId);
+        gr.addNotNullQuery('parent');
+		if(JSUtil.notNil(this.excludedTables))
+			gr.addQuery("sys_class_name", "NOT IN", this.excludedTables);
+        gr.query();
+        PPMDebug.log("validateInvalidParents Tasks -&gt; " + gr.getRowCount() + " -&gt; " + gr.getEncodedQuery());
+        var allTasksByTopTask = {};
+        var allParents = {};
+        while ( gr.next() ) {
+            allTasksByTopTask[gr.getValue('sys_id')] = '1';
+            allParents[gr.getValue('parent')] = '1';
+        }
+        for ( var parent in allParents ) {
+            if ( JSUtil.nil(allTasksByTopTask[parent]) &amp;&amp; parent != topTaskId ) {
+                gr = new GlideRecord('planned_task');
+                gr.addQuery('top_task', topTaskId);
+                gr.addQuery('parent', parent);
+                gr.query();
+                while ( gr.next() ) {
+                    var obj = {
+                        sys_id: gr.getValue("sys_id"),
+                        number: gr.getValue("number"),
+                        short_description: gr.getValue("short_description"),
+                        parent: gr.getDisplayValue("parent")
+                    };
+                    if ( JSUtil.nil(gr.getDisplayValue('parent')) )
+                        obj.parent = gr.getValue('parent');
+                    else
+                        obj.parent = gr.getDisplayValue('parent');
+                    this.tasksWithInvalidParents.push(obj);
+                }
+            }
+        }
+    },
+    
+    getInvalidTasksWithEmptyParents: function() {
+        return this.invalidTasksWithEmptyParents;
+    },
+    
+    getTasksWithInvalidParents: function() {
+        return this.tasksWithInvalidParents;
+    },
+    
+    
+    hasEmptyParents: function() {
+        if ( this.invalidTasksWithEmptyParents.length == 0 )
+            return false;
+        else
+            return true;
+    },
+    
+    hasInvalidParents: function() {
+        if ( this.tasksWithInvalidParents.length == 0 )
+            return false;
+        else
+            return true;
+    },
+    
+    type: 'ProjectParentValidator'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2016-09-15 23:11:51&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;769f81cf9f31220088265bb0657fcf80&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ProjectParentValidator&lt;/sys_name&gt;
+        &lt;sys_package display_value="Planned Task_v2" source="com.snc.planned_task_v2"&gt;e93557642fc10110d8a4d5f62799b623&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_769f81cf9f31220088265bb0657fcf80&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-10-07 05:39:35&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3817&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:37</sys_created_on>
+        <sys_id>b0dc853e2f331110d8a4d5f62799b6c5</sys_id>
+        <sys_name>ProjectParentValidator</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b0dc853e2f331110d8a4d5f62799b6c5</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

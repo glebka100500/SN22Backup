@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>35d1d637730310108ef62d2b04f6a70b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;public&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.ChangeFlowUtilSNC&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Flow utilities for Change Request. Override this behaviour in the ChangeFlowUtil script-include.&amp;#13;
+&amp;#13;
+Used by the "Show Flow" action on Change Request.&amp;#13;
+&amp;#13;
+Used by the following Flow Actions:&amp;#13;
+- Cancel Change Tasks created from Flow&amp;#13;
+- Disregard Change Request Approvals&lt;/description&gt;
+        &lt;name&gt;ChangeFlowUtilSNC&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var ChangeFlowUtilSNC = Class.create();
+ChangeFlowUtilSNC.prototype = {
+
+	CANCELED: "4",
+	CHANGE_MODEL_EVALUATE: "change_model.evaluate",
+	NOT_REQUIRED: "not_required",
+	NOT_REQUESTED: "not requested",
+	OPEN: "1",
+	PENDING: "-5",
+	REQUESTED: "requested",
+	STATE: "state",
+
+	initialize: function(changeRequestGR, _gs) {
+		this.changeRequestGR = changeRequestGR;
+		this._gs = _gs || gs;
+	},
+
+	getFlowData: function() {
+		var hasFlows = false;
+		var hasMultipleFlows = false;
+		var flowId = "";
+
+		if (!this.changeRequestGR || !this.changeRequestGR.isValidRecord())
+			return {hasFlows: hasFlows, hasMultipleFlows: hasMultipleFlows, flowId: flowId, flowQuery: ""};
+
+		var flowContextGR = new GlideRecord("sys_flow_context");
+		flowContextGR.addQuery("source_table", this.changeRequestGR.getRecordClassName());
+		flowContextGR.addQuery("source_record", this.changeRequestGR.getUniqueValue());
+		flowContextGR.query();
+		if (flowContextGR.next()) {
+			hasFlows = true;
+			if (!flowContextGR.hasNext())
+				flowId = flowContextGR.getUniqueValue();
+			else
+				hasMultipleFlows = true;
+		}
+
+		return {hasFlows: hasFlows, hasMultipleFlows: hasMultipleFlows, flowId: flowId, flowQuery: flowContextGR.getEncodedQuery()};
+	},
+
+	cancelChangeTasks: function() {
+		if (!this.changeRequestGR || !this.changeRequestGR.isValidRecord())
+			return;
+		var changeTasksGR = new GlideRecord("change_task");
+		changeTasksGR.addQuery("change_request", this.changeRequestGR.getUniqueValue());
+		changeTasksGR.addQuery("created_from", "flow");
+		changeTasksGR.addQuery(this.STATE, [this.OPEN, this.PENDING]);
+		changeTasksGR.setValue(this.STATE, this.CANCELED);
+		changeTasksGR.updateMultiple();
+	},
+
+	disregardApprovals: function() {
+		if (!this.changeRequestGR || !this.changeRequestGR.isValidRecord())
+			return;
+
+		var changeGR = new GlideRecord(this.changeRequestGR.getRecordClassName());
+		if (!changeGR.get(this.changeRequestGR.getUniqueValue()))
+			return;
+
+		var approvalUtils = new WorkflowApprovalUtils();
+		var comment = "";
+		if ("1" === changeGR.getValue("on_hold"))
+			comment = gs.getMessage("Approvals are no longer required as the change request is on hold.");
+		var changeRequestSysId = changeGR.getUniqueValue();
+		approvalUtils.setGroupApprovalsByTask(changeRequestSysId, this.NOT_REQUIRED, "", [this.NOT_REQUESTED, this.REQUESTED]);
+		approvalUtils.setUserApprovalsByTask(changeRequestSysId, this.NOT_REQUIRED, comment, [this.NOT_REQUESTED, this.REQUESTED]);
+
+		if (comment)
+			changeGR.approval_history = comment;
+		changeGR.setValue("approval", this.NOT_REQUESTED);
+		changeGR.update();
+	},
+	
+	evaluateChangeModel: function() {
+		if (!this.changeRequestGR || !this.changeRequestGR.isValidRecord())
+			return;
+
+		var changeGR = new GlideRecord(this.changeRequestGR.getRecordClassName());
+		if (!changeGR.get(this.changeRequestGR.getUniqueValue()) || changeGR.chg_model.nil())
+			return;
+
+		var changeModel = new ChangeModel(changeGR.chg_model.getRefRecord());
+		if (changeModel.applyAutomaticTransition(changeGR))
+			changeGR.update();
+	},
+
+	hasUserApprovedLatestApproval: function(sysUserGR) {
+		if (!this.changeRequestGR || !this.changeRequestGR.isValidRecord() || !sysUserGR || !sysUserGR.isValidRecord())
+			return false;
+
+		var grApproval = new GlideRecord("sysapproval_approver");
+		grApproval.addQuery("document_id", this.changeRequestGR.getUniqueValue());
+		grApproval.addQuery("approver", sysUserGR.getUniqueValue());
+		grApproval.orderByDesc("sys_created_on");
+		grApproval.query();
+
+		return grApproval.next() &amp;&amp; grApproval.getValue(this.STATE) === "approved";
+	},
+
+	type: 'ChangeFlowUtilSNC'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-11 12:43:05&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;35d1d637730310108ef62d2b04f6a70b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;19&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;ChangeFlowUtilSNC&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Request" source="com.snc.change_request"&gt;9be0c58b6d2620100acb70b3534330c8&lt;/sys_package&gt;
+        &lt;sys_policy&gt;read&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_35d1d637730310108ef62d2b04f6a70b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-26 16:24:02&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3602&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:26:50</sys_created_on>
+        <sys_id>6a6c05ba2f331110d8a4d5f62799b631</sys_id>
+        <sys_name>ChangeFlowUtilSNC</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_6a6c05ba2f331110d8a4d5f62799b631</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

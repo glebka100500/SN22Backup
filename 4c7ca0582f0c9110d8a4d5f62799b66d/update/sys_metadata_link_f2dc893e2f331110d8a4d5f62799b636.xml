@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>7aa6e0600a0a0b1000380545942ea686</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.KnowledgeWikiProcessor&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Processor for handling knowledge wiki pages&lt;/description&gt;
+        &lt;name&gt;KnowledgeWikiProcessor&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var KnowledgeWikiProcessor = Class.create();
+        KnowledgeWikiProcessor.prototype = Object.extendsObject(KnowledgeWikiProcessorSNC,{
+        type: 'KnowledgeWikiProcessor'
+        });]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;glide.maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2009-07-14 19:04:32&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;7aa6e0600a0a0b1000380545942ea686&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;106&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;KnowledgeWikiProcessor&lt;/sys_name&gt;
+        &lt;sys_package display_value="Knowledge Management Wiki Support" source="com.glideapp.knowledge2.wiki"&gt;17f101c36d6620100acb70b3534330f8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_7aa6e0600a0a0b1000380545942ea686&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2018-12-17 09:07:32&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;187&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:46</sys_created_on>
+        <sys_id>f2dc893e2f331110d8a4d5f62799b636</sys_id>
+        <sys_name>KnowledgeWikiProcessor</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f2dc893e2f331110d8a4d5f62799b636</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

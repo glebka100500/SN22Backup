@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>737ad30d0a0005a51a91dd8c4c796a0b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.TransferAuditToRotations2&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Transfer all the sys_audit data into as many rotations as needed to hold all the data&lt;/description&gt;
+        &lt;name&gt;TransferAuditToRotations2&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var TransferAuditToRotations2 = Class.create();
+
+TransferAuditToRotations2.prototype = {
+  initialize : function() {
+  },
+  process: function(idEnds) {
+     this.idEnds = idEnds;
+     this.messages = new Array();
+     this.total = 0;
+     this._transferData(); 
+  },
+
+  _transferData: function() {
+     var query = '';
+     if (this.idEnds != '') {
+        var ids = this.idEnds.split(",");
+        for (var i = 0; i &lt; ids.length; i++) {
+           ids[i] = "sys_idENDSWITH" + ids[i];
+        }
+
+        query = "record_checkpoint!=0^";
+        query += ids.join("^OR");
+     }
+
+     this.addMessage(query);
+     var t = new GlideTransferAuditDataHelper(worker, query);
+     this.total = t.transfer();
+  },
+
+  addMessage: function(msg) {
+     gs.log(msg);
+     this.messages.push(msg);
+     if (this.messages.length &gt;= 10)
+        this.messages.shift();
+
+     worker.addMessage(this.messages.join("\n"));
+  },
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;don goodliffe&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-03-01 22:12:32&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;737ad30d0a0005a51a91dd8c4c796a0b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;23&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;TransferAuditToRotations2&lt;/sys_name&gt;
+        &lt;sys_package display_value="Database Rotation" source="com.snc.db.rotation"&gt;e5adf40b6d2220100acb70b35343304b&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_737ad30d0a0005a51a91dd8c4c796a0b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;don goodliffe&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2011-03-03 22:00:30&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;948&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:30</sys_created_on>
+        <sys_id>47cc053e2f331110d8a4d5f62799b66e</sys_id>
+        <sys_name>TransferAuditToRotations2</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_47cc053e2f331110d8a4d5f62799b66e</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

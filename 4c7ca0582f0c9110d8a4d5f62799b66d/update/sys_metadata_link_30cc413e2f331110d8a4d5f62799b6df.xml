@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6e073e1d73e31010170b56b80ff6a73e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.AisOverridesUtil&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Uitl class for ais acl overrides.&lt;/description&gt;
+        &lt;name&gt;AisOverridesUtil&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var AisOverridesUtil = Class.create();
+AisOverridesUtil.prototype = {
+    initialize: function() {},
+    overridesForCatalogUtilCanReadApproval: function() {
+        var max = parseInt(gs.getProperty("glide.ais.default.in_query.max", 10000));
+        var limit = max + 1;
+        var gr = new GlideRecord('sysapproval_approver');
+        gr.addQuery('approver', 'IN', getMyApprovals());
+        gr.setLimit(limit);
+        gr.query();
+
+        // no approval record, match none
+        if (gr.getRowCount() == 0)
+            return "1=0";
+        else if (gr.getRowCount() &gt; max)
+            return "$LATE_BINDING$";
+        else {
+            var approvingRecordId = [];
+            while (gr.next()) {
+                var recordId = gr.getValue("sysapproval");
+                approvingRecordId.push(recordId);
+            }
+            return "sys_idIN" + approvingRecordId.join + "^EQ";
+        }
+
+    },
+
+    overridesApprovalUtilsCanApproverRead: function(tableName) {
+        // tableName is fixed, original from current.getTableName(), should be GR tableName(do not depend on context)
+        var transaction = GlideTransaction.get();
+        var targetRecord = JSUtil.notNil(transaction) ? transaction.getRequestParameter("sysparm_record_target") : null;
+
+        if (typeof g_approval_form_request != "undefined" &amp;&amp; g_approval_form_request == true) {
+            return "";
+        } else if (targetRecord != null &amp;&amp; targetRecord == "sysapproval_approver" &amp;&amp; targetRecord != tableName) {
+            var target = new GlideRecord(targetRecord);
+            // target.canRead not dependent on "context", just check roles
+            if (target.get(transaction.getRequestParameter("sys_id")) &amp;&amp; target.canRead())
+                return "";
+        } else if (targetRecord == tableName || transaction.getRequestParameter("sys_popup_direct")) {
+            var max = parseInt(gs.getProperty("glide.ais.default.in_query.max", 10000));
+            var limit = max + 1;
+            var sourceTable = transaction.getRequestParameter("sys_popup_direct") ? transaction.getRequestParameter("sysparm_table_name") : targetRecord;
+            var gr = new GlideRecord('sysapproval_approver');
+            gr.addQuery('approver', gs.getUserID());
+            gr.addQuery('source_table', sourceTable);
+            gr.setLimit(limit);
+            gr.query();
+
+            if (gr.getRowCount() == 0)
+                return "1=0";
+            else if (gr.getRowCount() &gt; max)
+                return "$LATE_BINDING$";
+            else {
+                var approvingRecordId = [];
+                while (gr.next()) {
+                    var recordId = gr.getValue("sysapproval");
+                    approvingRecordId.push(recordId);
+                }
+
+                return "sys_idIN" + approvingRecordId.join + "^EQ";
+            }
+        }
+
+        return "1=0"; //by default, match none
+    },
+
+    type: 'AisOverridesUtil'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2020-09-28 17:22:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6e073e1d73e31010170b56b80ff6a73e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;16&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;AisOverridesUtil&lt;/sys_name&gt;
+        &lt;sys_package display_value="AI Search" source="com.glide.ais"&gt;accdbc4b6d2220100acb70b353433053&lt;/sys_package&gt;
+        &lt;sys_policy&gt;protected&lt;/sys_policy&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6e073e1d73e31010170b56b80ff6a73e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2020-09-28 23:52:07&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;2921&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:21</sys_created_on>
+        <sys_id>30cc413e2f331110d8a4d5f62799b6df</sys_id>
+        <sys_name>AisOverridesUtil</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_30cc413e2f331110d8a4d5f62799b6df</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6fe8ecb147200200151119fbac9a710e</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MegaphoneBroadcastInsert&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Megaphone broadcast insert from an event from HI&lt;/description&gt;
+        &lt;name&gt;MegaphoneBroadcastInsert&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MegaphoneBroadcastInsert = Class.create();
+MegaphoneBroadcastInsert.prototype = {
+    initialize: function() {
+    },
+	
+	//Used by the event engine to insert a message from HI
+	fromEvent: function(eventxml) {
+		try{
+			var xml = gs.xmlToJSON(eventxml);
+			var obj = xml.sys_broadcast_message;
+			var msg = new GlideRecord('sys_broadcast_message');
+			msg.addQuery('dc_sys_id', obj.dc_sys_id);
+			msg.query();
+			var isNewMessage = !msg.hasNext();
+			
+			if(isNewMessage) {
+				msg.initialize();
+			}
+			else {
+				msg.next();
+			}
+			
+			for (var field in obj){
+				if (typeof obj[field] != "function"){
+					if(msg.isValidField(field)) {
+						var value = unescape(obj[field]);
+						if(field === 'notify_users_after_date' || field === 'notify_users_until_date') {
+							var gdt = new GlideDateTime(value);
+							msg[field] = gdt;
+						}
+						else {
+							msg[field] = value;
+						}
+					}
+					else {
+						gs.warn("Unknown megaphone field: " + field);
+					}
+				}
+			}
+			
+			if(isNewMessage) {
+				msg.insert();
+			}
+			else {
+				msg.update();
+			}
+		}
+		catch(ex) {
+			gs.warn("Error inserting megaphone message. " + ex);
+		}
+	},
+	
+    type: 'MegaphoneBroadcastInsert'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2015-06-10 03:31:59&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6fe8ecb147200200151119fbac9a710e&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MegaphoneBroadcastInsert&lt;/sys_name&gt;
+        &lt;sys_package display_value="Broadcast Messages" source="com.snc.mega_cust"&gt;a6b2850f6d6620100acb70b35343301e&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6fe8ecb147200200151119fbac9a710e&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2015-07-10 19:09:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1188&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:24</sys_created_on>
+        <sys_id>a1ccc13e2f331110d8a4d5f62799b600</sys_id>
+        <sys_name>MegaphoneBroadcastInsert</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a1ccc13e2f331110d8a4d5f62799b600</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

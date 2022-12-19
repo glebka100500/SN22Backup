@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>6d39e9320ab301553433929face3b068</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access/&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.Position&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;false&lt;/client_callable&gt;
+        &lt;description&gt;Finds a position within a given string.&lt;/description&gt;
+        &lt;name&gt;Position&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[// field normalization
+
+/*
+ * Finds a position within a given string.  The positions are found based on a "position specification", which can have any of four forms:
+ * 
+ * 1.  An integer specifying the number of characters from the right or left side of the string.  Negative numbers invert the from left/from right choice.
+ * 2.  A string that does NOT start with "/regex/".  The start of the first occurrence (if from left) or end of the last occurrence (if from right) is
+ *     taken as the position.
+ * 3.  A string that starts with "/regex/".  The remainder of the string is taken as a regular expression (with slashes doubled).  The start of the
+ *     first occurrence (if from left) or of the last occurrence (if from right) is taken as the position.
+ * 4.  A string that starts with "/regex//".  The remainder of the string is taken as a regular expression (with slashes doubled).  The end of the
+ *     first occurrence (if from left) or of the last occurrence (if from right) is taken as the position.
+ */
+var Position = Class.create();
+
+Position.prototype = {
+    initialize: function() {
+    },
+    
+    /*
+     * Returns the position if it can be determined, and null otherwise.
+     * 
+     * arguments:
+     *    value: the value within which a position is being computed
+     *    positionSpec: the position specification (see comments at top of file)
+     *    fromLeft: true if we're counting or searching from the left, false if from the right
+     *    
+     * returns:
+     *    The position found, counting from the left, which is guaranteed to be within the range of the given value's length, or -1 
+     *    if the position could not be found.
+     */
+    getPosition: function(value, positionSpec, fromLeft) {
+        if (value == null)
+            return null;
+        
+        if ((!positionSpec))
+            return null;
+        
+        this.positionSpec = '' + positionSpec;
+        this.fromLeft = ('true' == ('' + fromLeft));
+        this.value = '' + value;
+        
+        // do we have an integer?
+        var position = 0;
+        if (this.positionSpec.match(/^[+-]?\d+$/)) 
+            position = this.handleInteger();
+        
+        // do we have a regex?
+        else if (this.positionSpec.match(/^\/regex\/.*$/)) 
+            position = this.handleRegex();
+        
+        // well, then, we must have a plain old string...
+        else
+            position = this.handleString();
+
+        return position;
+    },
+    
+    handleInteger: function() {
+        var delta = this.positionSpec - 0;
+        delta = delta * (this.fromLeft ? 1 : -1);
+        return (delta &gt;= 0) ? Math.min(delta, this.value.length) : Math.max(0, this.value.length + delta);
+    },
+    
+    handleString: function() {
+        if (this.fromLeft)
+            return this.value.indexOf(this.positionSpec);
+        else {
+            var tent = this.value.lastIndexOf(this.positionSpec);
+            return (tent &lt; 0) ? -1 : tent + this.positionSpec.length;
+        }
+    },
+    
+    handleRegex: function() {
+        // fish out our regex, and decide if we're looking for the end or the beginning...
+        var regex = this.positionSpec.substring(7);
+        var pickEnd = false;
+        if (regex.charAt(0) == '/') {
+            pickEnd = true;
+            regex = regex.substring(1);
+        }
+                
+        // use Java regex to get more functionality...
+        var pat = Packages.java.util.regex.Pattern.compile('(?sm)' + regex);
+        var hit = -1;
+        var parts;
+        var mat = GlideRegexUtil.matcher(pat, this.value);
+        while (mat.find()) {
+            hit = pickEnd ? mat.end() : mat.start();
+            if (this.fromLeft)
+                break;
+        }
+        return hit;
+    },
+    
+    type: 'Position'
+};
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;tom.dilatush&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2011-01-10 00:01:36&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;6d39e9320ab301553433929face3b068&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;12&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Position&lt;/sys_name&gt;
+        &lt;sys_package display_value="Field Normalization" source="com.snc.field_normalization"&gt;74d312912f730110d8a4d5f62799b6a5&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_6d39e9320ab301553433929face3b068&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;tom.dilatush&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2012-04-16 23:09:33&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;3866&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:19</sys_created_on>
+        <sys_id>d4cc413e2f331110d8a4d5f62799b62b</sys_id>
+        <sys_name>Position</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d4cc413e2f331110d8a4d5f62799b62b</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>76f4e84d5b830110693e7da52d81c79f</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;
+    &lt;sys_script_include action="INSERT_OR_UPDATE"&gt;
+        &lt;access&gt;package_private&lt;/access&gt;
+        &lt;active&gt;true&lt;/active&gt;
+        &lt;api_name&gt;global.MultiSourceQueryStatusRecordsToDelete&lt;/api_name&gt;
+        &lt;caller_access/&gt;
+        &lt;client_callable&gt;true&lt;/client_callable&gt;
+        &lt;description&gt;Get the records to be deleted from cmdb_multisource_query_status except for the last execution_ids&lt;/description&gt;
+        &lt;name&gt;MultiSourceQueryStatusRecordsToDelete&lt;/name&gt;
+        &lt;script&gt;&lt;![CDATA[var MultiSourceQueryStatusRecordsToDelete = Class.create();
+MultiSourceQueryStatusRecordsToDelete.prototype = {
+    initialize: function() {},
+    getQueryExecutionIds: function() {
+        var lastExecutionIds = [];
+        var recordsToDelete = [];
+        var queryIds = [];
+
+        // Get all the query sys_ids
+        var ga = new GlideAggregate('cmdb_multisource_query_status');
+        ga.addAggregate('COUNT');
+        ga.groupBy('query_id');
+        ga.query();
+
+        while (ga.next()) {
+            queryIds.push(ga.getValue('query_id'));
+        }
+
+        // Get the latest execution_ids for the query sys_ids
+        for (var i = 0; i &lt; queryIds.length; i++) {
+            var queryExecutionObj = JSON.parse(sn_cmdb.MultiSourceAnalytics.getLastExecution(queryIds[i]));
+            lastExecutionIds.push(queryExecutionObj.executionId);
+        }
+
+        // Get the records to be deleted
+        var gr = new GlideRecord('cmdb_multisource_query_status');
+        gr.addQuery('sys_id', 'NOT IN', lastExecutionIds);
+        gr.query();
+        while (gr.next()) {
+            recordsToDelete.push(gr.getValue('sys_id'));
+        }
+        return recordsToDelete;
+    },
+
+    type: 'MultiSourceQueryStatusRecordsToDelete'
+};]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-04-22 04:06:56&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;76f4e84d5b830110693e7da52d81c79f&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;MultiSourceQueryStatusRecordsToDelete&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_include_76f4e84d5b830110693e7da52d81c79f&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-06-28 13:53:50&lt;/sys_updated_on&gt;
+        &lt;u_script_length&gt;1237&lt;/u_script_length&gt;
+    &lt;/sys_script_include&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:28:39</sys_created_on>
+        <sys_id>8ddcc53e2f331110d8a4d5f62799b669</sys_id>
+        <sys_name>MultiSourceQueryStatusRecordsToDelete</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8ddcc53e2f331110d8a4d5f62799b669</sys_update_name>
+        <tablename>sys_script_include</tablename>
+    </sys_metadata_link>
+</record_update>
