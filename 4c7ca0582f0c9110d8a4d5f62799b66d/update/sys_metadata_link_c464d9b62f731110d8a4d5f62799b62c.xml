@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>72cd338e73f110107419c907fbf6a730</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_table_builder/app</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>f70e338e73f110107419c907fbf6a733</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Table Builder Application</name>
+        <namespace>sn_table_builder</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>app</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-07-06 06:36:56</sys_created_on>
+        <sys_id>72cd338e73f110107419c907fbf6a730</sys_id>
+        <sys_mod_count>4</sys_mod_count>
+        <sys_name>Table Builder Application</sys_name>
+        <sys_package display_value="AES Table Builder" source="sn_table_builder">f53f19bac362fa22ca2e93692d32f18f</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="AES Table Builder">f53f19bac362fa22ca2e93692d32f18f</sys_scope>
+        <sys_update_name>sys_ws_definition_72cd338e73f110107419c907fbf6a730</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-07-06 06:42:32</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:01:36</sys_created_on>
+        <sys_id>c464d9b62f731110d8a4d5f62799b62c</sys_id>
+        <sys_name>Table Builder Application</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_c464d9b62f731110d8a4d5f62799b62c</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

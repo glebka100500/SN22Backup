@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>215afd4e73e2011007d56ad9af148b26</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Activating cmdb_health_score secondary db category&lt;/description&gt;
+        &lt;name&gt;CMDB Health DB Category Activation&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[activateCMDBHealthSecondaryDBCategory();
+
+function activateCMDBHealthSecondaryDBCategory() {
+    var fixName = 'CMDBHealth fix';
+
+    if (pm.isZboot())
+        return;
+
+    // Plugin is not installed
+    if (!pm.isActive('com.glide.secondary_db_pools'))
+        return;
+
+    // sys_db_category table does not exist
+    var gr = new GlideRecord('sys_db_category');
+    if (!gr.isValid())
+        return;
+    // Record already exists
+    if (gr.get('e5f078afeb12201007d5a1c628522814')) {
+        var gcd = GlideCollisionDetector.get();
+        // Record is customized
+        if (gcd.containsKey('sys_db_category_e5f078afeb12201007d5a1c628522814'))
+            return;
+        gs.info(fixName + ": updating un customized db category");
+        gr.setWorkflow(false);
+        gr.active = true;
+        gr.update();
+    } else {
+        gs.info(fixName + ": loading db category from unload");
+        var um = new GlideUpdateManager2();
+        um.setInstalling(true);
+        um.loadFile(gs.getGlideHome() + "/plugins/com.glide.secondary_db_pools/unload/sys_db_category_e5f078afeb12201007d5a1c628522814.xml");
+    }
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-03-31 18:19:02&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;215afd4e73e2011007d56ad9af148b26&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;CMDB Health db category activation&lt;/sys_name&gt;
+        &lt;sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb"&gt;c60efc0f6d2220100acb70b3534330c0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_215afd4e73e2011007d56ad9af148b26&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-03-31 18:27:55&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:53:50</sys_created_on>
+        <sys_id>1a9259362f731110d8a4d5f62799b6c0</sys_id>
+        <sys_name>CMDB Health DB Category Activation</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1a9259362f731110d8a4d5f62799b6c0</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

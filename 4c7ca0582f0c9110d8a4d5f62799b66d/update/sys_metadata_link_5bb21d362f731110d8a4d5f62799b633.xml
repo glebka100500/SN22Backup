@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>2a8f621d73b333008ef62d2b04f6a7e2</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Set "change.conflict.allow_contiguous_changes" system property to true for Zboot instances.&amp;#13;
+&amp;#13;
+When conflict checking for similar change requests (by Affected CIs or Assigned to) find records that overlap with the current change request only. &amp;#13;
+&amp;#13;
+Old behavior did not allow change requests that start at the same time as the end time of the current change request or a change request that ends at the same time as the start time of the current change request.&amp;#13;
+&amp;#13;
+As an example the following change requests apply to the same configuration item.&amp;#13;
+&amp;#13;
+CHG01, start: 2019-01-01 03:00:00 end: 2019-01-01 04:00:00.&amp;#13;
+CHG02, start: 2019-01-01 04:00:00 end: 2019-01-01 05:00:00.&amp;#13;
+&amp;#13;
+If this property is set to true these contiguous change requests will not conflict,  if the property is set to false they will conflict.&lt;/description&gt;
+        &lt;name&gt;Allow contiguous change requests zboot&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[(function () {
+	if (pm.isZboot())
+		gs.setProperty("change.conflict.allow_contiguous_changes", true);
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-09-09 10:53:58&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;2a8f621d73b333008ef62d2b04f6a7e2&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Allow contiguous change requests zboot&lt;/sys_name&gt;
+        &lt;sys_package display_value="Change Management - Collision Detector" source="com.snc.change.collision"&gt;479385476da620100acb70b3534330f0&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_2a8f621d73b333008ef62d2b04f6a7e2&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-09-09 10:55:06&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:54:28</sys_created_on>
+        <sys_id>5bb21d362f731110d8a4d5f62799b633</sys_id>
+        <sys_name>Allow contiguous change requests zboot</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_5bb21d362f731110d8a4d5f62799b633</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

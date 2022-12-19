@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>31f093333721110056cd2f3c8e41f153</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt; Set the active flag (to true) on existing records in the sys_update_set_source table, if it is set to NULL.&amp;#13;
+&lt;/description&gt;
+        &lt;name&gt;Fix Update Set Source Active&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[/**
+ *  Set the active flag (to true) on existing records in the sys_update_set_source table
+ *  if it is set to NULL.
+ */
+fixUpdateSetSourceActive();
+
+function fixUpdateSetSourceActive() {
+	var src = new GlideRecord('sys_update_set_source');
+	if(src.isValid()) {
+		src.addNullQuery('active');
+		src.query();
+		while (src.next()) {
+			src.active = true;
+			if (src.update()) {
+				gs.log('Updated sys_update_set_source, name: '+src.name+', url: '+src.url+'active: '+src.active);
+			}
+		}
+	}
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2013-12-17 01:24:54&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;31f093333721110056cd2f3c8e41f153&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;3&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Fix Update Set Source Active&lt;/sys_name&gt;
+        &lt;sys_package display_value="System Update Sets (with remote update set support)" source="com.glide.system_update_set"&gt;d8bdbc0b6d2220100acb70b3534330e8&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_31f093333721110056cd2f3c8e41f153&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2013-12-17 01:48:39&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:55:03</sys_created_on>
+        <sys_id>b3d29d362f731110d8a4d5f62799b6cd</sys_id>
+        <sys_name>Fix Update Set Source Active</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b3d29d362f731110d8a4d5f62799b6cd</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>b5617ef2b7620010ee0d3177ee11a9cc</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/now/life_cycle_api</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>2e437e36b7620010ee0d3177ee11a9b8</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Life Cycle API</name>
+        <namespace>now</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>life_cycle_api</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-01-28 19:34:26</sys_created_on>
+        <sys_id>b5617ef2b7620010ee0d3177ee11a9cc</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Life Cycle API</sys_name>
+        <sys_package display_value="Configuration Management (CMDB)" source="com.snc.cmdb">c60efc0f6d2220100acb70b3534330c0</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_ws_definition_b5617ef2b7620010ee0d3177ee11a9cc</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-01-29 23:07:31</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:02:46</sys_created_on>
+        <sys_id>45a4ddb62f731110d8a4d5f62799b6e8</sys_id>
+        <sys_name>Life Cycle API</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_45a4ddb62f731110d8a4d5f62799b6e8</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

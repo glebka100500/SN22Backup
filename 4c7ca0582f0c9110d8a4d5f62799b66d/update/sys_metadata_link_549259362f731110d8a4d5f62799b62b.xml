@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1f50cceda1f41110f87720abe6c4c0e5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;true&lt;/before&gt;
+        &lt;description&gt;Check if the attachment dropdown exists and capture the state of it if exists&lt;/description&gt;
+        &lt;name&gt;Attachment dropdown property capture&lt;/name&gt;
+        &lt;record_for_rollback&gt;true&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[(function() {
+    gs.info(gs.getMessage('Attachment property capture: Executing the attachment property capture script'));
+    if (pm.isZboot()) {
+        gs.info(gs.getMessage('Attachment property capture: returning since its zboot'));
+        return;
+    }
+    var PROP_NAME = "com.glide.encryption.enable_attachment_key_ui";
+    var PROP_STATE = PROP_NAME + ".state";
+    if (gs.getProperty(PROP_NAME, false) == 'false') {
+        gs.info(gs.getMessage('Attachment property capture: Property before is false or does not exists, hence returning'));
+        return;
+    }
+    gs.setProperty(PROP_STATE, true);
+    gs.info(gs.getMessage('Attachment property capture: Created state property'));
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;maint&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-07-19 14:41:07&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;1f50cceda1f41110f87720abe6c4c0e5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;14&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Attachment dropdown property capture&lt;/sys_name&gt;
+        &lt;sys_package display_value="Column Level Encryption" source="com.glide.encryption"&gt;b55dcb082f745110d8a4d5f62799b699&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_1f50cceda1f41110f87720abe6c4c0e5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;maint&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-07-20 03:49:14&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:53:42</sys_created_on>
+        <sys_id>549259362f731110d8a4d5f62799b62b</sys_id>
+        <sys_name>Attachment dropdown property capture</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_549259362f731110d8a4d5f62799b62b</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

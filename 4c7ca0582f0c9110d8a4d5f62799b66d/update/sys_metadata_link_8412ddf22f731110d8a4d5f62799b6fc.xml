@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>03ec18cd2f010110d8a4d5f62799b68b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description/&gt;
+        &lt;name&gt;Get users with duplicate employee id&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[var multiEmpIdUser = new GlideAggregate('sys_user');
+multiEmpIdUser.addAggregate('COUNT', 'employee_number');
+multiEmpIdUser.addNotNullQuery('employee_number');
+multiEmpIdUser.addHaving('COUNT', '&gt;', 1);
+multiEmpIdUser.setGroup(true);
+multiEmpIdUser.query();
+
+while (multiEmpIdUser.next()){
+	gs.log("Employee number: " + multiEmpIdUser.employee_number.toString());
+	gs.log(multiEmpIdUser.getAggregate('COUNT', 'employee_number') + " Users: ");
+	getUsersByEmpId(multiEmpIdUser.employee_number.toString());
+	gs.log("---------------------------------------------------\n");
+}
+
+function getUsersByEmpId(empId){
+	var grUser = new GlideRecord('sys_user');
+	// look for users with field "employee_number"
+	grUser.addQuery('employee_number', empId);
+	grUser.query();
+	
+	while (grUser.next()){
+		// print user attributes
+		gs.log(grUser.user_name.toString());
+	}
+}
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-01-12 17:30:04&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;03ec18cd2f010110d8a4d5f62799b68b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;20&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Get users with duplicate employee id&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_03ec18cd2f010110d8a4d5f62799b68b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-01-12 18:14:59&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:51:30</sys_created_on>
+        <sys_id>8412ddf22f731110d8a4d5f62799b6fc</sys_id>
+        <sys_name>Get users with duplicate employee id</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8412ddf22f731110d8a4d5f62799b6fc</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

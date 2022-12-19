@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>08edeabe2f205510d8a4d5f62799b646</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_hub_action_type_definition">
+    <sys_hub_action_type_definition action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <acls/>
+        <action_status/>
+        <action_template/>
+        <active>true</active>
+        <annotation/>
+        <callable_by_client_api>false</callable_by_client_api>
+        <category/>
+        <compiler_build/>
+        <copied_from/>
+        <copied_from_name/>
+        <description/>
+        <ih_action>false</ih_action>
+        <internal_name>integrationhub_tests</internal_name>
+        <label_cache/>
+        <latest_snapshot/>
+        <master_snapshot/>
+        <name>IntegrationHub tests</name>
+        <natlang/>
+        <outputs/>
+        <pre_compiled>false</pre_compiled>
+        <state>draft</state>
+        <sys_class_name>sys_hub_action_type_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-07-11 14:08:36</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>08edeabe2f205510d8a4d5f62799b646</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>IntegrationHub tests</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Global" source="global">global</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_hub_action_type_definition_08edeabe2f205510d8a4d5f62799b646</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-07-11 14:08:36</sys_updated_on>
+        <system_level>false</system_level>
+        <type/>
+    </sys_hub_action_type_definition>
+    <sys_translated_text action="delete_multiple" query="documentkey=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_variable_value action="delete_multiple" query="document_key=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_step_instance action="delete_multiple" query="action=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_action_input action="delete_multiple" query="model=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_action_output action="delete_multiple" query="model=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_pill_compound action="delete_multiple" query="attached_to=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_action_status_metadata action="delete_multiple" query="action_type_id=08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_input_08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_input_08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_output_08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_output_08edeabe2f205510d8a4d5f62799b646"/>
+    <sys_hub_action_plan action="delete_multiple" query="action_id=08edeabe2f205510d8a4d5f62799b646"/>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:18:32</sys_created_on>
+        <sys_id>bb38993e2f731110d8a4d5f62799b6a2</sys_id>
+        <sys_name>IntegrationHub tests</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bb38993e2f731110d8a4d5f62799b6a2</sys_update_name>
+        <tablename>sys_hub_action_type_definition</tablename>
+    </sys_metadata_link>
+</record_update>

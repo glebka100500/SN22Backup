@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3f6ea9a5c313011005aea539e540dd2c</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Remove ACLs for Change comments write role and Problem comments write role&lt;/description&gt;
+        &lt;name&gt;Remove comments write ACLs&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[(function() {
+	if (pm.isZboot())
+		return;
+	
+	var aclToRemove = [
+			'411372e2c3223010a282a539e540dd1f',
+			'4a68f896c3e13010a282a539e540ddba',
+			'37e27492c3e13010a282a539e540dd1b',
+			'79c6e89ac3a13010a282a539e540ddd1'
+		];
+
+		var aclCheckGR = new GlideRecord('sys_security_acl');
+		aclCheckGR.addQuery('sys_id', 'IN', aclToRemove);
+		aclCheckGR.deleteMultiple();
+})();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-05-06 09:07:53&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3f6ea9a5c313011005aea539e540dd2c&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Remove comments write ACLs&lt;/sys_name&gt;
+        &lt;sys_package display_value="ITSM Roles" source="com.snc.itsm.roles"&gt;b6358d476de620100acb70b3534330ac&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_3f6ea9a5c313011005aea539e540dd2c&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-05-06 09:09:42&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:55:59</sys_created_on>
+        <sys_id>ad1391762f731110d8a4d5f62799b68c</sys_id>
+        <sys_name>Remove comments write ACLs</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_ad1391762f731110d8a4d5f62799b68c</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

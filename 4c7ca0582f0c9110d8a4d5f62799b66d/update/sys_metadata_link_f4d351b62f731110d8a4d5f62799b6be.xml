@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>03938d26bd321010fa9b898c3fee09c7</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_topic_recommend/review</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>d6cf192cbcf52010fa9bd86549f3c61e</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Topic Recommender Review Api</name>
+        <namespace>sn_topic_recommend</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>review</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-25 23:22:53</sys_created_on>
+        <sys_id>03938d26bd321010fa9b898c3fee09c7</sys_id>
+        <sys_mod_count>4</sys_mod_count>
+        <sys_name>Topic Recommender Review Api</sys_name>
+        <sys_package display_value="Virtual Agent Topic Recommendations" source="sn_topic_recommend">87c995fd53d21010a813ddeeff7b12e1</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Virtual Agent Topic Recommendations">87c995fd53d21010a813ddeeff7b12e1</sys_scope>
+        <sys_update_name>sys_ws_definition_03938d26bd321010fa9b898c3fee09c7</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-01-15 23:49:38</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:59:12</sys_created_on>
+        <sys_id>f4d351b62f731110d8a4d5f62799b6be</sys_id>
+        <sys_name>Topic Recommender Review Api</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f4d351b62f731110d8a4d5f62799b6be</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

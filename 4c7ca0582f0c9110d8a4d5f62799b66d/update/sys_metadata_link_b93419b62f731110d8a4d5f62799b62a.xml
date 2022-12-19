@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>57ac99e85b462010fb2a210bb881c7df</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_workspace_sta_0/workspace_starter_experience</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Workspace Starter Experience</name>
+        <namespace>sn_workspace_sta_0</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>workspace_starter_experience</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-01-28 09:28:35</sys_created_on>
+        <sys_id>57ac99e85b462010fb2a210bb881c7df</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Workspace Starter Experience</sys_name>
+        <sys_package display_value="AES Workspace UI Template" source="sn_workspace_sta_0">a7caf0e3731020104cb09434c4f6a741</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="AES Workspace UI Template">a7caf0e3731020104cb09434c4f6a741</sys_scope>
+        <sys_update_name>sys_ws_definition_57ac99e85b462010fb2a210bb881c7df</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-01-28 09:28:35</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:00:54</sys_created_on>
+        <sys_id>b93419b62f731110d8a4d5f62799b62a</sys_id>
+        <sys_name>Workspace Starter Experience</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b93419b62f731110d8a4d5f62799b62a</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

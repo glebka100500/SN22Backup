@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>0977f81f2fa89510d8a4d5f62799b603</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_hub_action_type_definition">
+    <sys_hub_action_type_definition action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <acls/>
+        <action_status/>
+        <action_template>DATASTREAM</action_template>
+        <active>true</active>
+        <annotation/>
+        <callable_by_client_api>false</callable_by_client_api>
+        <category/>
+        <compiler_build/>
+        <copied_from/>
+        <copied_from_name/>
+        <description/>
+        <ih_action>false</ih_action>
+        <internal_name>get_duplicate_stream</internal_name>
+        <label_cache/>
+        <latest_snapshot/>
+        <master_snapshot/>
+        <name>Get Duplicate Stream</name>
+        <natlang/>
+        <outputs/>
+        <pre_compiled>false</pre_compiled>
+        <state>draft</state>
+        <sys_class_name>sys_hub_action_type_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-07-12 18:48:10</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>0977f81f2fa89510d8a4d5f62799b603</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Get Duplicate Stream</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Global" source="global">global</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_hub_action_type_definition_0977f81f2fa89510d8a4d5f62799b603</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-07-12 18:48:10</sys_updated_on>
+        <system_level>false</system_level>
+        <type/>
+    </sys_hub_action_type_definition>
+    <sys_translated_text action="delete_multiple" query="documentkey=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_variable_value action="delete_multiple" query="document_key=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_step_instance action="delete_multiple" query="action=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_action_input action="delete_multiple" query="model=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_action_output action="delete_multiple" query="model=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_pill_compound action="delete_multiple" query="attached_to=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_action_status_metadata action="delete_multiple" query="action_type_id=0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_input_0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_input_0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_output_0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_output_0977f81f2fa89510d8a4d5f62799b603"/>
+    <sys_hub_action_plan action="delete_multiple" query="action_id=0977f81f2fa89510d8a4d5f62799b603"/>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:18:37</sys_created_on>
+        <sys_id>8d48d93e2f731110d8a4d5f62799b6d9</sys_id>
+        <sys_name>Get Duplicate Stream</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_8d48d93e2f731110d8a4d5f62799b6d9</sys_update_name>
+        <tablename>sys_hub_action_type_definition</tablename>
+    </sys_metadata_link>
+</record_update>

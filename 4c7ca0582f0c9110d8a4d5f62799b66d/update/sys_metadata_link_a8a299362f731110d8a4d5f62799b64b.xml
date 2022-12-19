@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>240b4cb45b0320103738af151581c75a</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Remove reference_types=cmn_location attribute from location column in sys_sg_location_item_stream.&lt;/description&gt;
+        &lt;name&gt;Remove reference type for location item&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[function removeLocationAttribute() {
+	var locationColumn = new GlideRecord("sys_dictionary");
+	locationColumn.setLimit(1);
+	locationColumn.addQuery("name", "sys_sg_location_item_stream");
+	locationColumn.addQuery("element", "location");
+	locationColumn.addQuery("internal_type", "field_name");
+	locationColumn.addQuery("attributes", "allow_references=true,reference_types=cmn_location");
+	locationColumn.query();
+	
+	if(!locationColumn.next())
+		return;
+	
+	locationColumn.setValue("attributes", "allow_references=true");
+	locationColumn.update();
+}
+
+removeLocationAttribute();]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-03-19 15:19:44&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;240b4cb45b0320103738af151581c75a&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Remove reference type for location item&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile Custom Map" source="com.glide.sg.custom_map"&gt;681d56b02f000110d8a4d5f62799b635&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_240b4cb45b0320103738af151581c75a&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2021-03-19 16:36:19&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:54:00</sys_created_on>
+        <sys_id>a8a299362f731110d8a4d5f62799b64b</sys_id>
+        <sys_name>Remove reference type for location item</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_a8a299362f731110d8a4d5f62799b64b</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

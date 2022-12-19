@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>986214c16710320097eeff5557415a89</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_bm_client/benchmark_client_api</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl/>
+        <is_versioned>false</is_versioned>
+        <name>Benchmark Client API</name>
+        <namespace>sn_bm_client</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>benchmark_client_api</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-01-11 20:13:10</sys_created_on>
+        <sys_id>986214c16710320097eeff5557415a89</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Benchmark Client API</sys_name>
+        <sys_package display_value="Benchmark Client" source="sn_bm_client">3ad18693db92220004997878f0b8f516</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="Benchmark Client">3ad18693db92220004997878f0b8f516</sys_scope>
+        <sys_update_name>sys_ws_definition_986214c16710320097eeff5557415a89</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2017-01-11 20:42:51</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:02:15</sys_created_on>
+        <sys_id>19845db62f731110d8a4d5f62799b68a</sys_id>
+        <sys_name>Benchmark Client API</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_19845db62f731110d8a4d5f62799b68a</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

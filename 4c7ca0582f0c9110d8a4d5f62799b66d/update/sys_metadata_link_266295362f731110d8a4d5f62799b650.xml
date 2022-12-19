@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>15573895531101103738ddeeff7b127d</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Set Mappedin as the map_provider for existing records in sys_sg_custom_map_provider&lt;/description&gt;
+        &lt;name&gt;Set default mobile map provider&lt;/name&gt;
+        &lt;record_for_rollback&gt;true&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[(function(){
+	var customMapProvider = new GlideRecord("sys_sg_custom_map_provider");
+
+	if (!customMapProvider.isValid())
+		return;
+	
+	customMapProvider.addEncodedQuery("map_providerISEMPTY");
+	customMapProvider.query();
+	customMapProvider.setValue("map_provider", "mappedin");	
+	customMapProvider.updateMultiple();
+})();
+]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-01-26 00:25:45&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;15573895531101103738ddeeff7b127d&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Set default mobile map provider&lt;/sys_name&gt;
+        &lt;sys_package display_value="Mobile Custom Map" source="com.glide.sg.custom_map"&gt;681d56b02f000110d8a4d5f62799b635&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_15573895531101103738ddeeff7b127d&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-01-26 20:29:18&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:53:03</sys_created_on>
+        <sys_id>266295362f731110d8a4d5f62799b650</sys_id>
+        <sys_name>Set default mobile map provider</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_266295362f731110d8a4d5f62799b650</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>17f69bbcff32101088e94ee9453bf197</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_hub_flow">
+    <sys_hub_flow action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <acls/>
+        <active>false</active>
+        <annotation/>
+        <callable_by_client_api>false</callable_by_client_api>
+        <category/>
+        <compiler_build/>
+        <copied_from/>
+        <copied_from_name/>
+        <description/>
+        <internal_name>flow_template_post_a_weekly_message_from_gmail</internal_name>
+        <label_cache>[{"name":"5fa5c867-fae9-42d1-b54e-36080a0a7ec0.error_message","label":"1➛Error Message","reference_display":"Error Message","type":"string","base_type":"string","attributes":{"uiType":"string","uiTypeLabel":"String","element_mapping_provider":"com.glide.flow_design.action.data.FlowDesignVariableMapper","pwd2droppable":"true","uiUniqueId":"8e419990-95c2-422b-9954-a82e336c04c3"}},{"name":"5fa5c867-fae9-42d1-b54e-36080a0a7ec0.status","label":"1➛Status","reference_display":"Status","type":"choice","base_type":"choice","attributes":{"uiType":"choice","uiTypeLabel":"Choice","element_mapping_provider":"com.glide.flow_design.action.data.FlowDesignVariableMapper","uiUniqueId":"9eb88013-c4fa-41fb-be08-f2df51d67cd5"}},{"name":"5fa5c867-fae9-42d1-b54e-36080a0a7ec0.thread_id","label":"1➛Thread ID","reference_display":"Thread ID","type":"string","base_type":"string","attributes":{"uiType":"string","uiTypeLabel":"String","element_mapping_provider":"com.glide.flow_design.action.data.FlowDesignVariableMapper","pwd2droppable":"true","uiUniqueId":"65bd0fc3-18a4-4e22-96fb-e1ba3c0a16f1"}},{"name":"5fa5c867-fae9-42d1-b54e-36080a0a7ec0.message_id","label":"1➛Message ID","reference_display":"Message ID","type":"string","base_type":"string","attributes":{"uiType":"string","uiTypeLabel":"String","element_mapping_provider":"com.glide.flow_design.action.data.FlowDesignVariableMapper","pwd2droppable":"true","uiUniqueId":"b5758531-f149-453a-bc6c-f578cf0aabb0"}}]</label_cache>
+        <latest_snapshot/>
+        <master_snapshot/>
+        <name>Flow Template: Post a weekly message from Gmail</name>
+        <natlang/>
+        <outputs/>
+        <pre_compiled>false</pre_compiled>
+        <remote_trigger_id/>
+        <run_as>user</run_as>
+        <run_with_roles/>
+        <sc_callable>false</sc_callable>
+        <show_draft_actions>false</show_draft_actions>
+        <show_triggered_flows>false</show_triggered_flows>
+        <status>draft</status>
+        <sys_class_name>sys_hub_flow</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:01</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>17f69bbcff32101088e94ee9453bf197</sys_id>
+        <sys_mod_count>10</sys_mod_count>
+        <sys_name>Flow Template: Post a weekly message from Gmail</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="AES Flow Templates" source="sn_aes_flow_templa">f9a0de22c7022010d447c17cf4c260ea</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="AES Flow Templates">f9a0de22c7022010d447c17cf4c260ea</sys_scope>
+        <sys_update_name>sys_hub_flow_17f69bbcff32101088e94ee9453bf197</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:35:25</sys_updated_on>
+        <type>flow</type>
+    </sys_hub_flow>
+    <sys_translated_text action="delete_multiple" query="documentkey=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_variable_value action="delete_multiple" query="document_key=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_trigger_instance action="delete_multiple" query="flow=17f69bbcff32101088e94ee9453bf197^sys_idNOT INfa175fbcff32101088e94ee9453bf1b1"/>
+    <sys_hub_trigger_instance action="INSERT_OR_UPDATE">
+        <comment/>
+        <display_text/>
+        <flow display_value="Flow Template: Post a weekly message from Gmail">17f69bbcff32101088e94ee9453bf197</flow>
+        <name>Weekly</name>
+        <remote_sys_id/>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:32</sys_created_on>
+        <sys_id>fa175fbcff32101088e94ee9453bf1b1</sys_id>
+        <sys_mod_count>10</sys_mod_count>
+        <sys_scope/>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:35:25</sys_updated_on>
+        <trigger_definition display_value="Weekly">cf352104c32222002841b63b12d3ae1f</trigger_definition>
+        <trigger_inputs/>
+        <trigger_outputs/>
+        <trigger_type>weekly</trigger_type>
+    </sys_hub_trigger_instance>
+    <sys_variable_value action="delete_multiple" query="document_key=fa175fbcff32101088e94ee9453bf1b1"/>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_trigger_instance</document>
+        <document_key>fa175fbcff32101088e94ee9453bf1b1</document_key>
+        <order>100</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:32</sys_created_on>
+        <sys_id>3a175fbcff32101088e94ee9453bf1b2</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 20:35:39</sys_updated_on>
+        <value>1970-01-01 22:33:44</value>
+        <variable display_value="Time">a745a104c32222002841b63b12d3ae18</variable>
+    </sys_variable_value>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_trigger_instance</document>
+        <document_key>fa175fbcff32101088e94ee9453bf1b1</document_key>
+        <order>10</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-26 01:02:52</sys_created_on>
+        <sys_id>719a9926fff2101088e94ee9453bf136</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 20:35:39</sys_updated_on>
+        <value>2</value>
+        <variable display_value="Day of Week">c685a104c32222002841b63b12d3aed3</variable>
+    </sys_variable_value>
+    <sys_element_mapping action="delete_multiple" query="table=var__m_sys_hub_trigger_input_cf352104c32222002841b63b12d3ae1f^id=fa175fbcff32101088e94ee9453bf1b1"/>
+    <sys_hub_flow_stage action="delete_multiple" query="flow=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_flow_cat_variable_model action="delete_multiple" query="id=17f69bbcff32101088e94ee9453bf197^sys_idNOT IN5bf69bbcff32101088e94ee9453bf197"/>
+    <sys_flow_cat_variable_model action="INSERT_OR_UPDATE">
+        <id>17f69bbcff32101088e94ee9453bf197</id>
+        <name>Flow Template: Post a weekly message from Gmail</name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:01</sys_created_on>
+        <sys_id>5bf69bbcff32101088e94ee9453bf197</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_scope/>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-20 23:37:01</sys_updated_on>
+    </sys_flow_cat_variable_model>
+    <sys_flow_cat_variable action="delete_multiple" query="flow_catalog_model=5bf69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_flow_input action="delete_multiple" query="model=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_flow_output action="delete_multiple" query="model=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_alias_mapping action="delete_multiple" query="source_id=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_action_instance action="delete_multiple" query="flow=17f69bbcff32101088e94ee9453bf197^sys_idNOT IN76175fbcff32101088e94ee9453bf1c2"/>
+    <sys_hub_action_instance action="INSERT_OR_UPDATE">
+        <action_inputs/>
+        <action_type display_value="">76ff3433dbe7f70083fa2f0e0b961975</action_type>
+        <action_type_parent/>
+        <comment/>
+        <compiled_snapshot/>
+        <display_text/>
+        <flow display_value="Flow Template: Post a weekly message from Gmail">17f69bbcff32101088e94ee9453bf197</flow>
+        <order>1</order>
+        <parent_ui_id/>
+        <sys_class_name>sys_hub_action_instance</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:32</sys_created_on>
+        <sys_id>76175fbcff32101088e94ee9453bf1c2</sys_id>
+        <sys_mod_count>20</sys_mod_count>
+        <sys_scope display_value="AES Flow Templates">f9a0de22c7022010d447c17cf4c260ea</sys_scope>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:35:25</sys_updated_on>
+        <ui_id>5fa5c867-fae9-42d1-b54e-36080a0a7ec0</ui_id>
+    </sys_hub_action_instance>
+    <sys_variable_value action="delete_multiple" query="document_key=76175fbcff32101088e94ee9453bf1c2"/>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_action_instance</document>
+        <document_key>76175fbcff32101088e94ee9453bf1c2</document_key>
+        <order>1</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-26 01:02:52</sys_created_on>
+        <sys_id>3d9a9926fff2101088e94ee9453bf139</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:12:24</sys_updated_on>
+        <value>  </value>
+        <variable display_value="">32ff3433dbe7f70083fa2f0e0b961978</variable>
+    </sys_variable_value>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_action_instance</document>
+        <document_key>76175fbcff32101088e94ee9453bf1c2</document_key>
+        <order>8</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-26 22:23:24</sys_created_on>
+        <sys_id>67af7136ff72101088e94ee9453bf1e4</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:35:25</sys_updated_on>
+        <value>&lt;p&gt;none&lt;/p&gt;</value>
+        <variable display_value="">3eff3433dbe7f70083fa2f0e0b96199b</variable>
+    </sys_variable_value>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_action_instance</document>
+        <document_key>76175fbcff32101088e94ee9453bf1c2</document_key>
+        <order>7</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-20 23:37:32</sys_created_on>
+        <sys_id>7a175fbcff32101088e94ee9453bf1c4</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 20:35:40</sys_updated_on>
+        <value>{"complexObjectSchema":{"FlowDesigner:FDab8973ff9da800107175139168f7d34b":{"$COCollectionField":["String"],"$COCollectionField.$field_facets":{"SimpleMapFacet":"{\"up-shift-collection-level\":\"true\"}"}},"FlowDesigner:FDab8973ff9da800107175139168f7d34b.$type_facets":{"SimpleMapFacet":"{\"default_value\":\"\",\"label\":\"Attachments\",\"mandatory\":\"false\",\"child_name\":\"File_name\",\"uiUniqueId\":\"dc0beef0-ab70-43b2-a391-46c1697e4d6c\",\"uiTypeLabel\":\"Array.String\",\"co_type_name\":\"FDab8973ff9da800107175139168f7d34b\",\"child_label\":\"File name\",\"child_type_label\":\"String\",\"element_mapping_provider\":\"com.glide.flow_design.action.data.FlowDesignVariableMapper\",\"read_only\":\"false\",\"hint\":null,\"uiType\":\"array.string\",\"mapped\":\"{}\",\"child_type\":\"string\",\"order\":\"7\",\"max_length\":\"8000\",\"child_uiUniqueId\":\"52fa2bd1-a26d-4ef9-b9d7-762b3a0baa34\"}"}},"complexObject":{"name$":"FDab8973ff9da800107175139168f7d34b","$COCollectionField":[""]},"serializationFormat":"JSON","version":"1.0"}</value>
+        <variable display_value="">f6ff3433dbe7f70083fa2f0e0b961996</variable>
+    </sys_variable_value>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_action_instance</document>
+        <document_key>76175fbcff32101088e94ee9453bf1c2</document_key>
+        <order>2</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-26 22:22:31</sys_created_on>
+        <sys_id>a27ffdf2ff72101088e94ee9453bf1bc</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:22:31</sys_updated_on>
+        <value> </value>
+        <variable display_value="">f6ff3433dbe7f70083fa2f0e0b96197d</variable>
+    </sys_variable_value>
+    <sys_variable_value action="INSERT_OR_UPDATE">
+        <document>sys_hub_action_instance</document>
+        <document_key>76175fbcff32101088e94ee9453bf1c2</document_key>
+        <order>3</order>
+        <sys_class_name>sys_variable_value</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-08-26 22:22:31</sys_created_on>
+        <sys_id>ee7ffdf2ff72101088e94ee9453bf1bb</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-08-26 22:22:31</sys_updated_on>
+        <value> </value>
+        <variable display_value="">f6ff3433dbe7f70083fa2f0e0b961982</variable>
+    </sys_variable_value>
+    <sys_hub_input_scripts action="delete_multiple" query="instance=76175fbcff32101088e94ee9453bf1c2"/>
+    <sys_hub_alias_mapping action="delete_multiple" query="source_id=76175fbcff32101088e94ee9453bf1c2"/>
+    <sys_hub_sub_flow_instance action="delete_multiple" query="flow=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_flow_logic action="delete_multiple" query="flow=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_pill_compound action="delete_multiple" query="attached_to=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_hub_flow_variable action="delete_multiple" query="model=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_flow_input_17f69bbcff32101088e94ee9453bf197"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_flow_input_17f69bbcff32101088e94ee9453bf197"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_flow_output_17f69bbcff32101088e94ee9453bf197"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_flow_output_17f69bbcff32101088e94ee9453bf197"/>
+    <sys_flow_trigger_plan action="delete_multiple" query="plan_id=17f69bbcff32101088e94ee9453bf197"/>
+    <sys_flow_subflow_plan action="delete_multiple" query="plan_id=17f69bbcff32101088e94ee9453bf197"/>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:08:46</sys_created_on>
+        <sys_id>bc06993a2f731110d8a4d5f62799b6d9</sys_id>
+        <sys_name>Flow Template: Post a weekly message from Gmail</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_bc06993a2f731110d8a4d5f62799b6d9</sys_update_name>
+        <tablename>sys_hub_flow</tablename>
+    </sys_metadata_link>
+</record_update>

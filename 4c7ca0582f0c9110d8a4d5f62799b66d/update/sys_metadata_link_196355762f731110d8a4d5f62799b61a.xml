@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3c494f9b2f189950d8a4d5f62799b6bb</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="auth_algorithm">
+    <auth_algorithm action="INSERT_OR_UPDATE">
+        <agent_script/>
+        <algorithm>CustomAuth</algorithm>
+        <description>Sign requests to use AWS API</description>
+        <glide_script display_value="RequestAuthAWSAPIV4">7d2b875f2f189950d8a4d5f62799b658</glide_script>
+        <name>AWSv4 Signer API</name>
+        <sys_class_name>auth_algorithm</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-06-30 19:15:42</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>3c494f9b2f189950d8a4d5f62799b6bb</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>AWSv4 Signer API</sys_name>
+        <sys_package display_value="Global" source="global">global</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>auth_algorithm_3c494f9b2f189950d8a4d5f62799b6bb</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-07-01 13:25:59</sys_updated_on>
+    </auth_algorithm>
+    <sys_translated_text action="delete_multiple" query="documentkey=3c494f9b2f189950d8a4d5f62799b6bb"/>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:57:19</sys_created_on>
+        <sys_id>196355762f731110d8a4d5f62799b61a</sys_id>
+        <sys_name>AWSv4 Signer API</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_196355762f731110d8a4d5f62799b61a</sys_update_name>
+        <tablename>auth_algorithm</tablename>
+    </sys_metadata_link>
+</record_update>

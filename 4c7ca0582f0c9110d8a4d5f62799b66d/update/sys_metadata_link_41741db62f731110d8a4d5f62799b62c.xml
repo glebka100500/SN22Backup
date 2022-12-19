@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>842e289137031200612747efbe41f1ce</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_devstudio/users</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl>9bdf2c9137031200612747efbe41f1fd</enforce_acl>
+        <is_versioned>true</is_versioned>
+        <name>Users</name>
+        <namespace>sn_devstudio</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>users</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2016-04-26 17:23:14</sys_created_on>
+        <sys_id>842e289137031200612747efbe41f1ce</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Users</sys_name>
+        <sys_package display_value="Studio" source="sn_devstudio">5d9789f3eb51310007e48c1cf106fe9e</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Studio">5d9789f3eb51310007e48c1cf106fe9e</sys_scope>
+        <sys_update_name>sys_ws_definition_842e289137031200612747efbe41f1ce</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2016-04-26 17:33:49</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:01:57</sys_created_on>
+        <sys_id>41741db62f731110d8a4d5f62799b62c</sys_id>
+        <sys_name>Users</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_41741db62f731110d8a4d5f62799b62c</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>b4b950567f332200c57212f44efa9147</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/now/manager_calendar</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl>dc6a390f7f003200c57212f44efa91e7</enforce_acl>
+        <is_versioned>true</is_versioned>
+        <name>Manager Calendar</name>
+        <namespace>now</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>manager_calendar</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2016-12-21 21:26:01</sys_created_on>
+        <sys_id>b4b950567f332200c57212f44efa9147</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>Manager Calendar</sys_name>
+        <sys_package display_value="Agent Schedule" source="com.snc.agent_schedule">d9d6f9412f140110d8a4d5f62799b646</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_ws_definition_b4b950567f332200c57212f44efa9147</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2017-01-05 22:40:27</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:02:44</sys_created_on>
+        <sys_id>eca4ddb62f731110d8a4d5f62799b6e5</sys_id>
+        <sys_name>Manager Calendar</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_eca4ddb62f731110d8a4d5f62799b6e5</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

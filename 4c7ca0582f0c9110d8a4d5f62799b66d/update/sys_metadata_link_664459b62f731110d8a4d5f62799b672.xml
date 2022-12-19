@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>63e4aa3ac37203007923d73bf3d3ae9c</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_hr_integrations/sterling_backgound_check</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Sterling Backgound Check</name>
+        <namespace>sn_hr_integrations</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>sterling_backgound_check</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-12-06 20:10:51</sys_created_on>
+        <sys_id>63e4aa3ac37203007923d73bf3d3ae9c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Sterling Backgound Check</sys_name>
+        <sys_package display_value="Human Resources: Integrations" source="sn_hr_integrations">aaa655c19f0322003be01050a57fcf65</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Human Resources: Integrations">aaa655c19f0322003be01050a57fcf65</sys_scope>
+        <sys_update_name>sys_ws_definition_63e4aa3ac37203007923d73bf3d3ae9c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2017-12-06 20:10:51</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:01:14</sys_created_on>
+        <sys_id>664459b62f731110d8a4d5f62799b672</sys_id>
+        <sys_name>Sterling Backgound Check</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_664459b62f731110d8a4d5f62799b672</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

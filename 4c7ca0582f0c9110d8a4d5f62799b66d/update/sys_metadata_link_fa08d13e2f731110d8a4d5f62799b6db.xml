@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>03dbbec42f935110d8a4d5f62799b68f</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_hub_action_type_definition">
+    <sys_hub_action_type_definition action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <acls/>
+        <action_status/>
+        <action_template>DATASTREAM</action_template>
+        <active>true</active>
+        <annotation/>
+        <callable_by_client_api>false</callable_by_client_api>
+        <category/>
+        <compiler_build/>
+        <copied_from/>
+        <copied_from_name/>
+        <description/>
+        <ih_action>false</ih_action>
+        <internal_name>dynamic_scheduled_incident_load</internal_name>
+        <label_cache/>
+        <latest_snapshot/>
+        <master_snapshot/>
+        <name>Dynamic scheduled incident load</name>
+        <natlang/>
+        <outputs/>
+        <pre_compiled>false</pre_compiled>
+        <state>draft</state>
+        <sys_class_name>sys_hub_action_type_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-11-16 18:59:04</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>03dbbec42f935110d8a4d5f62799b68f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Dynamic scheduled incident load</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Global" source="global">global</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_hub_action_type_definition_03dbbec42f935110d8a4d5f62799b68f</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-11-16 18:59:04</sys_updated_on>
+        <system_level>false</system_level>
+        <type/>
+    </sys_hub_action_type_definition>
+    <sys_translated_text action="delete_multiple" query="documentkey=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_variable_value action="delete_multiple" query="document_key=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_step_instance action="delete_multiple" query="action=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_action_input action="delete_multiple" query="model=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_action_output action="delete_multiple" query="model=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_pill_compound action="delete_multiple" query="attached_to=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_action_status_metadata action="delete_multiple" query="action_type_id=03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_input_03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_input_03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_documentation action="delete_multiple" query="name=var__m_sys_hub_action_output_03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_choice action="delete_multiple" query="name=var__m_sys_hub_action_output_03dbbec42f935110d8a4d5f62799b68f"/>
+    <sys_hub_action_plan action="delete_multiple" query="action_id=03dbbec42f935110d8a4d5f62799b68f"/>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:17:39</sys_created_on>
+        <sys_id>fa08d13e2f731110d8a4d5f62799b6db</sys_id>
+        <sys_name>Dynamic scheduled incident load</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fa08d13e2f731110d8a4d5f62799b6db</sys_update_name>
+        <tablename>sys_hub_action_type_definition</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>4724340e878732006db5f127b7cb0b7a</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/now/service_mapping</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>ea4f3ae287132200b5bea18dd0e3eceb</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Application service utils API</name>
+        <namespace>now</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>service_mapping</service_id>
+        <short_description>Former "Service Mapping" API. Reused for application service.</short_description>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-05-31 18:12:00</sys_created_on>
+        <sys_id>4724340e878732006db5f127b7cb0b7a</sys_id>
+        <sys_mod_count>7</sys_mod_count>
+        <sys_name>Application service utils API</sys_name>
+        <sys_package display_value="Application Service" source="com.snc.cmdb.it_service">72b4cdcf6da620100acb70b353433039</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_ws_definition_4724340e878732006db5f127b7cb0b7a</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-03-05 11:40:49</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:00:36</sys_created_on>
+        <sys_id>d92495b62f731110d8a4d5f62799b6bd</sys_id>
+        <sys_name>Application service utils API</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_d92495b62f731110d8a4d5f62799b6bd</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

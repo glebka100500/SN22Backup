@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>197045862f531110d8a4d5f62799b6d5</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description/&gt;
+        &lt;name&gt;Get Token By  Profile and Request ID&lt;/name&gt;
+        &lt;record_for_rollback&gt;true&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[var requestId = 'b29d84b42f131110d8a4d5f62799b600'; // oauth_requestor_profile
+var profileId = '5aab9cf02f531110d8a4d5f62799b6dd'; // oauth_entity_profile
+var token = new sn_auth.GlideOAuthClient().getToken(requestId, profileId).getAccessToken();
+
+gs.log(token);]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-11-22 15:09:49&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;197045862f531110d8a4d5f62799b6d5&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Get Token By  Profile and Request ID&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_197045862f531110d8a4d5f62799b6d5&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-11-22 15:40:19&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:53:19</sys_created_on>
+        <sys_id>e672d5362f731110d8a4d5f62799b6ac</sys_id>
+        <sys_name>Get Token By  Profile and Request ID</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_e672d5362f731110d8a4d5f62799b6ac</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

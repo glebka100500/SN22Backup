@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>e5187e2f53333010532cddeeff7b1283</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_sow_itsm_common/task</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>f5416e6c53000110532cddeeff7b1283</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Task CMDB (Internal API)</name>
+        <namespace>sn_sow_itsm_common</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>task</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-11-19 19:51:07</sys_created_on>
+        <sys_id>e5187e2f53333010532cddeeff7b1283</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>Task CMDB (Internal API)</sys_name>
+        <sys_package display_value="Service Operations Workspace ITSM Common" source="sn_sow_itsm_common">0eef12637311301045216238edf6a75e</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Service Operations Workspace ITSM Common">0eef12637311301045216238edf6a75e</sys_scope>
+        <sys_update_name>sys_ws_definition_e5187e2f53333010532cddeeff7b1283</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-11-23 13:28:37</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:03:36</sys_created_on>
+        <sys_id>81d4d1f62f731110d8a4d5f62799b633</sys_id>
+        <sys_name>Task CMDB (Internal API)</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_81d4d1f62f731110d8a4d5f62799b633</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

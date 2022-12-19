@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>3fe89476ff832010635f056d793bf121</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Following labels will be updated&amp;#13;
+On Auto-Resolution Configuration:&amp;#13;
+   - Target table name will be renamed to Table&amp;#13;
+On Your recent request table:&amp;#13;
+   - NLU intent will be renamed to Intent&lt;/description&gt;
+        &lt;name&gt;Rename field labels related to IAR&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[renameColumnLabels();
+
+function renameColumnLabels() {
+	renameColumnLabel(AutoResolutionConstants.CONFIG_TABLE_NAME, 'target_table_name', 'Target table name', 'Table');
+	renameColumnLabel(AutoResolutionConstants.CONTEXT_TABLE_NAME, 'nlu_intent', 'NLU Intent', 'Intent');
+}
+
+function renameColumnLabel(tableName, columnName, existingLabel, replaceWith) {
+	var sysDictionaryGr = new GlideRecord('sys_dictionary');
+	sysDictionaryGr.addQuery('name', tableName);
+	sysDictionaryGr.addQuery('element', columnName);
+	sysDictionaryGr.addQuery('column_label', existingLabel);
+	sysDictionaryGr.query();
+	
+	if (sysDictionaryGr.next()) {
+		sysDictionaryGr.setValue('column_label', replaceWith);
+		sysDictionaryGr.update();
+		
+		gs.info('Replaced the label of column ' + columnName + ' from ' + existingLabel + ' with ' + replaceWith + ' on the table ' + tableName);
+	} else {
+		gs.warn('Could not replace the label of column ' + columnName + ' from ' + existingLabel + ' with ' + replaceWith + ' on the table ' + tableName);
+	}	
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2021-03-25 21:25:55&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;3fe89476ff832010635f056d793bf121&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;4&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Rename field labels related to IAR&lt;/sys_name&gt;
+        &lt;sys_package display_value="Issue Auto-Resolution" source="com.glide.cs.auto_resolution"&gt;85493a472f800110d8a4d5f62799b6a9&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_3fe89476ff832010635f056d793bf121&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-01-11 18:18:01&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:56:02</sys_created_on>
+        <sys_id>121391762f731110d8a4d5f62799b692</sys_id>
+        <sys_name>Rename field labels related to IAR</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_121391762f731110d8a4d5f62799b692</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

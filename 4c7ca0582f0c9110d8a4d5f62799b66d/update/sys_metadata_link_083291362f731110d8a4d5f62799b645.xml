@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>09515f542f095110d8a4d5f62799b65b</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description/&gt;
+        &lt;name&gt;Get table description&lt;/name&gt;
+        &lt;record_for_rollback&gt;true&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[var manager = GlideDBObjectManager.get();
+var fields = Object.keys(manager);
+function getAccessibleFields(field){
+	return field.toLowerCase() == field ;
+}
+function getFieldDescription(field){
+	return field + ' - ' +  typeof manager[field];
+}
+gs.log(fields.filter(getAccessibleFields).map(getFieldDescription).toString().replaceAll(',', '\n'));]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2022-07-28 18:57:22&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;09515f542f095110d8a4d5f62799b65b&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;21&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Get table description&lt;/sys_name&gt;
+        &lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_09515f542f095110d8a4d5f62799b65b&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2022-07-28 19:12:35&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:52:04</sys_created_on>
+        <sys_id>083291362f731110d8a4d5f62799b645</sys_id>
+        <sys_name>Get table description</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_083291362f731110d8a4d5f62799b645</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>

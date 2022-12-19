@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>354d4837c7223200b0ea8b3c5c976356</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/now/interactive_analysis</base_uri>
+        <consumes>application/json</consumes>
+        <consumes_customized>true</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl/>
+        <is_versioned>true</is_versioned>
+        <name>Interactive Analysis (Internal API)</name>
+        <namespace>now</namespace>
+        <produces>application/json</produces>
+        <produces_customized>true</produces_customized>
+        <service_id>interactive_analysis</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-05-12 05:16:59</sys_created_on>
+        <sys_id>354d4837c7223200b0ea8b3c5c976356</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>Interactive Analysis (Internal API)</sys_name>
+        <sys_package display_value="Interactive Analysis" source="com.glideapp.interactive_analysis">7cf3090b6da620100acb70b3534330a0</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_ws_definition_354d4837c7223200b0ea8b3c5c976356</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2017-05-12 05:22:45</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:00:09</sys_created_on>
+        <sys_id>fa0415b62f731110d8a4d5f62799b6b1</sys_id>
+        <sys_name>Interactive Analysis (Internal API)</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fa0415b62f731110d8a4d5f62799b6b1</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

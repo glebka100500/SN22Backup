@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>64c5c738c7ba3010408bc8d6f2c2609d</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_pipeline/authorization</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl>a6664378c7ba3010408bc8d6f2c260b3</enforce_acl>
+        <is_versioned>true</is_versioned>
+        <name>Authorization</name>
+        <namespace>sn_pipeline</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>authorization</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-09-22 14:46:32</sys_created_on>
+        <sys_id>64c5c738c7ba3010408bc8d6f2c2609d</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Authorization</sys_name>
+        <sys_package display_value="Pipeline" source="sn_pipeline">e78853e9c3222010b83971e54440dd26</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Pipeline">e78853e9c3222010b83971e54440dd26</sys_scope>
+        <sys_update_name>sys_ws_definition_64c5c738c7ba3010408bc8d6f2c2609d</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-09-22 14:48:05</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:01:15</sys_created_on>
+        <sys_id>fa4459b62f731110d8a4d5f62799b674</sys_id>
+        <sys_name>Authorization</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_fa4459b62f731110d8a4d5f62799b674</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

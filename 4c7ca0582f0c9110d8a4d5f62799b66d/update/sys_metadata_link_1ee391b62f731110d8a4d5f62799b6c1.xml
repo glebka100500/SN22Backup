@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>1c489737530110102f40ddeeff7b126d</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_va_teams/va_teams_inbound</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>VA Teams Inbound</name>
+        <namespace>sn_va_teams</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>va_teams_inbound</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-06-04 07:34:40</sys_created_on>
+        <sys_id>1c489737530110102f40ddeeff7b126d</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>VA Teams Inbound</sys_name>
+        <sys_package display_value="Conversational Integration with Microsoft Teams" source="sn_va_teams">8be385e4776110105d7b3882a910610e</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Conversational Integration with Microsoft Teams">8be385e4776110105d7b3882a910610e</sys_scope>
+        <sys_update_name>sys_ws_definition_1c489737530110102f40ddeeff7b126d</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-11-12 07:52:02</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:59:34</sys_created_on>
+        <sys_id>1ee391b62f731110d8a4d5f62799b6c1</sys_id>
+        <sys_name>VA Teams Inbound</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_1ee391b62f731110d8a4d5f62799b6c1</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

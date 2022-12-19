@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>54bdb9a37732230001fb4311a8106127</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_g_app_creator/guided_app_creator_api</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>No active default version</default_version>
+        <doc_link/>
+        <enforce_acl>fb347a677713230001fb4311a81061aa</enforce_acl>
+        <is_versioned>false</is_versioned>
+        <name>Guided App Creator API</name>
+        <namespace>sn_g_app_creator</namespace>
+        <produces>application/json</produces>
+        <produces_customized>true</produces_customized>
+        <service_id>guided_app_creator_api</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-01-10 17:37:03</sys_created_on>
+        <sys_id>54bdb9a37732230001fb4311a8106127</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Guided App Creator API</sys_name>
+        <sys_package display_value="Guided Application Creator" source="sn_g_app_creator">e4f5d215533223004205ddeeff7b1258</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Guided Application Creator">e4f5d215533223004205ddeeff7b1258</sys_scope>
+        <sys_update_name>sys_ws_definition_54bdb9a37732230001fb4311a8106127</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-02-04 18:09:20</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:00:46</sys_created_on>
+        <sys_id>b724d5b62f731110d8a4d5f62799b6c7</sys_id>
+        <sys_name>Guided App Creator API</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_b724d5b62f731110d8a4d5f62799b6c7</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>82a90c87c7102010408bc8d6f2c260b3</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/now/template_spokes_details</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl>99aa44c7c7102010408bc8d6f2c260b8</enforce_acl>
+        <is_versioned>true</is_versioned>
+        <name>Template Spokes Details</name>
+        <namespace>now</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>template_spokes_details</service_id>
+        <short_description/>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-11-09 22:03:52</sys_created_on>
+        <sys_id>82a90c87c7102010408bc8d6f2c260b3</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Template Spokes Details</sys_name>
+        <sys_package display_value="Application Templates" source="com.snc.apps_templates">703481cb6da620100acb70b3534330d9</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Global">global</sys_scope>
+        <sys_update_name>sys_ws_definition_82a90c87c7102010408bc8d6f2c260b3</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-11-09 22:05:47</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:01:56</sys_created_on>
+        <sys_id>f8741db62f731110d8a4d5f62799b629</sys_id>
+        <sys_name>Template Spokes Details</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_f8741db62f731110d8a4d5f62799b629</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

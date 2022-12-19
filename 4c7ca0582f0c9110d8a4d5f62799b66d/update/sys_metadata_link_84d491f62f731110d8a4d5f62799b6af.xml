@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>e15f1354b3233200f7d1a13816a8dcb2</documentkey>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_definition">
+    <sys_ws_definition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <base_uri>/api/sn_cs_builder/convo</base_uri>
+        <consumes>application/json,application/xml,text/xml</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_version>v1</default_version>
+        <doc_link/>
+        <enforce_acl>e92770b0b3700300f7d1a13816a8dca3</enforce_acl>
+        <is_versioned>true</is_versioned>
+        <name>Convo</name>
+        <namespace>sn_cs_builder</namespace>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <service_id>convo</service_id>
+        <short_description>API for getting the relationship between nodes in a Conversation graph</short_description>
+        <sys_class_name>sys_ws_definition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-06-20 16:40:02</sys_created_on>
+        <sys_id>e15f1354b3233200f7d1a13816a8dcb2</sys_id>
+        <sys_mod_count>6</sys_mod_count>
+        <sys_name>Convo</sys_name>
+        <sys_package display_value="Conversation Builder" source="sn_cs_builder">a6c104e2b3133200f7d1a13816a8dc64</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Conversation Builder">a6c104e2b3133200f7d1a13816a8dc64</sys_scope>
+        <sys_update_name>sys_ws_definition_e15f1354b3233200f7d1a13816a8dcb2</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2017-08-22 21:08:06</sys_updated_on>
+    </sys_ws_definition>
+</record_update>
+]]></payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 21:03:31</sys_created_on>
+        <sys_id>84d491f62f731110d8a4d5f62799b6af</sys_id>
+        <sys_name>Convo</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_84d491f62f731110d8a4d5f62799b6af</sys_update_name>
+        <tablename>sys_ws_definition</tablename>
+    </sys_metadata_link>
+</record_update>

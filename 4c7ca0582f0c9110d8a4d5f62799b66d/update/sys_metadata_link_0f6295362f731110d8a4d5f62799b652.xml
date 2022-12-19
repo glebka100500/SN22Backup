@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_metadata_link">
+    <sys_metadata_link action="INSERT_OR_UPDATE">
+        <directory>update</directory>
+        <documentkey>156841f353e0330034c6ddeeff7b12b8</documentkey>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_fix"&gt;
+    &lt;sys_script_fix action="INSERT_OR_UPDATE"&gt;
+        &lt;before&gt;false&lt;/before&gt;
+        &lt;description&gt;Hide who columns form the condition builder in new Retry policy from, It Seems that dictionary attributes filed does not work on bootstrap.&lt;/description&gt;
+        &lt;name&gt;Restrict Retry Policy Conditions Choices&lt;/name&gt;
+        &lt;record_for_rollback&gt;false&lt;/record_for_rollback&gt;
+        &lt;script&gt;&lt;![CDATA[var gr = new GlideRecord('sys_dictionary');
+gr.addEncodedQuery('name=sys_retry_policy^element=condition');
+gr.query();
+if(gr.hasNext()){
+	gr.next();
+	gr.attributes='restrictTo=restrict_to';
+	gr.update();
+}]]&gt;&lt;/script&gt;
+        &lt;sys_class_name&gt;sys_script_fix&lt;/sys_class_name&gt;
+        &lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;
+        &lt;sys_created_on&gt;2019-04-08 08:21:39&lt;/sys_created_on&gt;
+        &lt;sys_id&gt;156841f353e0330034c6ddeeff7b12b8&lt;/sys_id&gt;
+        &lt;sys_mod_count&gt;6&lt;/sys_mod_count&gt;
+        &lt;sys_name&gt;Restrict Retry Policy Conditions Choices&lt;/sys_name&gt;
+        &lt;sys_package display_value="Centralized Connection and Credential" source="com.snc.core.automation.connection_credential"&gt;d322c9476d6620100acb70b353433071&lt;/sys_package&gt;
+        &lt;sys_policy/&gt;
+        &lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+        &lt;sys_update_name&gt;sys_script_fix_156841f353e0330034c6ddeeff7b12b8&lt;/sys_update_name&gt;
+        &lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;
+        &lt;sys_updated_on&gt;2019-04-10 09:43:45&lt;/sys_updated_on&gt;
+        &lt;unloadable&gt;false&lt;/unloadable&gt;
+    &lt;/sys_script_fix&gt;
+&lt;/record_update&gt;
+</payload>
+        <sys_class_name>sys_metadata_link</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-19 20:53:05</sys_created_on>
+        <sys_id>0f6295362f731110d8a4d5f62799b652</sys_id>
+        <sys_name>Restrict Retry Policy Conditions Choices</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_metadata_link_0f6295362f731110d8a4d5f62799b652</sys_update_name>
+        <tablename>sys_script_fix</tablename>
+    </sys_metadata_link>
+</record_update>
