@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_data_source">
+    <sys_data_source action="INSERT_OR_UPDATE">
+        <batch_size>1000</batch_size>
+        <category/>
+        <connection_alias/>
+        <connection_override_last_success_time/>
+        <connection_timeout>0</connection_timeout>
+        <connection_url/>
+        <connection_url_parameters/>
+        <csv_delimiter/>
+        <data_in_single_column>false</data_in_single_column>
+        <data_loader><![CDATA[(function loadData(import_set_table, data_source, import_log, last_success_import_time) {
+
+	var provider = new sn_cc.ConnectionInfoProvider();
+	var connectionInfo = provider.getConnectionInfo("d7db37212fdbd110d8a4d5f62799b6f0");
+	var attributes = connectionInfo.getExtendedAttributes();
+	var log = new GlideImportLog();
+    try {
+        var r = new sn_ws.RESTMessageV2('Jira Groups  Pull', 'Get Jira Groups');
+		for (var attr in attributes){
+			r.setStringParameterNoEscape(attr.replace('u_', ''), attributes[attr]);
+		}
+        var response = r.execute();
+        var responseBody = JSON.parse(response.getBody());
+		
+        var httpStatus = response.getStatusCode();
+		var groups = responseBody.groups.groups;
+		for (var i = 0; i < groups.length && i < import_set_table.getMaximumRows(); i++){ // maximum rows is 20 in the case of test load
+			import_set_table.insert(groups[i]);
+		}
+		log.info("Jjira groups load status code " + httpStatus, "Jira Groups Load");
+    } catch (ex) {
+        var message = ex.message; // most of the errors will end up as Syntax Errors anyway (RhinoECMAError)
+		import_log.error(message);
+    }
+
+})(import_set_table, data_source, import_log, last_success_import_time);]]></data_loader>
+        <data_stream_action/>
+        <data_stream_action_inputs/>
+        <data_stream_connection_alias/>
+        <database_name/>
+        <database_port/>
+        <discard_arrays>true</discard_arrays>
+        <expand_node_children>false</expand_node_children>
+        <file_path/>
+        <file_retrieval_method>Attachment</file_retrieval_method>
+        <format>CSV</format>
+        <glide_keystore>false</glide_keystore>
+        <header_row>0</header_row>
+        <import_set_table_label>Jira Groups Stage</import_set_table_label>
+        <import_set_table_name>u_jira_groups_stage</import_set_table_name>
+        <instance_name/>
+        <jdbc_password/>
+        <jdbc_server/>
+        <jdbc_user_name/>
+        <jpath_root_node/>
+        <last_run_database_field/>
+        <last_run_datetime/>
+        <last_success_import_time>2022-11-30 15:41:22</last_success_import_time>
+        <ldap_target/>
+        <ldapprobe_result_set_rows>200</ldapprobe_result_set_rows>
+        <limit/>
+        <maximum_rows/>
+        <mid_server/>
+        <name>Jira Groups Load</name>
+        <offset>0</offset>
+        <oracle_port>1521</oracle_port>
+        <oracle_sid>orcl</oracle_sid>
+        <parsing_script><![CDATA[// The input value can be accessed through the variables named "line", "lineNumber" and "result"
+// The function uses result variable to return parse result back. 
+(function(line,lineNumber,result) {
+	// add code here
+})(line,lineNumber,result);]]></parsing_script>
+        <properties/>
+        <query>All Rows from Table</query>
+        <query_timeout>0</query_timeout>
+        <request_action/>
+        <scp_authentication>Username and Password</scp_authentication>
+        <scp_password/>
+        <scp_port/>
+        <scp_server/>
+        <scp_user_name/>
+        <sheet_number>0</sheet_number>
+        <sql_statement/>
+        <ssh_keyfile_path/>
+        <support_pagination>false</support_pagination>
+        <sys_class_name>sys_data_source</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-22 15:55:15</sys_created_on>
+        <sys_id>2d0b6fef2ff35110d8a4d5f62799b6d0</sys_id>
+        <sys_name>Jira Groups Load</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_data_source_2d0b6fef2ff35110d8a4d5f62799b6d0</sys_update_name>
+        <table_name/>
+        <type>CUSTOM</type>
+        <use_batch_import>false</use_batch_import>
+        <use_integrated_authentication>false</use_integrated_authentication>
+        <use_last_run_datetime>false</use_last_run_datetime>
+        <xpath_root_node/>
+        <zipped>false</zipped>
+    </sys_data_source>
+    <sys_variable_value action="delete_multiple" query="document_key=2d0b6fef2ff35110d8a4d5f62799b6d0"/>
+</record_update>

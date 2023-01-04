@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.HTTPRetryHandler</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>HTTPRetryHandler</name>
+        <script><![CDATA[var HTTPRetryHandler = Class.create();
+
+HTTPRetryHandler.prototype = {
+    initialize: function(retryCondition, retryCallback, maxRetries) {
+        this.maxRetries = maxRetries || 5; // max attempts
+        this.retry = true; // is retry enabled
+        this.retryCallback = retryCallback || function() {
+            gs.info("Attempting another request");
+        }; // execute after every retry
+        this.retryCondition = retryCondition || function(response) {
+            return response.getStatusCode() > 200;
+        };
+    },
+    /*
+    params:
+    
+    restMessage: RESTMessageV2
+    */
+    executeWithRetries: function(restMessage) {
+		var retries = 0;
+        do {
+            var response = restMessage.execute();
+				if (retries){
+					this.retryCallback(response, retries);
+				}
+        } while (this.shouldRetry(response, retries++));
+
+        return response;
+    },
+
+    shouldRetry: function(response, retries) {
+         if (retries < this.maxRetries) {
+            return this.retryCondition(response, retries);
+        } else {
+            throw new OutOfHTTPRetriesError();
+        }
+    },
+
+    type: 'HTTPRetryHandler'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-22 15:57:40</sys_created_on>
+        <sys_id>fd18e3272ff35110d8a4d5f62799b6d3</sys_id>
+        <sys_name>HTTPRetryHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_fd18e3272ff35110d8a4d5f62799b6d3</sys_update_name>
+        <u_script_length>1186</u_script_length>
+    </sys_script_include>
+</record_update>

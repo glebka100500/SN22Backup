@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="DELETE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.HTTPPageHandler</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>HTTPPageHandler</name>
+        <script><![CDATA[var HTTPPageHandler = Class.create();
+
+HTTPPageHandler.prototype = {
+    initialize: function(retryCondition, retryCallback, maxRetries) {
+        this.maxRetries = maxRetries || 5; // max attempts
+        this.retry = true; // is retry enabled
+        this.retries = 0; // retry counter
+        this.retryCallback = retryCallback || function() {
+            gs.info("Attempting another request");
+        }; // execute after every retry
+        this.retryCondition = retryCondition || function(response) {
+            return response.getStatusCode() > 200;
+        };
+    },
+    /*
+    params:
+    
+    restMessage: RESTMessageV2
+    */
+    executeWithRetries: function(restMessage) {
+        do {
+            var response = restMessage.execute();
+
+        } while (this.shouldRetry(response));
+
+        return response;
+    },
+
+    shouldRetry: function(response) {
+        if (!this.retryCondition(response, this.retries)) {
+            return false;
+        } else if (this.retry && this.retries < this.maxRetries) {
+            this.retries++;
+            this.retryCallback(response, this.retries);
+            return true;
+        } else {
+            throw new OutOfHTTPRetriesError();
+        }
+    },
+
+    type: 'HTTPPageHandler'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-23 14:43:11</sys_created_on>
+        <sys_id>ff14ec402f002110d8a4d5f62799b674</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>HTTPPageHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_ff14ec402f002110d8a4d5f62799b674</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-12-23 14:43:11</sys_updated_on>
+        <u_script_length>1286</u_script_length>
+    </sys_script_include>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</application>
+        <file_path/>
+        <instance_id>1af731b7dbbd5bc40e785d00cf9619f1</instance_id>
+        <instance_name>dev58569</instance_name>
+        <name>sys_script_include_ff14ec402f002110d8a4d5f62799b674</name>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;public&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;x_644088_integrati.HTTPPageHandler&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;false&lt;/client_callable&gt;&lt;description/&gt;&lt;name&gt;HTTPPageHandler&lt;/name&gt;&lt;script&gt;&lt;![CDATA[var HTTPPageHandler = Class.create();
+
+HTTPPageHandler.prototype = {
+    initialize: function(retryCondition, retryCallback, maxRetries) {
+        this.maxRetries = maxRetries || 5; // max attempts
+        this.retry = true; // is retry enabled
+        this.retries = 0; // retry counter
+        this.retryCallback = retryCallback || function() {
+            gs.info("Attempting another request");
+        }; // execute after every retry
+        this.retryCondition = retryCondition || function(response) {
+            return response.getStatusCode() &gt; 200;
+        };
+    },
+    /*
+    params:
+    
+    restMessage: RESTMessageV2
+    */
+    executeWithRetries: function(restMessage) {
+        do {
+            var response = restMessage.execute();
+
+        } while (this.shouldRetry(response));
+
+        return response;
+    },
+
+    shouldRetry: function(response) {
+        if (!this.retryCondition(response, this.retries)) {
+            return false;
+        } else if (this.retry &amp;&amp; this.retries &lt; this.maxRetries) {
+            this.retries++;
+            this.retryCallback(response, this.retries);
+            return true;
+        } else {
+            throw new OutOfHTTPRetriesError();
+        }
+    },
+
+    type: 'HTTPPageHandler'
+};]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2022-12-23 14:43:11&lt;/sys_created_on&gt;&lt;sys_id&gt;ff14ec402f002110d8a4d5f62799b674&lt;/sys_id&gt;&lt;sys_mod_count&gt;0&lt;/sys_mod_count&gt;&lt;sys_name&gt;HTTPPageHandler&lt;/sys_name&gt;&lt;sys_package display_value="Integrations 2022" source="x_644088_integrati"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_package&gt;&lt;sys_policy&gt;read&lt;/sys_policy&gt;&lt;sys_scope display_value="Integrations 2022"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_ff14ec402f002110d8a4d5f62799b674&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2022-12-23 14:43:11&lt;/sys_updated_on&gt;&lt;u_script_length&gt;1286&lt;/u_script_length&gt;&lt;/sys_script_include&gt;&lt;/record_update&gt;</payload>
+        <payload_hash>-41988649</payload_hash>
+        <record_name>HTTPPageHandler</record_name>
+        <reverted_from/>
+        <source>3681d5f62f331110d8a4d5f62799b6a9</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-23 14:43:12</sys_created_on>
+        <sys_id>4024ec402f002110d8a4d5f62799b677</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>1853f7025040000001</sys_recorded_at>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-12-23 14:43:12</sys_updated_on>
+        <type>Script Include</type>
+        <update_guid>7b14ec4018002110f8ac634d295a1b76</update_guid>
+        <update_guid_history>7b14ec4018002110f8ac634d295a1b76:-41988649</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-23 14:53:59</sys_created_on>
+        <sys_db_object display_value="" name="sys_script_include">sys_script_include</sys_db_object>
+        <sys_id>1fed68b46a8f47859f52f7af7dbd56a1</sys_id>
+        <sys_metadata>ff14ec402f002110d8a4d5f62799b674</sys_metadata>
+        <sys_name>HTTPPageHandler</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_parent/>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_scope_delete display_value="">4b9f281809d34184adaf9b4672ff2f90</sys_scope_delete>
+        <sys_update_name>sys_script_include_ff14ec402f002110d8a4d5f62799b674</sys_update_name>
+        <sys_update_version display_value="sys_script_include_ff14ec402f002110d8a4d5f62799b674">4024ec402f002110d8a4d5f62799b677</sys_update_version>
+    </sys_metadata_delete>
+</record_update>
