@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.OAuthUtilJiraCloud</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>//* Dont edit this script include. Best practise: Extend this script include and override the functions like shown in sample code. &#13;
+// Use the Script include to add or update headers, query parameters, endpoint URLs in oauth flow.&#13;
+//* sample script below&#13;
+//*&#13;
+	var OAuthCustomUtil = Class.create();&#13;
+	OAuthCustomUtil.prototype = Object.extendsObject(OAuthUtil, {&#13;
+&#13;
+	preprocessAuthCode: function(requestParamMap) {&#13;
+		this.oauthContext.setAuthorizationEndpoint("https://accounts.google.com/o/oauth2/v2/auth");&#13;
+		this.oauthContext.addHeader("Content-Type","application/json");&#13;
+		var profGr = this.oauthContext.getOAuthProfile();&#13;
+		gs.info(profGr.getValue('name'));&#13;
+	},&#13;
+	&#13;
+	preprocessAccessToken: function(requestParamMap) {&#13;
+		this.oauthContext.addHeader("Content-Type","application/json");&#13;
+		this.oauthContext.addQueryParameter("name","jackson");&#13;
+		gs.info(this.oauthContext.getQueryParameter("name"));&#13;
+		gs.info(this.oauthContext.getHeader("Content-Type"));&#13;
+		this.oauthContext.setTokenEndpoint("https://oauth2.googleapis.com/token");&#13;
+		var profGr = this.oauthContext.getOAuthProfile();&#13;
+		gs.info(profGr.getValue('grant_type'));&#13;
+	}&#13;
+	type: 'OAuthCustomUtil'&#13;
+}); &#13;
+ </description>
+        <name>OAuthUtilJiraCloud</name>
+        <script><![CDATA[//* Dont edit this script include. Best practise: Extend this script include and override the functions. 
+
+var OAuthUtilJiraCloud = Class.create();
+
+OAuthUtilJiraCloud.prototype = Object.extendsObject(OAuthUtil, {
+
+	preprocessAuthCode: function(requestParamMap) {
+		this.oauthContext.addQueryParameter("audience","api.atlassian.com");
+		this.oauthContext.addQueryParameter("prompt","consent");
+		
+	},
+	postprocessAccessToken: function(accessTokenResponse) {
+		var contentType = accessTokenResponse.getContentType();
+		if (contentType && contentType.indexOf('application/json') != -1) {
+			var tokenResponse = (new global.JSON()).decode(accessTokenResponse.getBody());
+			gs.log(tokenResponse);
+			var paramMap = accessTokenResponse.getparameters();
+			for (param in tokenResponse)
+				paramMap.put(param, tokenResponse[param].toString());
+		}
+		gs.log("Jira OAuth 2.0 ---------- " + accessTokenResponse.getBody());
+	},
+	type: 'OAuthUtilJiraCloud'
+}); ]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:38:00</sys_created_on>
+        <sys_id>3b4719db2f633110d8a4d5f62799b6e1</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>OAuthUtilJiraCloud</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_3b4719db2f633110d8a4d5f62799b6e1</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:38:00</sys_updated_on>
+        <u_script_length>974</u_script_length>
+    </sys_script_include>
+</record_update>

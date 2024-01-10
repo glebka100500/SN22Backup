@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_web_service">
+    <sys_web_service action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <function_name>createTicket</function_name>
+        <name>AlgosecAPI</name>
+        <scoped_name>x_644088_integrati_AlgosecAPI</scoped_name>
+        <script><![CDATA[(function scriptedWebServiceOperation(request, response) {
+
+	// user must have soap_script role
+	try {
+		var inputs = {};
+		inputs['request_data'] = soapRequestXML; // String 
+		var result = sn_fd.FlowAPI.getRunner().subflow('global.algosec_sc_request').inForeground().withInputs(inputs).run();
+		var outputs = result.getOutputs();
+		response.request = outputs['request'];
+		response.status = "success"; 
+	} catch (ex) {
+		response.status = "error";
+		response.message = ex.getMessage();
+	}
+})(request, response);]]></script>
+        <short_description/>
+        <sys_class_name>sys_web_service</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:31:03</sys_created_on>
+        <sys_id>b5b5d9d72f633110d8a4d5f62799b63e</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>AlgosecAPI</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_web_service_b5b5d9d72f633110d8a4d5f62799b63e</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:31:03</sys_updated_on>
+        <wsdl>https://dev58569.service-now.com/x_644088_integrati_AlgosecAPI.do?WSDL</wsdl>
+        <wsdl_compliance>false</wsdl_compliance>
+    </sys_web_service>
+</record_update>

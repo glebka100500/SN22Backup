@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="catalog_ui_policy_action">
+    <catalog_ui_policy_action action="INSERT_OR_UPDATE">
+        <catalog_item display_value="Copy of SAP Request">525599972f633110d8a4d5f62799b6ac</catalog_item>
+        <catalog_variable>IO:5230eb402fe43110d8a4d5f62799b601</catalog_variable>
+        <cleared>false</cleared>
+        <disabled>ignore</disabled>
+        <field/>
+        <mandatory>true</mandatory>
+        <order>100</order>
+        <sys_class_name>catalog_ui_policy_action</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:29:32</sys_created_on>
+        <sys_id>bf559d972f633110d8a4d5f62799b616</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>select_roles</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>catalog_ui_policy_action_bf559d972f633110d8a4d5f62799b616</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:29:32</sys_updated_on>
+        <table/>
+        <ui_policy display_value="select fields mandatory -">bb559d972f633110d8a4d5f62799b607</ui_policy>
+        <variable>select_roles</variable>
+        <variable_set/>
+        <visible>ignore</visible>
+    </catalog_ui_policy_action>
+</record_update>

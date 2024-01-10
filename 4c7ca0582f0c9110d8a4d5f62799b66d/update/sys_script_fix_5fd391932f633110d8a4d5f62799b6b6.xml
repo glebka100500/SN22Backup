@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_fix">
+    <sys_script_fix action="INSERT_OR_UPDATE">
+        <before>false</before>
+        <description>get credential details for automation</description>
+        <name>TEST: get credential details</name>
+        <record_for_rollback>true</record_for_rollback>
+        <script><![CDATA[var alias = new sn_cc.ConnectionInfoProvider();
+    var con = alias.getConnectionInfo(inputs.aliasID);
+    var grCon = new GlideRecord("sys_connection");
+    grCon.get(con.getAttribute("sys_id"));
+    if (grCon){
+        var connection = grCon;
+    }
+    else {
+        throw "Could not resolve alias";
+    }]]></script>
+        <sys_class_name>sys_script_fix</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:22:57</sys_created_on>
+        <sys_id>5fd391932f633110d8a4d5f62799b6b6</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TEST: get credential details</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_fix_5fd391932f633110d8a4d5f62799b6b6</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:22:57</sys_updated_on>
+        <unloadable>false</unloadable>
+    </sys_script_fix>
+</record_update>

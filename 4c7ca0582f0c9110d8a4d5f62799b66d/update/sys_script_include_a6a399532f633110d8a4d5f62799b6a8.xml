@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.MyJSUtils</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>Dev Tools</description>
+        <name>MyJSUtils</name>
+        <script><![CDATA[var MyJSUtils = Class.create();
+MyJSUtils.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+	
+	initialize: function () {
+		AbstractAjaxProcessor.prototype.initialize.apply(this, arguments);
+		
+		function _constants() {
+		var _BASE_64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		var _BASE_64_MAP = _BASE_64.match(/./g).reduce(function (p, v, i) {
+			p[i] = v;
+			return p;
+		}, {});
+		var _BASE_64_PADD = 64;
+		
+		return {
+			BASE_64_MAP: function(key) { // these are accessible from closure only
+				return _BASE_64_MAP[key];
+			},
+			BASE_64_PADD: function(){
+				return _BASE_64_PADD;
+			}
+		};
+	}
+		var constants = _constants();
+		
+		this.BASE_64_MAP = constants.BASE_64_MAP;
+		this.BASE_64_PADD = constants.BASE_64_PADD;
+		var props = this.getParameter("sysparm_params").split(",").reduce(function (p, c, i){
+			var map = c.split('=');
+			p[map[0]] = map[1];
+			return p;
+		}, this);
+	},
+	
+	isVip: function (user) {
+		gs.log("--------- user _____ " + this.user);
+		user = user ? user : this.user;
+		var u = new GlideRecord("sys_user");
+		u.get(user);
+		return u.vip;
+	},
+	
+	_constants: function () {
+		var _BASE_64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		var _BASE_64_MAP = _BASE_64.match(/./g).reduce(function (p, v, i) {
+			p[i] = v;
+			return p;
+		}, {});
+		var _BASE_64_PADD = 64;
+		
+		return {
+			BASE_64_MAP: function(key) {
+				return _BASE_64_MAP[key];
+			},
+			BASE_64_PADD: function(){
+				return _BASE_64_PADD;
+			}
+		};
+	},
+	
+	/*convert utf-8 string to base64
+	
+	@param {string} data utf-8 string to encode
+	@returns {string} result base64 encoded string
+	*/
+	
+	hexToBase64: function (data){
+		var result = this.base64Encode(data.match(/[0-9a-f]{2}/g).map(function(a) {
+			var hex = parseInt(a, 16);
+			return String.fromCharCode(hex);
+		}).join(""));
+		return result;
+	},
+	
+	UTF8toHex: function (src){
+		str = encodeURIComponent(src);
+		
+		var result = str.split('').map(function(c){
+			var c1 = c.charCodeAt(0) & 0x0f;
+			var c2 = c.charCodeAt(0) >> 4;
+			return c2.toString(16) + c1.toString(16);
+		});
+		return result.join('');
+	},
+	
+	hmacHexDigest: function (key, alg, payload) {
+		var gc = new GlideCertificateEncryption;
+		
+		if (typeof payload != 'string'){
+			payload = JSON.stringify(payload);
+		}
+		var signatureBase64 = gc.generateMac(key, alg, payload);
+		return GlideStringUtil.base64Decode(signatureBase64);
+		
+	},
+	/*
+	verify digital signature signed with HMACSHA256 algorithm
+
+	@param {string} signature 
+	@param {string} secret 
+	@param {Object} payload
+
+	@returns {boolean} outputs true if provided signature matches payload signed with secret
+	*/
+	verifySignature: function (signature, secret, payload){ 
+	
+		//	convert hex signature to base64
+		var b64 = this.hexToBase64(signature);
+		// sign the payload
+		var gsEnc = new GlideCertificateEncryption;
+		secret = this.base64Encode(secret);
+		var hmac = gsEnc.generateMac(secret, "HmacSHA256", JSON.stringify(payload));
+		return hmac == b64;
+	},
+	
+	
+	glideVerifySignature: function (signature, secret, payload){ 
+	
+		//	convert hex signature to base64
+		// sign the payload
+		var gsEnc = new GlideCertificateEncryption;
+		secret = this.base64Encode(secret);
+		var hmac64 = gsEnc.generateMac(secret, "HmacSHA256", encodeURIComponent(JSON.stringify(payload)));
+		var hmac = '';
+		GlideStringUtil.base64DecodeAsBytes(hmac64);
+
+		return hmacHex == signature;
+	},
+	
+	base64Encode: function (src){
+		var len = src.length;
+		var count = 0;
+		var result = '';
+		if (len < 1){
+			return;
+		}
+
+		var code;
+		var s1, s2, s3, s4;
+		
+		while (count < len){
+			
+			// note: Number is 64 bit double
+			if (count == len - 2){ // two bytes left, padd as nessesary
+				code = src.substring(count);
+				s1 = code.charCodeAt(0) >> 2;
+				s2 = ((code.charCodeAt(0) & 3) << 4) + (code.charCodeAt(1) >> 4);
+				s3 = (code.charCodeAt(1) & 15) << 2; // 4 least significant bits, rest are padded with 0s
+				s4 = this.BASE_64_PADD();
+			}
+			else if (count == len - 1){ 
+				code = src.substring(count);
+				s1 = code.charCodeAt(0) >> 2;
+				s2 = (code.charCodeAt(0) & 3) << 4;
+				s3 = this.BASE_64_PADD();
+				s4 = this.BASE_64_PADD();
+			}
+			else {
+				code = src.substring(count, count + 3);
+				s1 = code.charCodeAt(0) >> 2;
+				s2 = ((code.charCodeAt(0) & 3) << 4) + (code.charCodeAt(1) >> 4);
+				s3 = ((code.charCodeAt(1) & 15) << 2) + (code.charCodeAt(2) >> 6);
+				s4 = code.charCodeAt(2) & 63;
+			}
+        
+			result += this.BASE_64_MAP(s1) + this.BASE_64_MAP(s2) + this.BASE_64_MAP(s3) + this.BASE_64_MAP(s4);
+			count = count + 3;
+		}
+
+		return result;
+	},
+	/*
+		Get Display Values of Groups
+	*/
+	gr_getUserGroups: function(userID) {
+		var grMember = new GlideRecord('sys_user_grmember');
+		grMember.addQuery('user', userID);
+		grMember.query();
+		var groups = [];
+		while(grMember.next()){
+			groups.push(grMember.group.getDisplayValue().toString());
+		}
+		gs.log(groups.join());
+	},
+	
+	getUserMembers: function (userID) {
+		var result = new global.GlideQuery('sys_user_grmember')
+		.where('user', '6816f79cc0a8016401c5a33be04be441')
+		.select('group$DISPLAY')
+		.reduce(function(acc, curr){return  curr['group$DISPLAY'] + ',' + acc;}, '');
+	},
+	
+	gr_getGroupsWithoutMembers: function (userID) {
+		var grMembers = new GlideRecord('sys_user_grmember');
+		grMembers.addQuery('user', userID);
+		grMembers.query();
+		var groups = [];
+		while(grMembers.next()){
+			groups.push(grMembers.group.sys_id.toString());
+		}
+		var grGroups = new GlideRecord('sys_user_group');
+		grGroups.addQuery('sys_id', 'NOT IN', groups.join(','));
+		grGroups.query();
+		var nonMemberGroups = [];
+		while (grGroups.next())
+			nonMemberGroups.push(grGroups.sys_id.toString());
+		return nonMemberGroups.join(',');
+	},
+	/*
+		Get groups that do not have any of the following members
+	*/
+	getGroupsWithoutMembers: function (userID){
+		var result = new global.GlideQuery('sys_user_grmember')
+		.where('user', '6816f79cc0a8016401c5a33be04be441')
+		.select('group')
+		.map(function(t){return t.group;})
+		.toArray(100);
+		var gqGroup = new global.GlideQuery('sys_user_group')
+		.where('sys_id', 'NOT IN', result)
+		.select('name')
+        .map(function(t){return t.name;})
+		.toArray(100);
+	},
+	
+	getGroupsWithoutMembersRLQuery: function () {
+		var grUser = new GlideRecord('sys_user');
+		grUser.addEncodedQuery('RLQUERYsys_user_grmember.user,=7^ENDRLQUERY');
+		grUser.query();
+		while (grUser.next()){
+			gs.log(grUser.user_name.toString());
+		}
+	},
+
+	addDuration: function (numericDate, day, time){
+		var dur = new GlideDuration(numericDate);
+		var addDur = new GlideDuration(day + " " + time);
+		dur.add(addDur);
+		return dur.getValue();
+	},
+    type: 'MyJSUtils'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:22:05</sys_created_on>
+        <sys_id>a6a399532f633110d8a4d5f62799b6a8</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>MyJSUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_a6a399532f633110d8a4d5f62799b6a8</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:22:05</sys_updated_on>
+        <u_script_length>6922</u_script_length>
+    </sys_script_include>
+</record_update>

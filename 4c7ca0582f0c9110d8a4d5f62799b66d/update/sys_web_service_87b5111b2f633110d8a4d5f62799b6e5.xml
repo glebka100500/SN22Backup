@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_web_service">
+    <sys_web_service action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <function_name>execute</function_name>
+        <name>DemoWSDL</name>
+        <scoped_name>x_644088_integrati_DemoWSDL</scoped_name>
+        <script><![CDATA[(function scriptedWebServiceOperation(request, response) {
+
+	var grInc = new GlideRecord('incident');
+	grInc.initialize();
+	grInc.short_description = request.short_description + " WSDL";
+	grInc.insert();
+	
+	response.result = "Incident inserted - " + grInc.getValue('number');
+
+})(request, response);]]></script>
+        <short_description/>
+        <sys_class_name>sys_web_service</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:31:08</sys_created_on>
+        <sys_id>87b5111b2f633110d8a4d5f62799b6e5</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>DemoWSDL</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_web_service_87b5111b2f633110d8a4d5f62799b6e5</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:31:08</sys_updated_on>
+        <wsdl>https://dev58569.service-now.com/x_644088_integrati_DemoWSDL.do?WSDL</wsdl>
+        <wsdl_compliance>true</wsdl_compliance>
+    </sys_web_service>
+</record_update>

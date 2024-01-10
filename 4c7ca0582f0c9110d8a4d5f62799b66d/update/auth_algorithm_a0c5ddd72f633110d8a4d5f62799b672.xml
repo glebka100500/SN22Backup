@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="auth_algorithm">
+    <auth_algorithm action="INSERT_OR_UPDATE">
+        <agent_script/>
+        <algorithm>CustomAuth</algorithm>
+        <description>Authenticates with Azure Vault and retrieves keys and secrets</description>
+        <glide_script display_value="RequestAuthAzureVault">a62631482f59a510d8a4d5f62799b6d3</glide_script>
+        <name>Azure Vault</name>
+        <sys_class_name>auth_algorithm</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:31:14</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>a0c5ddd72f633110d8a4d5f62799b672</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Azure Vault</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>auth_algorithm_a0c5ddd72f633110d8a4d5f62799b672</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:31:14</sys_updated_on>
+    </auth_algorithm>
+    <sys_translated_text action="delete_multiple" query="documentkey=a0c5ddd72f633110d8a4d5f62799b672"/>
+</record_update>

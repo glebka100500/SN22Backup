@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_fix">
+    <sys_script_fix action="INSERT_OR_UPDATE">
+        <before>false</before>
+        <description/>
+        <name>TEST: Find groups for non members</name>
+        <record_for_rollback>true</record_for_rollback>
+        <script><![CDATA[function getGroupsWithoutMember(userID){
+	var grGroup = new GlideRecord('sys_user_group');
+grGroup.addEncodedQuery('RLQUERYsys_user_grmember.group,=0^sys_id=' + userID + '^ENDRLQUERY'); // related list query + mtm
+grGroup.query();
+
+while (grGroup.next()){
+gs.log(grGroup.getDisplayValue());
+}
+gs.log(grGroup.getRowCount());
+}
+
+function getGroupsWithoutMemberGR(userID){
+	var groupIDs = '';
+	var groupsWithMember = GlideRecord('sys_user_grmember');
+	groupsWithMember.addQuery('user', userID);
+	groupsWithMember.query();
+	while (groupsWithMember.next()){
+		groupIDs += groupsWithMember.group.sys_id.toString() + ",";
+	}
+	var groupsWithoutMember = new GlideRecord('sys_user_group');
+	groupsWithoutMember.addQuery('sys_id', 'NOT IN', groupIDs);
+	groupsWithoutMember.query();
+	gs.log(groupsWithoutMember.getRowCount());
+	while(groupsWithoutMember.next()){
+		gs.log(groupsWithoutMember.getDisplayValue());
+	}
+	
+}
+getGroupsWithoutMember('6816f79cc0a8016401c5a33be04be441');]]></script>
+        <sys_class_name>sys_script_fix</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:23:20</sys_created_on>
+        <sys_id>45f359932f633110d8a4d5f62799b6af</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TEST: Find groups for non members</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_fix_45f359932f633110d8a4d5f62799b6af</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:23:20</sys_updated_on>
+        <unloadable>false</unloadable>
+    </sys_script_fix>
+</record_update>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.OAuthGitHub</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>OAuthGitHub</name>
+        <script><![CDATA[var OAuthGitHub = Class.create();
+OAuthGitHub.prototype = {
+    initialize: function() {
+    },
+	interceptRequestParameters: function (requestParamMap) {},
+	parseTokenResponse: function (accessTokenResponse) {},
+	postProcessAccessToken: function (accessTokenResponse) {
+		gs.log("Token received ---------------------------")
+		var contentType = accessTokenResponse.getContentType();
+		var contentBody  = accessTokenResponse.getBody();
+		var paramMap = accessTokenResponse.getparameters();
+		var params = contentBody.split('&');
+		
+		var parts, refreshToken = false;
+		
+		params.forEach(function (param){
+			parts = param.split('=');
+			if (parts && parts.length == 2){
+				paramMap.put(parts[0], parts[1]);
+				if (parts[0] == 'refresh_token')
+					refreshToken = true;
+			}
+		});
+		
+		if (!refreshToken){
+			paramMap.put('expires_in', '565246060');
+		}
+	},
+    type: 'OAuthGitHub'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:38:06</sys_created_on>
+        <sys_id>15575ddb2f633110d8a4d5f62799b653</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>OAuthGitHub</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_15575ddb2f633110d8a4d5f62799b653</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:38:06</sys_updated_on>
+        <u_script_length>913</u_script_length>
+    </sys_script_include>
+</record_update>

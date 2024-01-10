@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.SCTaskUtils</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Dev Tools</description>
+        <name>SCTaskUtils</name>
+        <script><![CDATA[var SCTaskUtils = Class.create();
+// define display column to send in request body
+SCTaskUtils.DISPLAY_COLUMNS = {
+    LIST: {
+        "sys_user_role": "name",
+        "u_sap_grc_roles": "u_sap_role_name",
+		"sys_choice": "value"
+    },
+    REFERENCE: {
+        "sys_user_role": "name",
+        "sys_user": "employee_number",
+        "u_sap_grc_roles": "u_sap_role_name",
+    }
+};
+// catalog variable value are stored in sc_item_option
+SCTaskUtils.VARIABLES = {
+    BLACKLIST: ["confidentiality_agreement", "select_roles.short_description"]
+};
+
+// mrvs value are stored in sc_multi_row_question_answer
+
+
+SCTaskUtils.prototype = {
+    initialize: function(grTask) {
+        this.gr = grTask;
+        this.item = grTask.getValue('cat_item');
+        this.table = grTask.getRecordClassName();
+        this.extractElement = this.extractElement.bind(this);
+    },
+
+	getTaskHierarchy: function() {
+		if (this.table == "sc_request"){
+			// request does not contain variables
+		}
+		else if (this.table == "sc_req_item"){
+			return [this.gr.request.getRecordClassName(), this.table];
+		}
+		else if (this.table == "sc_task"){
+			var ritm = this.parent;
+			var request = ritm.request;
+			return [request.getRecordClassName(), ritm.getRecordClassName(), this.table];
+		}
+		else if (JSUtil.nil(this.gr.parent) && parent.isValidRecord()){
+			return [this.table];
+		}
+		else { // go by parent
+			var parent = this.gr.parent;
+			var result = [];
+			while (!JSUtil.nil(parent) && parent.isValidRecord()){
+				result.push(parent.getRecordClassName());
+				parent = parent.parent;
+			}
+			return result;
+		}
+
+	}, 
+    getJSONBody: function(nested) {
+        var body = this.getOptions();
+		var reqUser = this.gr.variables.requested_for || this.gr.opened_by;
+		if (nested){
+			body.requested_for = {
+			user_id: reqUser.user_name.toString(),
+			email: reqUser.email.toString(),
+			first_name: reqUser.first_name.toString(),
+			last_name: reqUser.last_name.toString(),
+			employee_number: reqUser.employee_number.toString()
+			};
+
+			body.requested_by = this.gr.opened_by.user_name.toString();
+		}
+		else {
+			body.name = reqUser.name.toString();
+			body.email = reqUser.email.toString();
+			body.userid = reqUser.user_name.toString();
+		}
+        
+        // populate start and end date based on user type
+        body.contract_start_date = gs.now().toString();
+		
+		if (reqUser.u_user_type.toString() == "Partner"){
+			body.contract_end_date = "12/31/9999";
+		}
+		else {
+			var contract_end_date = new GlideDateTime();
+			contract_end_date.addYears(1);
+			body.contract_end_date = contract_end_date.getDate().toString();
+		}
+        
+
+		body.REQ = this.gr.request.number.toString();
+        body.RITM = this.gr.number.toString();
+        body.SysId = this.gr.sys_id.toString();
+
+
+        return body;
+    },
+
+    getOptions: function() {
+        var elements = this.gr.variables.getElements(true);
+        return elements.map(this.extractElement)
+		.filter(
+			function(c) {
+				return SCTaskUtils.VARIABLES.BLACKLIST.indexOf(c.name) == -1;
+				}
+		)
+		.reduce(
+            function(p, c) {
+                if (!JSUtil.nil(c)) {
+                    p[c.name] = c.value;
+                    return p;
+                }
+            }, {}
+        );
+    },
+
+    getVariableProps: function(name, props, multivar) {
+        var vQuery;
+
+        if (JSUtil.nil(multivar)) { // standard variable
+            vQuery = new GlideQuery()
+                .where("cat_item", this.item)
+                .where("name", name);
+
+        } else {
+            vQuery = new GlideQuery()
+                .where("variable_set.title", multivar)
+                .where("name", name);
+        }
+        return new GlideQuery("item_option_new").where(vQuery).selectOne(props).get();
+    },
+
+    getVariableDisplay: function(name, value, multivar) {
+        var props = this.getVariableProps(name, ["type$DISPLAY", "reference", "list_table"], multivar);
+        var display = "";
+
+		if (JSUtil.nil(value)){
+			return "";
+		}
+        else if (props["type$DISPLAY"] == "Reference") {
+            display = SCTaskUtils.DISPLAY_COLUMNS.REFERENCE[props.reference];
+            return new GlideQuery(props.reference)
+                .where("sys_id", value)
+                .selectOne(display)
+                .get()[display].toUpperCase();
+        } else if (props["type$DISPLAY"] == "List Collector") {
+            display = SCTaskUtils.DISPLAY_COLUMNS.LIST[props.list_table];
+            return new GlideQuery(props.list_table)
+                .where("sys_id", "IN", value.split(","))
+                .select(display)
+                .toArray(100).map(function(c){return c[display].toUpperCase();}).join(",");
+
+        } else {
+            return value;
+        }
+    },
+
+    extractElement: function(el) {
+        if (el.isMultiRow()) { // row and cell are not js objects
+            var result = [];
+            var rows = el.getRows();
+			var setName = el.getLabel().toLowerCase().replace(/\s/g, '_');
+            for (var j = 0; j < el.getRowCount(); j++) {
+                var row = rows[j];
+                var rowObj = {};
+                var cells = row.getCells();
+                for (var k = 0; k < cells.length; k++) {
+                    var cell = cells[k];
+					if (SCTaskUtils.VARIABLES.BLACKLIST.indexOf(setName + "." + cell.getName()) == -1){ // filter on variable set level
+						rowObj[cell.getName()] = this.getVariableDisplay(cell.getName(), cell.getCellValue(), el.getLabel());
+					}
+                    
+                }
+                result.push(rowObj);
+            }
+            return {
+                name: setName,
+                value: result
+            };
+        } else  {
+            return {
+                name: el.getName(),
+                value: this.getVariableDisplay(el.getName(), el.getValue())
+            };
+        } 
+    },
+    type: 'SCTaskUtils'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:21:50</sys_created_on>
+        <sys_id>4b93d9532f633110d8a4d5f62799b6e1</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>SCTaskUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_4b93d9532f633110d8a4d5f62799b6e1</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:21:50</sys_updated_on>
+        <u_script_length>6041</u_script_length>
+    </sys_script_include>
+</record_update>

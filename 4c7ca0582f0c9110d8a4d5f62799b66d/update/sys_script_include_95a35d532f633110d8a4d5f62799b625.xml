@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.CatVariableUtils</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>Dev Tools</description>
+        <name>CatVariableUtils</name>
+        <script><![CDATA[var CatVariableUtils = Class.create();
+CatVariableUtils.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+
+	checkAccessRequests: function () {
+		var item = this.getParameter('sysparm_item');
+		var varsCsv = this.getParameter('sysparm_variables');
+		var variables = varsCsv.split(';').reduce(function(p, c){
+			var tokens = c.split('=');
+			p[tokens[0]] = tokens[1];
+			return p;
+		}, {});
+		return this.getReqItemByVariables(item, variables);
+	},
+	getReqItemByVariables: function(item, variables){
+		var gr = new GlideRecord('sc_req_item');
+		gr.addQuery('state', '!=', '7');
+		gr.addQuery('state', '!=', '3');
+		gr.addQuery('cat_item', item);
+		gr.query();
+		var vrs = Object.keys(variables);
+		while(gr.next()){
+			var count = 0;
+			for (var variable in vrs){
+				if (gr.variables[vrs[variable]] != variables[vrs[variable]]){
+					break;
+				}
+				else {
+					count++;
+				}
+			}
+			if (count == vrs.length){
+				return gr.number;
+			}
+			
+		}
+		return "";
+	},
+    getVariablesByQuestion: function(reqItemId, question) {
+		var result = [];
+        var gr = new GlideRecord('sc_req_item');
+        gr.get(reqItemId);
+
+        var catVars = Object.keys(gr.variables);
+
+        for (var i in catVars) {
+            if (gr.variables[catVars[i]].getLabel() == question){
+				result.push(gr.variables[catVars[i]]);
+			}
+        }
+		return result;
+    },
+    type: 'CatVariableUtils'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:21:59</sys_created_on>
+        <sys_id>95a35d532f633110d8a4d5f62799b625</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>CatVariableUtils</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_95a35d532f633110d8a4d5f62799b625</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:21:59</sys_updated_on>
+        <u_script_length>1442</u_script_length>
+    </sys_script_include>
+</record_update>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_fix">
+    <sys_script_fix action="INSERT_OR_UPDATE">
+        <before>false</before>
+        <description>getContentBase64 is only available in scope so this uses readLine method</description>
+        <name>TEST: get file content global</name>
+        <record_for_rollback>true</record_for_rollback>
+        <script><![CDATA[ var att = "23234eqweqe"; // attachment sys_id
+    var inputStream = new GlideSysAttachment().getContentStream(att);
+    var reader = new GlideTextReader(inputStream);
+    var line = reader.readLine();
+    var next = true;
+    var content = "";
+    var fileName = inputs.file_name;
+    while (line != null ){
+        if (!next){
+            content += "\n"; // reader removes newline character so add it back
+        }
+        content += line;
+        line = reader.readLine();
+        next = false;
+    }]]></script>
+        <sys_class_name>sys_script_fix</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-10 16:22:49</sys_created_on>
+        <sys_id>d5d3d1932f633110d8a4d5f62799b6f6</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TEST: get file content global</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_fix_d5d3d1932f633110d8a4d5f62799b6f6</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-10 16:22:49</sys_updated_on>
+        <unloadable>false</unloadable>
+    </sys_script_fix>
+</record_update>
