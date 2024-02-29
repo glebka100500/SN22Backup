@@ -31,15 +31,15 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>ba77d7df93e002107a4bbba97bba10fb</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_mod_count>3</sys_mod_count>
         <sys_name>Test VCS Collision</sys_name>
         <sys_overrides/>
         <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
         <sys_policy/>
         <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
         <sys_update_name>sys_hub_flow_ba77d7df93e002107a4bbba97bba10fb</sys_update_name>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2024-02-29 19:03:00</sys_updated_on>
+        <sys_updated_by>integration.user</sys_updated_by>
+        <sys_updated_on>2024-02-29 19:34:38</sys_updated_on>
         <type>flow</type>
     </sys_hub_flow>
     <sys_translated_text action="delete_multiple" query="documentkey=ba77d7df93e002107a4bbba97bba10fb"/>
@@ -62,45 +62,7 @@
     <sys_hub_flow_input action="delete_multiple" query="model=ba77d7df93e002107a4bbba97bba10fb"/>
     <sys_hub_flow_output action="delete_multiple" query="model=ba77d7df93e002107a4bbba97bba10fb"/>
     <sys_hub_alias_mapping action="delete_multiple" query="source_id=ba77d7df93e002107a4bbba97bba10fb"/>
-    <sys_hub_action_instance action="delete_multiple" query="flow=ba77d7df93e002107a4bbba97bba10fb^sys_idNOT IN0ff79753932402107a4bbba97bba10fa,1e97df13932402107a4bbba97bba103f"/>
-    <sys_hub_action_instance action="INSERT_OR_UPDATE">
-        <action_inputs/>
-        <action_type display_value="Log">5bc1bcc6531003003bf1d9109ec587d4</action_type>
-        <action_type_parent/>
-        <comment/>
-        <compiled_snapshot/>
-        <display_text/>
-        <flow display_value="Test VCS Collision">ba77d7df93e002107a4bbba97bba10fb</flow>
-        <order>2</order>
-        <parent_ui_id/>
-        <sys_class_name>sys_hub_action_instance</sys_class_name>
-        <sys_created_by>admin</sys_created_by>
-        <sys_created_on>2024-02-29 19:02:59</sys_created_on>
-        <sys_id>0ff79753932402107a4bbba97bba10fa</sys_id>
-        <sys_mod_count>2</sys_mod_count>
-        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2024-02-29 19:02:59</sys_updated_on>
-        <ui_id>7175da00-e539-4863-916b-cae16b21e6d8</ui_id>
-    </sys_hub_action_instance>
-    <sys_variable_value action="delete_multiple" query="document_key=0ff79753932402107a4bbba97bba10fa"/>
-    <sys_variable_value action="INSERT_OR_UPDATE">
-        <document>sys_hub_action_instance</document>
-        <document_key>0ff79753932402107a4bbba97bba10fa</document_key>
-        <order>1</order>
-        <sys_class_name>sys_variable_value</sys_class_name>
-        <sys_created_by>admin</sys_created_by>
-        <sys_created_on>2024-02-29 19:02:59</sys_created_on>
-        <sys_id>4ff79753932402107a4bbba97bba10fb</sys_id>
-        <sys_mod_count>0</sys_mod_count>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2024-02-29 19:02:59</sys_updated_on>
-        <value>uncommited changes</value>
-        <variable display_value="Message">23c1bcc6531003003bf1d9109ec587e5</variable>
-    </sys_variable_value>
-    <sys_element_mapping action="delete_multiple" query="table=var__m_sys_hub_action_input_5bc1bcc6531003003bf1d9109ec587d4^id=0ff79753932402107a4bbba97bba10fa"/>
-    <sys_hub_input_scripts action="delete_multiple" query="instance=0ff79753932402107a4bbba97bba10fa"/>
-    <sys_hub_alias_mapping action="delete_multiple" query="source_id=0ff79753932402107a4bbba97bba10fa"/>
+    <sys_hub_action_instance action="delete_multiple" query="flow=ba77d7df93e002107a4bbba97bba10fb^sys_idNOT IN1e97df13932402107a4bbba97bba103f"/>
     <sys_hub_action_instance action="INSERT_OR_UPDATE">
         <action_inputs/>
         <action_type display_value="Log">5bc1bcc6531003003bf1d9109ec587d4</action_type>
@@ -115,10 +77,10 @@
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2024-02-29 19:01:18</sys_created_on>
         <sys_id>1e97df13932402107a4bbba97bba103f</sys_id>
-        <sys_mod_count>4</sys_mod_count>
+        <sys_mod_count>6</sys_mod_count>
         <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2024-02-29 19:02:59</sys_updated_on>
+        <sys_updated_by>integration.user</sys_updated_by>
+        <sys_updated_on>2024-02-29 19:34:37</sys_updated_on>
         <ui_id>a088d2fd-fa68-49f4-a0f2-5372c4fdd4cf</ui_id>
     </sys_hub_action_instance>
     <sys_variable_value action="delete_multiple" query="document_key=1e97df13932402107a4bbba97bba103f"/>
@@ -130,10 +92,10 @@
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2024-02-29 19:01:18</sys_created_on>
         <sys_id>9297df13932402107a4bbba97bba1042</sys_id>
-        <sys_mod_count>0</sys_mod_count>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2024-02-29 19:01:18</sys_updated_on>
-        <value>Testing collision</value>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>integration.user</sys_updated_by>
+        <sys_updated_on>2024-02-29 19:34:37</sys_updated_on>
+        <value>Integration user changes -- </value>
         <variable display_value="Message">23c1bcc6531003003bf1d9109ec587e5</variable>
     </sys_variable_value>
     <sys_element_mapping action="delete_multiple" query="table=var__m_sys_hub_action_input_5bc1bcc6531003003bf1d9109ec587d4^id=1e97df13932402107a4bbba97bba103f"/>
