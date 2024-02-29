@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="ecc_agent_script_file">
+    <ecc_agent_script_file action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <checksum/>
+        <description>Sample ps1 script to link Azure resource groups to app services</description>
+        <directory>false</directory>
+        <name>_LinkResourceGroups</name>
+        <parent/>
+        <script>function Create-Apps {&#13;
+    param (&#13;
+        $Path,&#13;
+        $Url,&#13;
+        $Auth&#13;
+    )&#13;
+    $resourceTable = 'cmdb_ci_resource_group'&#13;
+    $resourceField = 'object_id'&#13;
+    $subTable = 'cmdb_ci_cloud_service_account'&#13;
+    $subField = 'name'&#13;
+    $subDisplay = 'account_id,name'&#13;
+    $appTable = "cmdb_ci_service_auto"&#13;
+    $field = 'name'&#13;
+    $rg = Import-Csv -Path $path&#13;
+    $rgGroups = $rg | Group-Object -Property @("APP (TAG)", "ENV (TAG)")&#13;
+    $added = 0&#13;
+    $missing = 0&#13;
+    $ignored = 0&#13;
+    $total = 0&#13;
+    $missingBody = "";&#13;
+&#13;
+    $missingNames = "";&#13;
+    $ignoredNames = "";&#13;
+&#13;
+    foreach ($group in $rgGroups){&#13;
+        &#13;
+        $subValues = '';&#13;
+        $fullName = $group.Group[0].'APP (TAG)' + "-" + (Get-Culture).TextInfo.ToTitleCase($group.Group[0].'ENV (TAG)')&#13;
+         foreach ($res in $group.Group){&#13;
+            $subValues = $res.SUBSCRIPTION + ','&#13;
+        }&#13;
+        # get subscription ids and build map of account names to account ids&#13;
+&#13;
+        $subRes = Get-CIByQuery -tableName $subTable -field $subField -values $subValues -baseUrl $Url -auth $Auth -display $subDisplay&#13;
+        $subMap = @{}&#13;
+&#13;
+        foreach ($sub in $subRes.result){&#13;
+            $subKey = $sub.name&#13;
+            $subMap.$subKey = $sub.account_id&#13;
+        }&#13;
+        #construct object ids for resource groups&#13;
+        $resValues = '';&#13;
+        foreach ($appRes in $group.Group){&#13;
+            $resName = $appRes.NAME&#13;
+	    $subName = $appRes.SUBSCRIPTION 	&#13;
+	    $subId = $subMap.$subName&#13;
+            if ($subId){&#13;
+	    $resObjId = '/subscriptions/' + $subId + '/resourceGroups/' + $resName&#13;
+            $resValues += $resObjId + ','&#13;
+            }&#13;
+        }&#13;
+       &#13;
+        #get resource group sys_id's by object_id&#13;
+        $grRes = Get-CIByQuery -tableName $resourceTable -field $resourceField -values $resValues -baseUrl $Url -auth $Auth&#13;
+&#13;
+        #get app id by name and construct body &#13;
+&#13;
+        $appRes = Get-CIByQuery -tableName $appTable -field $field -values $fullName  -baseUrl $Url -auth $Auth&#13;
+        $outRels = @();&#13;
+	$childIds = @();&#13;
+        foreach ($id in $grRes.result){&#13;
+            $outRels += @{&#13;
+                'target' = $id.sys_id&#13;
+                'type' = '1a9cb166f1571100a92eb60da2bce5c5'&#13;
+            }&#13;
+	    $childIds += $id.sys_id&#13;
+        }&#13;
+        $appBody = @{&#13;
+            'outbound_relations' = $outRels&#13;
+        }&#13;
+        $appId = $appRes.result[0].sys_id&#13;
+        $location = $Url + '/api/now/cmdb/instance/cmdb_ci_service_auto/' + $appId + "/relation"&#13;
+        $authHeader = 'Basic ' + $auth&#13;
+        $headers = @{&#13;
+            'Authorization' = $authHeader&#13;
+            'Content-Type' = 'application/json'&#13;
+        }&#13;
+        $jsonBody = $appBody | ConvertTo-Json&#13;
+	if ($appId){&#13;
+		$hasRels = checkRels -Uri $Url -auth $Auth -appId $appId -childIds $childIds&#13;
+	}&#13;
+	else {&#13;
+		$hasRels = $true&#13;
+	}&#13;
+        &#13;
+    &#13;
+        #create app relationships and write log&#13;
+&#13;
+	&#13;
+&#13;
+        if ($hasRels -eq $false){&#13;
+         Write-Host "App Id: "$appId "First Link:" $outRels[0].target post to $location&#13;
+         $response = Invoke-RestMethod -Uri $location -Body $jsonBody -headers $headers -Method POST&#13;
+         $added++&#13;
+    }&#13;
+        elseif (!$appId){&#13;
+        Write-Host $fullName does not exist&#13;
+        $missing++   &#13;
+        $missingNames += $fullName + "`n"&#13;
+	$missingBody += $resValues + ","&#13;
+    }&#13;
+        else {&#13;
+        Write-Host Application $fullName already has outbound CI relationships defined&#13;
+	$ignoredNames += $fullName + "`n"&#13;
+        $ignored++&#13;
+    }&#13;
+    $total++&#13;
+    }&#13;
+    Write-Host "Total:" $total"," "Missing:" $missing"," "Ignored:" $ignored&#13;
+    $path = ${pwd}.Path&#13;
+    $filePath = $path + '\Missing App Names (Azure).txt';&#13;
+    New-Item -Type File -Path $filePath -Force&#13;
+    Set-Content -Path $filePath -Value $missingNames&#13;
+    &#13;
+    $filePath = $path + '\Ignored App Names (Azure).txt';&#13;
+    New-Item -Type File -Path $filePath -Force&#13;
+    Set-Content -Path $filePath -Value $ignoredNames&#13;
+&#13;
+    $bodyPath = $path + '\Missing Resource Groups.txt'&#13;
+    New-Item -Type File -Path $bodyPath -Force&#13;
+    $missingRes = '';&#13;
+    $missingBody -split "," | foreach-object {$missingRes += $_ + '`'}&#13;
+&#13;
+    Set-Content -Path $bodyPath -Value $missingRes&#13;
+    &#13;
+}&#13;
+    &#13;
+    function Get-CIByQuery {&#13;
+        param (&#13;
+            $tableName,&#13;
+            $field,&#13;
+            $values,&#13;
+            $baseUrl,&#13;
+            $auth,&#13;
+            $display&#13;
+        )&#13;
+        if ($values){&#13;
+		if ($display){&#13;
+            $restPath = '/api/now/table/' + $tableName + '?sysparm_fields=sys_id,' + $display + '&amp;sysparm_query=' + $field + 'IN' + $values&#13;
+        }&#13;
+        else {&#13;
+            $restPath = '/api/now/table/' + $tableName + '?sysparm_fields=sys_id&amp;sysparm_query=' + $field + 'IN' + $values&#13;
+        }&#13;
+        &#13;
+        $uri = $baseUrl + $restPath&#13;
+        $authHeader = 'Basic ' + $auth&#13;
+        $headers = @{&#13;
+            'Authorization' = $authHeader;&#13;
+            'Content-Type' = 'application/json';&#13;
+            'Accept' = 'application/json';&#13;
+        }&#13;
+        Invoke-RestMethod -Uri $uri -headers $headers -Method GET&#13;
+}&#13;
+    }&#13;
+    &#13;
+    $Env = "prod"&#13;
+    &#13;
+    if ($Env -eq "dev"){&#13;
+        $Uri = "https://bakerdev.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "qa"){&#13;
+        $Uri = "https://bakerqa.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "uat"){&#13;
+        $Uri = "https://bakeruat.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "prod") {&#13;
+        $Uri= "https://bakerhughes.service-now.com"&#13;
+    }&#13;
+    &#13;
+    &#13;
+    function checkRels {&#13;
+     param (&#13;
+        $uri,&#13;
+        $auth,&#13;
+        $appId,&#13;
+	$childIds&#13;
+    )&#13;
+    &#13;
+    $headers = @{&#13;
+        Authorization = 'Basic ' + $auth&#13;
+    }&#13;
+    &#13;
+    $url = $uri + "/api/now/cmdbrelation/relation/" + $appId + "?sLevel=1"&#13;
+    &#13;
+    $res = Invoke-RestMethod -Uri $url -Headers $headers&#13;
+&#13;
+    $rels = $res.result.relations | ConvertFrom-Json&#13;
+    &#13;
+    foreach ($rel in $rels.relations.relations){&#13;
+	if ($rel.childSysClassName -eq "cmdb_ci_resource_group" -and -not ($rel.childSysId -in $childIds)){&#13;
+		Write-Host APP SKIPPED: $appId&#13;
+	    return $true&#13;
+}&#13;
+		&#13;
+    }&#13;
+    return $false   &#13;
+&#13;
+    }&#13;
+    &#13;
+    &#13;
+    Create-Apps -Path "C:\Users\hlib.korniienko\Desktop\Baker Hughes\Azure Service Graph\CMDB APIs\Prod SGC RG connections needed for connectiong to CMDB application.csv" -Url $Uri -Auth  </script>
+        <script_attachment/>
+        <source/>
+        <sys_class_name>ecc_agent_script_file</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-12 16:21:48</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>d166273793a331107a4bbba97bba10ee</sys_id>
+        <sys_mod_count>5</sys_mod_count>
+        <sys_name>_LinkResourceGroups</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>ecc_agent_script_file_d166273793a331107a4bbba97bba10ee</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-23 19:34:01</sys_updated_on>
+        <use_attachment>false</use_attachment>
+        <version/>
+    </ecc_agent_script_file>
+</record_update>

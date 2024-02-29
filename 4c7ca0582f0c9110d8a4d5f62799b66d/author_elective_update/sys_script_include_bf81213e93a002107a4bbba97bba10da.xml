@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="DELETE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.QRPolynomial</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>DevTools 2024</description>
+        <name>QRPolynomial</name>
+        <script><![CDATA[var QRPolynomial = Class.create();
+QRPolynomial.prototype = {
+    initialize: function(num, shift) {
+        if (num.length == undefined) {
+            throw new Error(num.length + "/" + shift);
+        }
+
+        var offset = 0;
+
+        while (offset < num.length && num[offset] == 0) {
+            offset++;
+        }
+
+        this.num = new Array(num.length - offset + shift);
+        for (var i = 0; i < num.length - offset; i++) {
+            this.num[i] = num[i + offset];
+        }
+    },
+
+    get: function(index) {
+        return this.num[index];
+    },
+
+    getLength: function() {
+        return this.num.length;
+    },
+
+    multiply: function(e) {
+
+        var num = new Array(this.getLength() + e.getLength() - 1);
+
+        for (var i = 0; i < this.getLength(); i++) {
+            for (var j = 0; j < e.getLength(); j++) {
+                num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i)) + QRMath.glog(e.get(j)));
+            }
+        }
+
+        return new QRPolynomial(num, 0);
+    },
+
+    mod: function(e) {
+
+        if (this.getLength() - e.getLength() < 0) {
+            return this;
+        }
+
+        var ratio = QRMath.glog(this.get(0)) - QRMath.glog(e.get(0));
+
+        var num = new Array(this.getLength());
+
+        for (var i = 0; i < this.getLength(); i++) {
+            num[i] = this.get(i);
+        }
+
+        for (var i = 0; i < e.getLength(); i++) {
+            num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
+        }
+
+        // recursive call
+        return new QRPolynomial(num, 0).mod(e);
+    },
+
+    type: 'QRPolynomial'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-27 21:11:03</sys_created_on>
+        <sys_id>bf81213e93a002107a4bbba97bba10da</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>QRPolynomial</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_bf81213e93a002107a4bbba97bba10da</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-27 21:11:18</sys_updated_on>
+    </sys_script_include>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</application>
+        <file_path/>
+        <instance_id>1334035bdbce315492f5684e13961986</instance_id>
+        <instance_name>dev196711</instance_name>
+        <name>sys_script_include_bf81213e93a002107a4bbba97bba10da</name>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;public&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;x_644088_integrati.QRPolynomial&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;false&lt;/client_callable&gt;&lt;description&gt;DevTools 2024&lt;/description&gt;&lt;name&gt;QRPolynomial&lt;/name&gt;&lt;script&gt;&lt;![CDATA[var QRPolynomial = Class.create();
+QRPolynomial.prototype = {
+    initialize: function(num, shift) {
+        if (num.length == undefined) {
+            throw new Error(num.length + "/" + shift);
+        }
+
+        var offset = 0;
+
+        while (offset &lt; num.length &amp;&amp; num[offset] == 0) {
+            offset++;
+        }
+
+        this.num = new Array(num.length - offset + shift);
+        for (var i = 0; i &lt; num.length - offset; i++) {
+            this.num[i] = num[i + offset];
+        }
+    },
+
+    get: function(index) {
+        return this.num[index];
+    },
+
+    getLength: function() {
+        return this.num.length;
+    },
+
+    multiply: function(e) {
+
+        var num = new Array(this.getLength() + e.getLength() - 1);
+
+        for (var i = 0; i &lt; this.getLength(); i++) {
+            for (var j = 0; j &lt; e.getLength(); j++) {
+                num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i)) + QRMath.glog(e.get(j)));
+            }
+        }
+
+        return new QRPolynomial(num, 0);
+    },
+
+    mod: function(e) {
+
+        if (this.getLength() - e.getLength() &lt; 0) {
+            return this;
+        }
+
+        var ratio = QRMath.glog(this.get(0)) - QRMath.glog(e.get(0));
+
+        var num = new Array(this.getLength());
+
+        for (var i = 0; i &lt; this.getLength(); i++) {
+            num[i] = this.get(i);
+        }
+
+        for (var i = 0; i &lt; e.getLength(); i++) {
+            num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
+        }
+
+        // recursive call
+        return new QRPolynomial(num, 0).mod(e);
+    },
+
+    type: 'QRPolynomial'
+};]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2024-02-27 21:11:03&lt;/sys_created_on&gt;&lt;sys_id&gt;bf81213e93a002107a4bbba97bba10da&lt;/sys_id&gt;&lt;sys_mod_count&gt;1&lt;/sys_mod_count&gt;&lt;sys_name&gt;QRPolynomial&lt;/sys_name&gt;&lt;sys_package display_value="Integrations 2022" source="x_644088_integrati"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_package&gt;&lt;sys_policy&gt;read&lt;/sys_policy&gt;&lt;sys_scope display_value="Integrations 2022"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_bf81213e93a002107a4bbba97bba10da&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2024-02-27 21:11:18&lt;/sys_updated_on&gt;&lt;/sys_script_include&gt;&lt;/record_update&gt;</payload>
+        <payload_hash>1935862803</payload_hash>
+        <record_name>QRPolynomial</record_name>
+        <reverted_from/>
+        <source>c2c7a01a937331107a4bbba97bba104e</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-27 21:11:18</sys_created_on>
+        <sys_id>572261b2932402107a4bbba97bba1091</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>18dec685b690000001</sys_recorded_at>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-27 21:11:18</sys_updated_on>
+        <type>Script Include</type>
+        <update_guid>db2261b2d7240210efdc0c6a8ba02590</update_guid>
+        <update_guid_history>db2261b2d7240210efdc0c6a8ba02590:1935862803,631221b265240210bccf8e035f13e194:-1637839166</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-28 00:21:51</sys_created_on>
+        <sys_db_object display_value="" name="sys_script_include">sys_script_include</sys_db_object>
+        <sys_id>9eea50fcf5eb4ba8b575a5d79d336c79</sys_id>
+        <sys_metadata>bf81213e93a002107a4bbba97bba10da</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>QRPolynomial</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_parent/>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_scope_delete display_value="">4b9f281809d34184adaf9b4672ff2f90</sys_scope_delete>
+        <sys_update_name>sys_script_include_bf81213e93a002107a4bbba97bba10da</sys_update_name>
+        <sys_update_version display_value="sys_script_include_bf81213e93a002107a4bbba97bba10da">572261b2932402107a4bbba97bba1091</sys_update_version>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-28 00:21:51</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="DELETE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_644088_integrati.QRBitBuffer</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Dev Tools 2024</description>
+        <name>QRBitBuffer</name>
+        <script><![CDATA[var QRBitBuffer = Class.create();
+QRBitBuffer.prototype = {
+    initialize: function() {
+        this.buffer = new Array();
+        this.length = 0;
+    },
+    get: function(index) {
+        var bufIndex = Math.floor(index / 8);
+        return ((this.buffer[bufIndex] >>> (7 - index % 8)) & 1) == 1;
+    },
+
+    put: function(num, length) {
+        for (var i = 0; i < length; i++) {
+            this.putBit(((num >>> (length - i - 1)) & 1) == 1);
+        }
+    },
+
+    getLengthInBits: function() {
+        return this.length;
+    },
+
+    putBit: function(bit) {
+
+        var bufIndex = Math.floor(this.length / 8);
+        if (this.buffer.length <= bufIndex) {
+            this.buffer.push(0);
+        }
+
+        if (bit) {
+            this.buffer[bufIndex] |= (0x80 >>> (this.length % 8));
+        }
+
+        this.length++;
+    },
+    type: 'QRBitBuffer'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-27 21:04:59</sys_created_on>
+        <sys_id>db50a1b2932402107a4bbba97bba109b</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>QRBitBuffer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>sys_script_include_db50a1b2932402107a4bbba97bba109b</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-27 21:15:10</sys_updated_on>
+    </sys_script_include>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</application>
+        <file_path/>
+        <instance_id>1334035bdbce315492f5684e13961986</instance_id>
+        <instance_name>dev196711</instance_name>
+        <name>sys_script_include_db50a1b2932402107a4bbba97bba109b</name>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_script_include"&gt;&lt;sys_script_include action="INSERT_OR_UPDATE"&gt;&lt;access&gt;public&lt;/access&gt;&lt;active&gt;true&lt;/active&gt;&lt;api_name&gt;x_644088_integrati.QRBitBuffer&lt;/api_name&gt;&lt;caller_access/&gt;&lt;client_callable&gt;false&lt;/client_callable&gt;&lt;description&gt;Dev Tools 2024&lt;/description&gt;&lt;name&gt;QRBitBuffer&lt;/name&gt;&lt;script&gt;&lt;![CDATA[var QRBitBuffer = Class.create();
+QRBitBuffer.prototype = {
+    initialize: function() {
+        this.buffer = new Array();
+        this.length = 0;
+    },
+    get: function(index) {
+        var bufIndex = Math.floor(index / 8);
+        return ((this.buffer[bufIndex] &gt;&gt;&gt; (7 - index % 8)) &amp; 1) == 1;
+    },
+
+    put: function(num, length) {
+        for (var i = 0; i &lt; length; i++) {
+            this.putBit(((num &gt;&gt;&gt; (length - i - 1)) &amp; 1) == 1);
+        }
+    },
+
+    getLengthInBits: function() {
+        return this.length;
+    },
+
+    putBit: function(bit) {
+
+        var bufIndex = Math.floor(this.length / 8);
+        if (this.buffer.length &lt;= bufIndex) {
+            this.buffer.push(0);
+        }
+
+        if (bit) {
+            this.buffer[bufIndex] |= (0x80 &gt;&gt;&gt; (this.length % 8));
+        }
+
+        this.length++;
+    },
+    type: 'QRBitBuffer'
+};]]&gt;&lt;/script&gt;&lt;sys_class_name&gt;sys_script_include&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2024-02-27 21:04:59&lt;/sys_created_on&gt;&lt;sys_id&gt;db50a1b2932402107a4bbba97bba109b&lt;/sys_id&gt;&lt;sys_mod_count&gt;2&lt;/sys_mod_count&gt;&lt;sys_name&gt;QRBitBuffer&lt;/sys_name&gt;&lt;sys_package display_value="Integrations 2022" source="x_644088_integrati"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_package&gt;&lt;sys_policy&gt;read&lt;/sys_policy&gt;&lt;sys_scope display_value="Integrations 2022"&gt;4c7ca0582f0c9110d8a4d5f62799b66d&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_script_include_db50a1b2932402107a4bbba97bba109b&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2024-02-27 21:15:10&lt;/sys_updated_on&gt;&lt;/sys_script_include&gt;&lt;/record_update&gt;</payload>
+        <payload_hash>-1074891388</payload_hash>
+        <record_name>QRBitBuffer</record_name>
+        <reverted_from/>
+        <source>c2c7a01a937331107a4bbba97bba104e</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-27 21:15:10</sys_created_on>
+        <sys_id>8013a136932402107a4bbba97bba10ae</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>18dec6be6150000001</sys_recorded_at>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-27 21:15:10</sys_updated_on>
+        <type>Script Include</type>
+        <update_guid>4813a136822402107a5379c5c1cc74ad</update_guid>
+        <update_guid_history>4813a136822402107a5379c5c1cc74ad:-1074891388,93222df2542402102b6c09b142ac4bc0:-1905287772,b2b0a1b2682402109d7ad176158cdaa3:1157589461</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-02-28 00:21:51</sys_created_on>
+        <sys_db_object display_value="" name="sys_script_include">sys_script_include</sys_db_object>
+        <sys_id>3a1fa60a9eda4d68a0ab787ed8ad2ce4</sys_id>
+        <sys_metadata>db50a1b2932402107a4bbba97bba109b</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>QRBitBuffer</sys_name>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_parent/>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_scope_delete display_value="">4b9f281809d34184adaf9b4672ff2f90</sys_scope_delete>
+        <sys_update_name>sys_script_include_db50a1b2932402107a4bbba97bba109b</sys_update_name>
+        <sys_update_version display_value="sys_script_include_db50a1b2932402107a4bbba97bba109b">8013a136932402107a4bbba97bba10ae</sys_update_version>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-02-28 00:21:51</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

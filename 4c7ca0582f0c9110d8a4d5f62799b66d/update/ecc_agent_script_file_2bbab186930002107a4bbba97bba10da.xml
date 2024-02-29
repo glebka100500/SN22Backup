@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="ecc_agent_script_file">
+    <ecc_agent_script_file action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <checksum/>
+        <description/>
+        <directory>false</directory>
+        <name>_CreateAppCIs</name>
+        <parent/>
+        <script>function Create-AppCI {&#13;
+    param (&#13;
+        $Parent,&#13;
+        $AppName,&#13;
+        $Url&#13;
+        $Auth,&#13;
+    )&#13;
+    $Headers = @{&#13;
+        "Authorization" = "Basic " + $Auth;&#13;
+        'Content-Type' = 'application/json';&#13;
+        'Accept' = 'application/json';&#13;
+    }&#13;
+&#13;
+    $Uri = $Url + "/api/now/cmdb/csdm/app_service/register_service"&#13;
+&#13;
+&#13;
+    $Body = @{&#13;
+        "basic_details" = @{&#13;
+            "name" = $AppName&#13;
+        },&#13;
+        "relationships" = @(&#13;
+            @{"business_app" = $Parent}&#13;
+        )&#13;
+    }&#13;
+    $JsonBody = $Body | ConvertTo-Json&#13;
+&#13;
+    Invoke-RestMethod -Uri $Uri -Method "POST" -headers $Headers -body $JsonBody&#13;
+&#13;
+}&#13;
+&#13;
+function Get-Auth{&#13;
+    param (&#13;
+        $user,&#13;
+        $pass&#13;
+    )&#13;
+&#13;
+    $authStr = $user + ":" + $pass&#13;
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($authStr)&#13;
+    $base64 = [Convert]::ToBase64String($bytes)&#13;
+&#13;
+    return $base64&#13;
+}&#13;
+&#13;
+function Get-BaseUrl{&#13;
+    param (&#13;
+        $Env&#13;
+    )&#13;
+    $Env = $Env.toLower()&#13;
+&#13;
+    if ($Env -eq "dev"){&#13;
+        $Uri = "https://bakerdev.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "qa"){&#13;
+        $Uri = "https://bakerqa.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "uat"){&#13;
+        $Uri = "https://bakeruat.service-now.com"&#13;
+    }&#13;
+    elseif ($Env -eq "prod") {&#13;
+        $Uri= "https://bakerhughes.service-now.com"&#13;
+    }&#13;
+}&#13;
+&#13;
+function Get-CIByQuery {&#13;
+    param (&#13;
+        $TableName,&#13;
+        $Field,&#13;
+        $Values,&#13;
+        $BaseUrl,&#13;
+        $Auth,&#13;
+        $Display&#13;
+    )&#13;
+    if ($Values){&#13;
+        if ($Display){&#13;
+            $restPath = '/api/now/table/' + $tableName + '?sysparm_fields=sys_id,' + $display + '&amp;sysparm_query=' + $field + 'IN' + $values&#13;
+        }&#13;
+        else {&#13;
+            $restPath = '/api/now/table/' + $tableName + '?sysparm_fields=sys_id&amp;sysparm_query=' + $field + 'IN' + $values&#13;
+        }&#13;
+        &#13;
+        $uri = $BaseUrl + $restPath&#13;
+        $authHeader = 'Basic ' + $Auth&#13;
+        $headers = @{&#13;
+            'Authorization' = $authHeader;&#13;
+            'Content-Type' = 'application/json';&#13;
+            'Accept' = 'application/json';&#13;
+        }&#13;
+        Invoke-RestMethod -Uri $uri -headers $headers -Method GET&#13;
+}&#13;
+}&#13;
+&#13;
+function LoadAllApps {&#13;
+    param (&#13;
+        $User,&#13;
+        $Pass,&#13;
+        $Path,&#13;
+        $Env&#13;
+    )&#13;
+&#13;
+    $missing = Import-Csv -Path $Path&#13;
+&#13;
+    $Url = Get-BaseUrl -Env $Env &#13;
+    $Auth = Get-Auth -user $User -pass $Pass&#13;
+&#13;
+    $parentNames = ""&#13;
+    $parentTable = "cmdb_ci_service"&#13;
+    $parentField = "name"&#13;
+&#13;
+    # construct query from actual parent names&#13;
+&#13;
+    $parentMap = @{}&#13;
+&#13;
+    for ($app in $missing){&#13;
+        $cutoff = $app.lastIndexOf('-')&#13;
+        $pName = $app.Substring(0, $app.length - $cutoff - 1)&#13;
+        $parentNames += $pName + ","&#13;
+        if ($parentMap.$pName -eq $null){&#13;
+            $parentMap.$pName = @($app)&#13;
+        }&#13;
+        else {&#13;
+            $parentMap.$pName += $app&#13;
+        }&#13;
+    }&#13;
+&#13;
+    # get parent app ids&#13;
+&#13;
+    $res = Get-CIByQuery -TableName $parentTable -Field $parentField -Values $parentNames -BaseUrl $Url -Auth $Auth -Display "name"&#13;
+    &#13;
+&#13;
+&#13;
+    # for each parent and each missing up under it, create a new envionment&#13;
+&#13;
+    for ($id in $res.result){&#13;
+        $parentName = $id.name&#13;
+        $parentId = $id.sys_id&#13;
+        $apps = $parentMap.$parentName&#13;
+        &#13;
+        for ($app in $apps){&#13;
+            Create-AppCI -Parent $parentId -AppName $app -Url $Url -Auth $Auth&#13;
+        }&#13;
+    }&#13;
+}</script>
+        <script_attachment/>
+        <source/>
+        <sys_class_name>ecc_agent_script_file</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-01-31 18:33:33</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>2bbab186930002107a4bbba97bba10da</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>_CreateAppCIs</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Integrations 2022" source="x_644088_integrati">4c7ca0582f0c9110d8a4d5f62799b66d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Integrations 2022">4c7ca0582f0c9110d8a4d5f62799b66d</sys_scope>
+        <sys_update_name>ecc_agent_script_file_2bbab186930002107a4bbba97bba10da</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-01-31 18:33:33</sys_updated_on>
+        <use_attachment>false</use_attachment>
+        <version/>
+    </ecc_agent_script_file>
+</record_update>
